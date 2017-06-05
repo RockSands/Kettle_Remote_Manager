@@ -162,7 +162,6 @@ public class DBTransferMain {
 			transMeta.addStep(insert);
 			transMeta.addTransHop(new TransHopMeta(isNew, insert));
 			frm_new.getStepIOMeta().getTargetStreams().get(0).setStepMeta(insert);
-			System.out.println(toi.getXML());
 			/*
 			 * isChange判断
 			 */
