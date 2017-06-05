@@ -26,7 +26,7 @@ public class DBUpdateOrInsertMain {
 		try {
 			// 创建一个转换
 			TransMeta transMeta = new TransMeta();
-			transMeta.setName("CKW-TransMeta-Test");
+			transMeta.setName("CKW-DBUpdateOrInsert-Test");
 
 			/*
 			 * 获取数据
@@ -62,8 +62,8 @@ public class DBUpdateOrInsertMain {
 			 */
 			String[] sourceFields = { "emp_no", "dept_no", "first_name", "last_name", "birth_date" };
 			String[] targetFields = { "empID", "deptID", "firstName", "lastName", "born" };
-			int[] targetPrecisions = { 0, 0, 0, 0, 0 };
-			int[] targetLengths = { 64, 64, 64, 64, 64 };
+			int[] targetPrecisions = { 0, 0, 0, 0, 0 };// 0 默认
+			int[] targetLengths = { 0, 0, 0, 0, 0 };// 0 默认
 			SelectValuesMeta svi = new SelectValuesMeta();
 			svi.setSelectLength(targetLengths);
 			svi.setSelectPrecision(targetPrecisions);
