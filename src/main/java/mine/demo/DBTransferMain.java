@@ -24,6 +24,7 @@ public class DBTransferMain {
 
 	public static void main(String[] args) throws KettleException {
 		// 初始化环境
+		System.getProperties().setProperty("KETTLE_HOME", "/Kettle-5-Demo/src/main/resources");
 		KettleEnvironment.init();
 		EnvUtil.environmentInit();
 		try {
