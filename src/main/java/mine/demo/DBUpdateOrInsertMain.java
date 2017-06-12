@@ -10,6 +10,7 @@ import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
 import org.pentaho.di.trans.steps.insertupdate.InsertUpdateMeta;
+import org.pentaho.di.trans.steps.selectvalues.SelectMetadataChange;
 import org.pentaho.di.trans.steps.selectvalues.SelectValuesMeta;
 import org.pentaho.di.trans.steps.tableinput.TableInputMeta;
 
@@ -28,6 +29,7 @@ public class DBUpdateOrInsertMain {
 		KettleEnvironment.init();
 		EnvUtil.environmentInit();
 		try {
+
 			// 创建一个转换
 			TransMeta transMeta = new TransMeta();
 			transMeta.setName("CKW-DBUpdateOrInsert-Test");
@@ -39,8 +41,8 @@ public class DBUpdateOrInsertMain {
 					"employees", "3306", "root", "123456");
 			transMeta.addDatabase(sourceDataBase);
 
-			DatabaseMeta targetDatabase = new DatabaseMeta("targetDatabase", "MySQL", "Native", "192.168.80.138",
-					"person", "3306", "root", "123456");
+			DatabaseMeta targetDatabase = new DatabaseMeta("targetDatabase", "MySQL", "Native", "192.168.80.138", "person",
+					"3306", "root", "123456");
 			transMeta.addDatabase(targetDatabase);
 
 			String note = "Reads information from table [sourceDataBase] on database [" + sourceDataBase + "]";
@@ -73,6 +75,8 @@ public class DBUpdateOrInsertMain {
 			svi.setSelectPrecision(targetPrecisions);
 			svi.setSelectName(sourceFields);
 			svi.setSelectRename(targetFields);
+			svi.setDeleteName(new String[0]);
+			svi.setMeta(new SelectMetadataChange[0]);
 
 			String selstepname = "Rename field names";
 			StepMeta selstep = new StepMeta(selstepname, svi);

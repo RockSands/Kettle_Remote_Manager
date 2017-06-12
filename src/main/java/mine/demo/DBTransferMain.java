@@ -20,6 +20,10 @@ import org.pentaho.di.trans.steps.tableinput.TableInputMeta;
 import org.pentaho.di.trans.steps.tableoutput.TableOutputMeta;
 import org.pentaho.di.trans.steps.update.UpdateMeta;
 
+/**
+ * @author Administrator
+ *
+ */
 public class DBTransferMain {
 
 	public static void main(String[] args) throws KettleException {
