@@ -24,7 +24,6 @@ public class KTRCreater {
 
 	public static KTRCreater ktrCreater;
 
-	@SuppressWarnings("deprecation")
 	public static void main(String[] args) {
 		try {
 			KettleEnvironment.init();
