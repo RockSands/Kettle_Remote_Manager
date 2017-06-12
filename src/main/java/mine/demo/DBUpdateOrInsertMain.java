@@ -15,13 +15,16 @@ import org.pentaho.di.trans.steps.tableinput.TableInputMeta;
 
 /**
  * 创建一个转换,实现数据库迁移的功能
+ * 
  * @author Administrator
  *
  */
 public class DBUpdateOrInsertMain {
 	public static void main(String[] args) throws Exception {
+		// 手动设置KETTLE_HOME
+		// System.getProperties().setProperty("KETTLE_HOME",
+		// "/Kettle-5-Demo/src/main/resources");
 		// 初始化环境
-		System.getProperties().setProperty("KETTLE_HOME", "/Kettle-5-Demo/src/main/resources");
 		KettleEnvironment.init();
 		EnvUtil.environmentInit();
 		try {
