@@ -37,9 +37,9 @@ public class DBRepositeSaveTran {
 						"3306", "root", "123456"));
 		repository.init(dbrepositoryMeta);
 		repository.connect("admin", "admin");
-		TransMeta transMeta = getTransMeta();
 		// 初始化工作路径
 		RepositoryDirectoryInterface repositoryDirectory = repository.findDirectory("");
+		TransMeta transMeta = getTransMeta();
 		transMeta.setRepositoryDirectory(repositoryDirectory);
 		repository.save(transMeta, "vision 0.1", Calendar.getInstance(), null, true);
 	}
