@@ -41,8 +41,8 @@ public class DBUpdateOrInsertMain {
 					"employees", "3306", "root", "123456");
 			transMeta.addDatabase(sourceDataBase);
 
-			DatabaseMeta targetDatabase = new DatabaseMeta("targetDatabase", "MySQL", "Native", "192.168.80.138", "person",
-					"3306", "root", "123456");
+			DatabaseMeta targetDatabase = new DatabaseMeta("targetDatabase", "MySQL", "Native", "192.168.80.138",
+					"person", "3306", "root", "123456");
 			transMeta.addDatabase(targetDatabase);
 
 			String note = "Reads information from table [sourceDataBase] on database [" + sourceDataBase + "]";
@@ -137,8 +137,15 @@ public class DBUpdateOrInsertMain {
 			 * 执行
 			 */
 			Trans trans = new Trans(transMeta);
+			System.out.println("==>" + trans.getEnded());
+			System.out.println("==>" + trans.getStatus());
 			trans.execute(null);
+			System.out.println("==>" + trans.getEnded());
+			System.out.println("==>" + trans.getStatus());
 			trans.waitUntilFinished();
+			System.out.println("=ObjectID=>" + trans.getObjectId());
+			System.out.println("==>" + trans.getEnded());
+			System.out.println("==>" + trans.getStatus());
 			// 转换构建完成
 		} catch (Exception e) {
 			e.printStackTrace();

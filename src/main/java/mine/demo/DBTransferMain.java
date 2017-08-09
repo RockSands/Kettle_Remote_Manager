@@ -32,7 +32,7 @@ public class DBTransferMain {
 		// "/Kettle-5-Demo/src/main/resources");
 		// 初始化环境
 		KettleEnvironment.init();
-		EnvUtil.environmentInit();
+		//EnvUtil.environmentInit();
 		try {
 			// 创建一个转换
 			TransMeta transMeta = new TransMeta();

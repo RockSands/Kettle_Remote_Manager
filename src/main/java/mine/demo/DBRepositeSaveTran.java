@@ -1,17 +1,18 @@
 package mine.demo;
 
-import java.util.Calendar;
+import java.util.UUID;
 
 import org.pentaho.di.core.KettleEnvironment;
 import org.pentaho.di.core.NotePadMeta;
 import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.exception.KettleException;
-import org.pentaho.di.core.util.EnvUtil;
+import org.pentaho.di.repository.ObjectId;
 import org.pentaho.di.repository.Repository;
 import org.pentaho.di.repository.RepositoryDirectoryInterface;
 import org.pentaho.di.repository.RepositoryMeta;
 import org.pentaho.di.repository.kdr.KettleDatabaseRepository;
 import org.pentaho.di.repository.kdr.KettleDatabaseRepositoryMeta;
+import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransHopMeta;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.StepMeta;
@@ -20,9 +21,11 @@ import org.pentaho.di.trans.steps.insertupdate.InsertUpdateMeta;
 import org.pentaho.di.trans.steps.selectvalues.SelectMetadataChange;
 import org.pentaho.di.trans.steps.selectvalues.SelectValuesMeta;
 import org.pentaho.di.trans.steps.tableinput.TableInputMeta;
+import org.pentaho.di.cluster.SlaveServer;
 
 /**
  * Kettle DBReposite保存转换
+ * 
  * @author Administrator
  *
  */
@@ -30,7 +33,6 @@ public class DBRepositeSaveTran {
 
 	public static void main(String[] args) throws KettleException {
 		KettleEnvironment.init();
-		EnvUtil.environmentInit();
 		Repository repository = new KettleDatabaseRepository();
 		RepositoryMeta dbrepositoryMeta = new KettleDatabaseRepositoryMeta("KettleDBRepo", "KettleDBRepo",
 				"Kettle DB Repository", new DatabaseMeta("kettleRepo", "MySQL", "Native", "192.168.80.138", "kettle",
@@ -41,13 +43,55 @@ public class DBRepositeSaveTran {
 		RepositoryDirectoryInterface repositoryDirectory = repository.findDirectory("");
 		TransMeta transMeta = getTransMeta();
 		transMeta.setRepositoryDirectory(repositoryDirectory);
-		repository.save(transMeta, "vision 0.1", Calendar.getInstance(), null, true);
+		// repository.save(transMeta, "ckw", Calendar.getInstance(), null,
+		// true);
+		repository.disconnect();
+		TransMeta reposTransMeta = getTransMeta(transMeta.getName(), repository, repositoryDirectory);
+		Trans trans = new Trans(transMeta);
+		trans.setRepository(repository);
+		System.out.println("==>" + trans.getObjectId());
+		System.out.println("==>" + trans.getEnded());
+		System.out.println("==>" + trans.getStatus());
+		// System.out.println("=REPO=>" + reposTransMeta.getObjectId());
+		// System.out.println("=REPO=>" + reposTransMeta.getEnded());
+		// System.out.println("=REPO=>" + reposTransMeta.getStatus());
+		trans.execute(null);
+		System.out.println("==>" + trans.getObjectId());
+		System.out.println("==>" + trans.getEnded());
+		System.out.println("==>" + trans.getStatus());
+		// System.out.println("=REPO=>" + reposTransMeta.getObjectId());
+		// System.out.println("=REPO=>" + reposTransMeta.getEnded());
+		// System.out.println("=REPO=>" + reposTransMeta.getStatus());
+		trans.waitUntilFinished();
+		System.out.println("==>" + trans.getObjectId());
+		System.out.println("==>" + trans.getEnded());
+		System.out.println("==>" + trans.getStatus());
+		// System.out.println("=REPO=>" + reposTransMeta.getObjectId());
+		// System.out.println("=REPO=>" + reposTransMeta.getEnded());
+		// System.out.println("=REPO=>" + reposTransMeta.getStatus());
+
+	}
+
+	private static TransMeta getTransMeta(String name, Repository repository,
+			RepositoryDirectoryInterface repositoryDirectory) throws KettleException {
+		repository.connect("admin", "admin");
+		try {
+			ObjectId transformationID = repository.getTransformationID(name, repositoryDirectory);
+			if (transformationID == null) {
+				return null;
+			}
+			TransMeta transMeta = repository.loadTransformation(transformationID, null);
+			return transMeta;
+		} finally {
+			repository.disconnect();
+		}
 	}
 
 	public static TransMeta getTransMeta() {
+		String uuid = UUID.randomUUID().toString().replace("-", "");
 		// 创建一个转换
 		TransMeta transMeta = new TransMeta();
-		transMeta.setName("CKW-DBUpdateOrInsert-Test");
+		transMeta.setName("CKW-YHHX-" + uuid);
 
 		/*
 		 * 获取数据

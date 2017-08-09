@@ -28,6 +28,7 @@ import org.pentaho.di.trans.steps.selectvalues.SelectValuesMeta;
 import org.pentaho.di.trans.steps.tableinput.TableInputMeta;
 import org.pentaho.di.trans.steps.tableoutput.TableOutputMeta;
 import org.pentaho.di.trans.steps.update.UpdateMeta;
+import org.pentaho.di.cluster.SlaveServer;
 
 /**
  * Kettle数据迁移管理者
@@ -39,34 +40,53 @@ public class KettleMgrInstance {
 
 	private static KettleMgrInstance instance = null;
 
-	private static Repository repository = null;
+	private Repository repository = null;
 
-	private static RepositoryDirectoryInterface repositoryDirectory = null;
+	private RepositoryDirectoryInterface repositoryDirectory = null;
+
+	private SlaveServer remoteServer = null;
+
+	static {
+		getInstance();
+	}
 
 	private KettleMgrInstance() {
-
+		kettleInit();
 	}
 
-	public KettleMgrInstance instance() throws KettleException {
-		synchronized (instance) {
-			if (instance == null) {
-				instance = new KettleMgrInstance();
-				kettleInit();
-				return instance;
-			}
-			return instance;
+	public static KettleMgrInstance getInstance() {
+		if (instance == null) {
+			instance = new KettleMgrInstance();
 		}
+		return instance;
 	}
 
-	private void kettleInit() throws KettleException {
-		KettleEnvironment.init();
-		// EnvUtil.environmentInit();
-		repository = new KettleDatabaseRepository();
-		repositoryDirectory = repository.findDirectory("");
-		RepositoryMeta dbrepositoryMeta = new KettleDatabaseRepositoryMeta("KettleDBRepo", "KettleDBRepo",
-				"Kettle DB Repository", new DatabaseMeta("kettleRepo", "MySQL", "Native", "192.168.80.138", "kettle",
-						"3306", "root", "123456"));
-		repository.init(dbrepositoryMeta);
+	private void kettleInit() {
+		try {
+			KettleEnvironment.init();
+			repository = new KettleDatabaseRepository();
+			RepositoryMeta dbrepositoryMeta = new KettleDatabaseRepositoryMeta("KettleDBRepo", "KettleDBRepo",
+					"Kettle DB Repository", new DatabaseMeta("kettleRepo", "MySQL", "Native", "192.168.80.138",
+							"kettle", "3306", "root", "123456"));
+			repository.init(dbrepositoryMeta);
+			repository.connect("admin", "admin");
+			repositoryDirectory = repository.findDirectory("");
+			for (SlaveServer server : repository.getSlaveServers()) {
+				if (server.isMaster()) {
+					remoteServer = server;
+					break;
+				}
+			}
+			if (repositoryDirectory == null || repositoryDirectory == null || remoteServer == null) {
+				throw new RuntimeException("KettleMgrInstance初始化失败,部署失败!");
+			}
+		} catch (KettleException ex) {
+			throw new RuntimeException("KettleMgrInstance初始化失败", ex);
+		} finally {
+			if (repository != null) {
+				repository.disconnect();
+			}
+		}
 	}
 
 	private TransMeta getTransMeta(String name) throws KettleException {
