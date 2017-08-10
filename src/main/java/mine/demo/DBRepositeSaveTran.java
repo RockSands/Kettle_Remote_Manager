@@ -2,17 +2,19 @@ package mine.demo;
 
 import java.util.UUID;
 
+import org.elasticsearch.monitor.jvm.JvmStats.Threads;
+import org.pentaho.di.cluster.SlaveServer;
 import org.pentaho.di.core.KettleEnvironment;
 import org.pentaho.di.core.NotePadMeta;
 import org.pentaho.di.core.database.DatabaseMeta;
-import org.pentaho.di.core.exception.KettleException;
-import org.pentaho.di.repository.ObjectId;
+import org.pentaho.di.core.logging.LogLevel;
 import org.pentaho.di.repository.Repository;
 import org.pentaho.di.repository.RepositoryDirectoryInterface;
 import org.pentaho.di.repository.RepositoryMeta;
 import org.pentaho.di.repository.kdr.KettleDatabaseRepository;
 import org.pentaho.di.repository.kdr.KettleDatabaseRepositoryMeta;
 import org.pentaho.di.trans.Trans;
+import org.pentaho.di.trans.TransExecutionConfiguration;
 import org.pentaho.di.trans.TransHopMeta;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.StepMeta;
@@ -21,7 +23,8 @@ import org.pentaho.di.trans.steps.insertupdate.InsertUpdateMeta;
 import org.pentaho.di.trans.steps.selectvalues.SelectMetadataChange;
 import org.pentaho.di.trans.steps.selectvalues.SelectValuesMeta;
 import org.pentaho.di.trans.steps.tableinput.TableInputMeta;
-import org.pentaho.di.cluster.SlaveServer;
+import org.pentaho.di.www.SlaveServerTransStatus;
+import org.pentaho.di.www.WebResult;
 
 /**
  * Kettle DBReposite保存转换
@@ -31,60 +34,70 @@ import org.pentaho.di.cluster.SlaveServer;
  */
 public class DBRepositeSaveTran {
 
-	public static void main(String[] args) throws KettleException {
+	public static void main(String[] args) throws Exception {
+		/*
+		 * 初始化
+		 */
 		KettleEnvironment.init();
+		/*
+		 * 资源库
+		 */
 		Repository repository = new KettleDatabaseRepository();
-		RepositoryMeta dbrepositoryMeta = new KettleDatabaseRepositoryMeta("KettleDBRepo", "KettleDBRepo",
-				"Kettle DB Repository", new DatabaseMeta("kettleRepo", "MySQL", "Native", "192.168.80.138", "kettle",
-						"3306", "root", "123456"));
+		RepositoryMeta dbrepositoryMeta = new KettleDatabaseRepositoryMeta("KettleDatabaseRepository", "DBRepository",
+				"Kettle DB Repository",
+				new DatabaseMeta("DBRepo", "MySQL", "Native", "192.168.80.138", "kettle", "3306", "root", "123456"));
 		repository.init(dbrepositoryMeta);
+		/*
+		 * 资源路径
+		 */
 		repository.connect("admin", "admin");
-		// 初始化工作路径
 		RepositoryDirectoryInterface repositoryDirectory = repository.findDirectory("");
-		TransMeta transMeta = getTransMeta();
-		transMeta.setRepositoryDirectory(repositoryDirectory);
-		// repository.save(transMeta, "ckw", Calendar.getInstance(), null,
-		// true);
 		repository.disconnect();
-		TransMeta reposTransMeta = getTransMeta(transMeta.getName(), repository, repositoryDirectory);
-		Trans trans = new Trans(transMeta);
-		trans.setRepository(repository);
-		System.out.println("==>" + trans.getObjectId());
-		System.out.println("==>" + trans.getEnded());
-		System.out.println("==>" + trans.getStatus());
-		// System.out.println("=REPO=>" + reposTransMeta.getObjectId());
-		// System.out.println("=REPO=>" + reposTransMeta.getEnded());
-		// System.out.println("=REPO=>" + reposTransMeta.getStatus());
-		trans.execute(null);
-		System.out.println("==>" + trans.getObjectId());
-		System.out.println("==>" + trans.getEnded());
-		System.out.println("==>" + trans.getStatus());
-		// System.out.println("=REPO=>" + reposTransMeta.getObjectId());
-		// System.out.println("=REPO=>" + reposTransMeta.getEnded());
-		// System.out.println("=REPO=>" + reposTransMeta.getStatus());
-		trans.waitUntilFinished();
-		System.out.println("==>" + trans.getObjectId());
-		System.out.println("==>" + trans.getEnded());
-		System.out.println("==>" + trans.getStatus());
-		// System.out.println("=REPO=>" + reposTransMeta.getObjectId());
-		// System.out.println("=REPO=>" + reposTransMeta.getEnded());
-		// System.out.println("=REPO=>" + reposTransMeta.getStatus());
-
-	}
-
-	private static TransMeta getTransMeta(String name, Repository repository,
-			RepositoryDirectoryInterface repositoryDirectory) throws KettleException {
+		/*
+		 * 转换保存
+		 */
+		// repository.connect("admin", "admin");
+		TransMeta transMeta = getTransMeta();
+		// transMeta.setRepositoryDirectory(repositoryDirectory);
+		// repository.save(transMeta, "ckw-20170810", null, null, true);
+		// repository.disconnect();
+		/*
+		 * 获取远程服务
+		 */
 		repository.connect("admin", "admin");
-		try {
-			ObjectId transformationID = repository.getTransformationID(name, repositoryDirectory);
-			if (transformationID == null) {
-				return null;
+		SlaveServer remoteServer = null;
+		for (SlaveServer server : repository.getSlaveServers()) {
+			if (server.isMaster()) {
+				remoteServer = server;
+				break;
 			}
-			TransMeta transMeta = repository.loadTransformation(transformationID, null);
-			return transMeta;
-		} finally {
-			repository.disconnect();
 		}
+		repository.disconnect();
+		/*
+		 * 远程执行
+		 */
+		repository.connect("admin", "admin");
+		remoteServer.getLogChannel().setLogLevel(LogLevel.ERROR);
+		TransExecutionConfiguration transExecutionConfiguration = new TransExecutionConfiguration();
+		transExecutionConfiguration.setRemoteServer(remoteServer);
+		transExecutionConfiguration.setLogLevel(LogLevel.ERROR);
+		Trans trans = new Trans(transMeta);
+		trans.sendToSlaveServer(transMeta, transExecutionConfiguration, repository, repository.getMetaStore());
+		WebResult webresult = remoteServer.startTransformation(transMeta.getName(), null);
+		System.out.println("=start=>" + webresult.getId());
+		System.out.println("=start=>" + webresult.getMessage());
+		System.out.println("=start=>" + webresult.getResult());// OK
+		SlaveServerTransStatus slaveServerStatus = remoteServer.getTransStatus(transMeta.getName(), null, 0);
+		do {
+			slaveServerStatus = remoteServer.getTransStatus(transMeta.getName(), null, 0);
+			System.out.println("------------------------------");
+			System.out.println("=status=>" + slaveServerStatus.getId());
+			System.out.println("=status=>" + slaveServerStatus.getErrorDescription());
+			System.out.println("=status=>" + slaveServerStatus.getResult().getExitStatus());
+			System.out.println("=status=>" + slaveServerStatus.getResult().getResult());
+			Thread.sleep(5000);
+		} while (!slaveServerStatus.isWaiting());
+		repository.disconnect();
 	}
 
 	public static TransMeta getTransMeta() {
@@ -155,7 +168,7 @@ public class DBRepositeSaveTran {
 		InsertUpdateMeta ium = new InsertUpdateMeta();
 		ium.setDatabaseMeta(targetDatabase);
 		ium.setTableName("target_employees");
-		ium.setCommitSize(100);
+		ium.setCommitSize("100");
 		ium.setChanged(true);
 		ium.setKeyCondition(new String[] { "=", "=" });
 		ium.setKeyLookup(new String[] { "empID", "deptID" });
