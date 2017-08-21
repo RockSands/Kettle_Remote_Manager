@@ -15,7 +15,10 @@
 	<repositories>
 		<repository>
 			<id>pentaho-repo</id>
+			<!-- 
 			<url>http://repository.pentaho.org/artifactory/repo/</url>
+			 -->
+			<url>http://maven-repository.com/artifact/pentaho-kettle</url>
 		</repository>
 	</repositories>
 	<dependencies>
@@ -30,6 +33,7 @@
 			<artifactId>mysql-connector-java</artifactId>
 			<version>5.1.24</version>
 		</dependency>
+		<!-- 
 		<dependency>
 			<groupId>pentaho-kettle</groupId>
 			<artifactId>kettle-core</artifactId>
@@ -40,6 +44,7 @@
 			<artifactId>kettle-engine</artifactId>
 			<version>5.0.1-stable</version>
 		</dependency>
+		-->
 		<!-- 解决低版本IO Classload无法读取 -->
 		<dependency>
 			<groupId>commons-io</groupId>

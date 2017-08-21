@@ -2,7 +2,6 @@ package mine.demo;
 
 import java.util.UUID;
 
-import org.elasticsearch.monitor.jvm.JvmStats.Threads;
 import org.pentaho.di.cluster.SlaveServer;
 import org.pentaho.di.core.KettleEnvironment;
 import org.pentaho.di.core.NotePadMeta;
@@ -87,7 +86,7 @@ public class DBRepositeSaveTran {
 		System.out.println("=start=>" + webresult.getId());
 		System.out.println("=start=>" + webresult.getMessage());
 		System.out.println("=start=>" + webresult.getResult());// OK
-		SlaveServerTransStatus slaveServerStatus = remoteServer.getTransStatus(transMeta.getName(), null, 0);
+		SlaveServerTransStatus slaveServerStatus = null;
 		do {
 			slaveServerStatus = remoteServer.getTransStatus(transMeta.getName(), null, 0);
 			System.out.println("------------------------------");
@@ -168,7 +167,7 @@ public class DBRepositeSaveTran {
 		InsertUpdateMeta ium = new InsertUpdateMeta();
 		ium.setDatabaseMeta(targetDatabase);
 		ium.setTableName("target_employees");
-		ium.setCommitSize("100");
+		ium.setCommitSize(100);
 		ium.setChanged(true);
 		ium.setKeyCondition(new String[] { "=", "=" });
 		ium.setKeyLookup(new String[] { "empID", "deptID" });
