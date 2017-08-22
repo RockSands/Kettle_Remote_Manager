@@ -235,7 +235,7 @@ public class KettleMgrInstance {
 	 * @throws KettleException
 	 * @throws Exception
 	 */
-	public KettleTransResult remoteTransStatus(String transID) throws KettleException, Exception {
+	public KettleTransResult queryTransStatus(String transID) throws KettleException, Exception {
 		KettleTransResult kettleTransResult = new KettleTransResult();
 		kettleTransResult.setTransID(transID);
 		SlaveServerTransStatus slaveServerStatus = remoteServer.getTransStatus(transID, null, 0);

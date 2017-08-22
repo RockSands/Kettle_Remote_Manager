@@ -48,10 +48,9 @@ public class ExcuteMain {
 		 * 以下为定时轮询,未完成,提供的查询接口是remoteTransStatus
 		 */
 		Thread.sleep(5000);
-		KettleMgrInstance.getInstance().remoteStartTrans(result.getTransID());
 		do {// 睡1分钟
 			Thread.sleep(5000);
-			result = KettleMgrInstance.getInstance().remoteTransStatus(result.getTransID());
+			result = KettleMgrInstance.getInstance().queryTransStatus(result.getTransID());
 			System.out.println("------------------------------");
 			System.out.println("=status:Msg=>\n" + result.getStatus());
 		} while (true);
