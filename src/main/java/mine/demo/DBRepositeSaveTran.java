@@ -90,12 +90,9 @@ public class DBRepositeSaveTran {
 		do {
 			slaveServerStatus = remoteServer.getTransStatus(transMeta.getName(), null, 0);
 			System.out.println("------------------------------");
-			System.out.println("=status=>" + slaveServerStatus.getId());
-			System.out.println("=status=>" + slaveServerStatus.getErrorDescription());
-			System.out.println("=status=>" + slaveServerStatus.getResult().getExitStatus());
-			System.out.println("=status=>" + slaveServerStatus.getResult().getResult());
+			System.out.println("=message=>" + slaveServerStatus.getStatusDescription());
 			Thread.sleep(5000);
-		} while (!slaveServerStatus.isWaiting());
+		} while ("Running".equals(slaveServerStatus.getStatusDescription()));
 		repository.disconnect();
 	}
 
