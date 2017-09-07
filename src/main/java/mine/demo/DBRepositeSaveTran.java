@@ -55,11 +55,11 @@ public class DBRepositeSaveTran {
 		/*
 		 * 转换保存
 		 */
-		// repository.connect("admin", "admin");
+		repository.connect("admin", "admin");
 		TransMeta transMeta = getTransMeta();
-		// transMeta.setRepositoryDirectory(repositoryDirectory);
-		// repository.save(transMeta, "ckw-20170810", null, null, true);
-		// repository.disconnect();
+		transMeta.setRepositoryDirectory(repositoryDirectory);
+		repository.save(transMeta, "ckw-20170810", null, null, true);
+		repository.disconnect();
 		/*
 		 * 获取远程服务
 		 */
@@ -80,8 +80,7 @@ public class DBRepositeSaveTran {
 		TransExecutionConfiguration transExecutionConfiguration = new TransExecutionConfiguration();
 		transExecutionConfiguration.setRemoteServer(remoteServer);
 		transExecutionConfiguration.setLogLevel(LogLevel.ERROR);
-		Trans trans = new Trans(transMeta);
-		trans.sendToSlaveServer(transMeta, transExecutionConfiguration, repository, repository.getMetaStore());
+		Trans.sendToSlaveServer(transMeta, transExecutionConfiguration, repository, repository.getMetaStore());
 		WebResult webresult = remoteServer.startTransformation(transMeta.getName(), null);
 		System.out.println("=start=>" + webresult.getId());
 		System.out.println("=start=>" + webresult.getMessage());
@@ -164,7 +163,7 @@ public class DBRepositeSaveTran {
 		InsertUpdateMeta ium = new InsertUpdateMeta();
 		ium.setDatabaseMeta(targetDatabase);
 		ium.setTableName("target_employees");
-		ium.setCommitSize(100);
+		ium.setCommitSize("100");
 		ium.setChanged(true);
 		ium.setKeyCondition(new String[] { "=", "=" });
 		ium.setKeyLookup(new String[] { "empID", "deptID" });

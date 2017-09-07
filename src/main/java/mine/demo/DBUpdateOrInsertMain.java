@@ -117,7 +117,7 @@ public class DBUpdateOrInsertMain {
 			InsertUpdateMeta ium = new InsertUpdateMeta();
 			ium.setDatabaseMeta(targetDatabase);
 			ium.setTableName("target_employees");
-			ium.setCommitSize(100);
+			ium.setCommitSize("100");
 			ium.setChanged(true);
 			ium.setKeyCondition(new String[] { "=", "=" });
 			ium.setKeyLookup(new String[] { "empID", "deptID" });

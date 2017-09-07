@@ -6,7 +6,6 @@ import org.pentaho.di.core.NotePadMeta;
 import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.ValueMetaAndData;
-import org.pentaho.di.core.util.EnvUtil;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransHopMeta;
 import org.pentaho.di.trans.TransMeta;
@@ -188,7 +187,7 @@ public class DBTransferMain {
 			UpdateMeta um = new UpdateMeta();
 			um.setDatabaseMeta(targetDatabase);
 			um.setTableName("targetSalary");
-			um.setCommitSize(100);
+			um.setCommitSize("100");
 			um.setKeyCondition(new String[] { "=", "=" });
 			um.setKeyStream2(new String[] { null, null });
 			um.setKeyStream(new String[] { "empID", "fromDate" });
@@ -207,7 +206,7 @@ public class DBTransferMain {
 			DeleteMeta dm = new DeleteMeta();
 			dm.setDatabaseMeta(targetDatabase);
 			dm.setTableName("targetSalary");
-			dm.setCommitSize(500);
+			dm.setCommitSize("500");
 			dm.setKeyCondition(new String[] { "=", "=" });
 			dm.setKeyLookup(new String[] { "empID", "fromDate" });
 			dm.setKeyStream2(new String[] { null, null });
