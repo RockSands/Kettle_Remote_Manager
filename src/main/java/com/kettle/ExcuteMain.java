@@ -43,17 +43,26 @@ public class ExcuteMain {
 		target.setSql("SELECT empID, deptID, firstName, lastName, born FROM target_employees");
 		target.setTableName("target_employees");
 		KettleTransResult result = KettleMgrInstance.getInstance().createDataTransfer(source, target);
-		System.out.println(result.getTransID());
+		System.out.println("完成");
+		/*
+		 * Kettle的repository是实时的验证
+		 */
+		// for(int i=0;i<10 ; i++){
+		// KettleMgrInstance.getInstance().connect();
+		// System.out.println(KettleMgrInstance.getInstance().isConnected());
+		// KettleMgrInstance.getInstance().disconnect();
+		// }
 		/*
 		 * 以下为定时轮询,未完成,提供的查询接口是remoteTransStatus
 		 */
-		Thread.sleep(5000);
-		do {// 睡1分钟
-			Thread.sleep(5000);
-			result = KettleMgrInstance.getInstance().queryTransStatus(result.getTransID());
-			System.out.println("------------------------------");
-			System.out.println("=status:Msg=>\n" + result.getStatus());
-		} while (true);
+		// Thread.sleep(5000);
+		// do {// 睡1分钟
+		// Thread.sleep(5000);
+		// result =
+		// KettleMgrInstance.getInstance().queryTransStatus(result.getTransID());
+		// System.out.println("------------------------------");
+		// System.out.println("=status:Msg=>\n" + result.getStatus());
+		// } while (true);
 	}
 
 }

@@ -1,29 +1,25 @@
 package com.kettle;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.UUID;
 
-import org.pentaho.di.cluster.SlaveServer;
+import org.pentaho.di.cluster.ClusterSchema;
 import org.pentaho.di.core.Condition;
 import org.pentaho.di.core.KettleEnvironment;
 import org.pentaho.di.core.NotePadMeta;
 import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.exception.KettleException;
-import org.pentaho.di.core.logging.LogLevel;
 import org.pentaho.di.core.row.ValueMetaAndData;
 import org.pentaho.di.repository.ObjectId;
-import org.pentaho.di.repository.Repository;
 import org.pentaho.di.repository.RepositoryDirectoryInterface;
 import org.pentaho.di.repository.RepositoryMeta;
 import org.pentaho.di.repository.kdr.KettleDatabaseRepository;
 import org.pentaho.di.repository.kdr.KettleDatabaseRepositoryMeta;
-import org.pentaho.di.trans.Trans;
-import org.pentaho.di.trans.TransExecutionConfiguration;
 import org.pentaho.di.trans.TransHopMeta;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.StepMeta;
-import org.pentaho.di.trans.step.StepStatus;
 import org.pentaho.di.trans.steps.delete.DeleteMeta;
 import org.pentaho.di.trans.steps.dummytrans.DummyTransMeta;
 import org.pentaho.di.trans.steps.filterrows.FilterRowsMeta;
@@ -33,8 +29,6 @@ import org.pentaho.di.trans.steps.selectvalues.SelectValuesMeta;
 import org.pentaho.di.trans.steps.tableinput.TableInputMeta;
 import org.pentaho.di.trans.steps.tableoutput.TableOutputMeta;
 import org.pentaho.di.trans.steps.update.UpdateMeta;
-import org.pentaho.di.www.SlaveServerTransStatus;
-import org.pentaho.di.www.WebResult;
 
 /**
  * Kettle数据迁移管理者
@@ -52,7 +46,7 @@ public class KettleMgrInstance {
 	/**
 	 * 资源库
 	 */
-	private Repository repository = null;
+	private KettleDatabaseRepository repository = null;
 
 	/**
 	 * 资源路径
@@ -60,16 +54,17 @@ public class KettleMgrInstance {
 	private RepositoryDirectoryInterface repositoryDirectory = null;
 
 	/**
-	 * 远程服务
+	 * 远程执行池
 	 */
-	private SlaveServer remoteServer = null;
+	private KettleRemotePool kettleRemotePool;
+
+	/**
+	 * 资源池数据库连接
+	 */
+	private KettleDBRepositoryClient dbRepositoryClient;
 
 	static {
 		getInstance();
-	}
-
-	private KettleMgrInstance() {
-		kettleInit();
 	}
 
 	public static KettleMgrInstance getInstance() {
@@ -79,7 +74,11 @@ public class KettleMgrInstance {
 		return instance;
 	}
 
-	private void kettleInit() {
+	private KettleMgrInstance() {
+		init();
+	}
+
+	private void init() {
 		try {
 			KettleEnvironment.init();
 			repository = new KettleDatabaseRepository();
@@ -89,21 +88,15 @@ public class KettleMgrInstance {
 			repository.init(dbrepositoryMeta);
 			repository.connect("admin", "admin");
 			repositoryDirectory = repository.findDirectory("");
-			for (SlaveServer server : repository.getSlaveServers()) {
-				if (server.isMaster()) {
-					remoteServer = server;
-					break;
-				}
-			}
-			// 设置debug级别
-			remoteServer.getLogChannel().setLogLevel(LogLevel.ERROR);
-			if (repositoryDirectory == null || repositoryDirectory == null || remoteServer == null) {
+			dbRepositoryClient = new KettleDBRepositoryClient(repository);
+			kettleRemotePool = new KettleRemotePool(repository, repository.getSlaveServers());
+			if (repositoryDirectory == null || repositoryDirectory == null) {
 				throw new RuntimeException("KettleMgrInstance初始化失败,部署失败!");
 			}
 		} catch (KettleException ex) {
 			throw new RuntimeException("KettleMgrInstance初始化失败", ex);
 		} finally {
-			if (repository != null) {
+			if (repository != null && repository.isConnected()) {
 				repository.disconnect();
 			}
 		}
@@ -116,11 +109,11 @@ public class KettleMgrInstance {
 	 * @return
 	 * @throws KettleException
 	 */
-	public TransMeta getTransMeta(String name) throws KettleException {
+	public TransMeta getTransMeta(String transName) throws KettleException {
 		synchronized (repository) {
 			repository.connect("admin", "admin");
 			try {
-				ObjectId transformationID = repository.getTransformationID(name, repositoryDirectory);
+				ObjectId transformationID = repository.getTransformationID(transName, repositoryDirectory);
 				if (transformationID == null) {
 					return null;
 				}
@@ -138,17 +131,37 @@ public class KettleMgrInstance {
 	 * @param transMeta
 	 * @throws KettleException
 	 */
-	// private void saveTransMeta(TransMeta transMeta) throws KettleException {
-	// synchronized (repository) {
-	// repository.connect("admin", "admin");
-	// try {
-	// transMeta.setRepositoryDirectory(repositoryDirectory);
-	// repository.save(transMeta, "1", Calendar.getInstance(), null, true);
-	// } finally {
-	// repository.disconnect();
-	// }
-	// }
-	// }
+	private void saveTransMeta(TransMeta transMeta) throws KettleException {
+		synchronized (repository) {
+			repository.connect("admin", "admin");
+			try {
+				transMeta.setRepositoryDirectory(repositoryDirectory);
+				repository.save(transMeta, "1", Calendar.getInstance(), null, true);
+			} finally {
+				repository.disconnect();
+			}
+		}
+	}
+
+	/**
+	 * 资源库删除TransMeta
+	 *
+	 * @param transMeta
+	 * @throws KettleException
+	 */
+	private void deleteTransMeta(String transName) throws KettleException {
+		synchronized (repository) {
+			repository.connect("admin", "admin");
+			try {
+				ObjectId transformationID = repository.getTransformationID(transName, repositoryDirectory);
+				if (transformationID != null) {
+					repository.deleteTransformation(transformationID);
+				}
+			} finally {
+				repository.disconnect();
+			}
+		}
+	}
 
 	/**
 	 * 获取集群定义
@@ -156,117 +169,41 @@ public class KettleMgrInstance {
 	 * @return
 	 * @throws KettleException
 	 */
-	// private ClusterSchema getClusterSchem() throws KettleException {
-	// synchronized (repository) {
-	// repository.connect("admin", "admin");
-	// try {
-	// ObjectId clusterID = repository.getClusterID("YHHX-Cluster");
-	// return repository.loadClusterSchema(clusterID, null, null);
-	// } finally {
-	// repository.disconnect();
-	// }
-	// }
-	// }
+	private ClusterSchema getClusterSchem() throws KettleException {
+		synchronized (repository) {
+			repository.connect("admin", "admin");
+			try {
+				ObjectId clusterID = repository.getClusterID("YHHX-Cluster");
+				return repository.loadClusterSchema(clusterID, null, null);
+			} finally {
+				repository.disconnect();
+			}
+		}
+	}
 
 	/**
-	 * 远程推送转换
+	 * 远程发送并执行
 	 * 
 	 * @param transMeta
-	 * @throws KettleException
-	 * @throws Exception
-	 */
-	private String remoteSendTrans(TransMeta transMeta) throws KettleException, Exception {
-		TransExecutionConfiguration transExecutionConfiguration = new TransExecutionConfiguration();
-		transExecutionConfiguration.setRemoteServer(remoteServer);
-		transExecutionConfiguration.setLogLevel(LogLevel.ERROR);
-		transExecutionConfiguration.setRepository(repository);
-		transExecutionConfiguration.setPassingExport(false);
-		transExecutionConfiguration.setExecutingRemotely(true);
-		transExecutionConfiguration.setExecutingLocally(false);
-		String remoteID = Trans.sendToSlaveServer(transMeta, transExecutionConfiguration, repository,
-				repository.getMetaStore());
-		return remoteID;
-	}
-
-	/**
-	 * 清理缓存
-	 * 
-	 * @param transMetaName
-	 * @throws KettleException
-	 * @throws Exception
-	 */
-	public void remoteCleanTrans(String transID) throws KettleException, Exception {
-		remoteServer.cleanupTransformation(transID, null);
-	}
-
-	/**
-	 * 远程启动
-	 * 
-	 * @param transMetaName
-	 * @throws KettleException
-	 * @throws Exception
-	 */
-	public void remoteStartTrans(String transID) throws KettleException, Exception {
-		WebResult result = remoteServer.startTransformation(transID, null);
-		if (!"OK".equals(result.getResult())) {
-			throw new KettleException("启动失败!");
-		}
-	}
-
-	/**
-	 * 远程停止
-	 * 
-	 * @param transMetaName
-	 * @throws KettleException
-	 * @throws Exception
-	 */
-	public void remoteStopTrans(String transID) throws KettleException, Exception {
-		WebResult result = remoteServer.stopTransformation(transID, null);
-		if (!"OK".equals(result.getResult())) {
-			throw new KettleException("停止失败!");
-		}
-	}
-
-	/**
-	 * 获取执行状态
-	 * 
-	 * @param transMetaName
 	 * @return
-	 * @throws KettleException
 	 * @throws Exception
+	 * @throws KettleException
 	 */
-	public KettleTransResult queryTransStatus(String transID) throws KettleException, Exception {
-		KettleTransResult kettleTransResult = new KettleTransResult();
-		kettleTransResult.setTransID(transID);
-		SlaveServerTransStatus slaveServerStatus = remoteServer.getTransStatus(transID, null, 0);
-		if ("Finished (with errors)".equals(slaveServerStatus.getStatusDescription())) {
-			kettleTransResult.setStatus("ERROR");
-			return kettleTransResult;
-		} else if ("Finished".equals(slaveServerStatus.getStatusDescription())) {
-			for (StepStatus stepStatus : slaveServerStatus.getStepStatusList()) {
-				if (!"Finished".equals(stepStatus.getStatusDescription())) {
-					kettleTransResult.setStatus("RUNNING");
-					return kettleTransResult;
-				}
+	public KettleTransResult remoteSendTrans(TransMeta transMeta) throws KettleException, Exception {
+		synchronized (repository) {
+			KettleTransBean kettleTransBean;
+			repository.connect("admin", "admin");
+			try {
+				kettleTransBean = kettleRemotePool.remoteSendTrans(transMeta);
+				dbRepositoryClient.insertTransRecord(kettleTransBean);
+			} finally {
+				repository.disconnect();
 			}
-			kettleTransResult.setStatus("Finished");
-			return kettleTransResult;
-		} else {
-			// TODO 待定
-			kettleTransResult.setStatus("OTHER");
+			KettleTransResult kettleTransResult = new KettleTransResult();
+			kettleTransResult.setRunID(kettleTransBean.getRunID());
+			kettleTransResult.setStatus(kettleTransBean.getStatus());
 			return kettleTransResult;
 		}
-	}
-
-	/**
-	 * 删除Tran
-	 *
-	 * @param name
-	 * @return
-	 * @throws Exception
-	 */
-	public void remoteDRemoveTran(String transName) throws Exception {
-		remoteServer.removeTransformation(transName, null);
 	}
 
 	/**
@@ -498,11 +435,8 @@ public class KettleMgrInstance {
 			transMeta.addStep(delete);
 			transMeta.addTransHop(new TransHopMeta(isChange, delete));
 			frm_isChange.getStepIOMeta().getTargetStreams().get(1).setStepMeta(delete);
-			// saveTransMeta(transMeta);
-			String remoteID = remoteSendTrans(transMeta);
-			KettleTransResult result = new KettleTransResult();
-			result.setRemoteID(remoteID);
-			result.setTransID(transMeta.getName());
+			saveTransMeta(transMeta);
+			KettleTransResult result = remoteSendTrans(transMeta);
 			return result;
 		} catch (Exception e) {
 			e.printStackTrace();

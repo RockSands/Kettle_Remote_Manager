@@ -1,11 +1,13 @@
 package mine.demo;
 
+import java.util.Calendar;
 import java.util.UUID;
 
 import org.pentaho.di.cluster.SlaveServer;
 import org.pentaho.di.core.KettleEnvironment;
 import org.pentaho.di.core.NotePadMeta;
 import org.pentaho.di.core.database.DatabaseMeta;
+import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.logging.LogLevel;
 import org.pentaho.di.repository.Repository;
 import org.pentaho.di.repository.RepositoryDirectoryInterface;
@@ -59,39 +61,6 @@ public class DBRepositeSaveTran {
 		TransMeta transMeta = getTransMeta();
 		transMeta.setRepositoryDirectory(repositoryDirectory);
 		repository.save(transMeta, "ckw-20170810", null, null, true);
-		repository.disconnect();
-		/*
-		 * 获取远程服务
-		 */
-		repository.connect("admin", "admin");
-		SlaveServer remoteServer = null;
-		for (SlaveServer server : repository.getSlaveServers()) {
-			if (server.isMaster()) {
-				remoteServer = server;
-				break;
-			}
-		}
-		repository.disconnect();
-		/*
-		 * 远程执行
-		 */
-		repository.connect("admin", "admin");
-		remoteServer.getLogChannel().setLogLevel(LogLevel.ERROR);
-		TransExecutionConfiguration transExecutionConfiguration = new TransExecutionConfiguration();
-		transExecutionConfiguration.setRemoteServer(remoteServer);
-		transExecutionConfiguration.setLogLevel(LogLevel.ERROR);
-		Trans.sendToSlaveServer(transMeta, transExecutionConfiguration, repository, repository.getMetaStore());
-		WebResult webresult = remoteServer.startTransformation(transMeta.getName(), null);
-		System.out.println("=start=>" + webresult.getId());
-		System.out.println("=start=>" + webresult.getMessage());
-		System.out.println("=start=>" + webresult.getResult());// OK
-		SlaveServerTransStatus slaveServerStatus = null;
-		do {
-			slaveServerStatus = remoteServer.getTransStatus(transMeta.getName(), null, 0);
-			System.out.println("------------------------------");
-			System.out.println("=message=>" + slaveServerStatus.getStatusDescription());
-			Thread.sleep(5000);
-		} while ("Running".equals(slaveServerStatus.getStatusDescription()));
 		repository.disconnect();
 	}
 
