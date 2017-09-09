@@ -1,11 +1,19 @@
 package com.kettle;
 
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+
 import org.pentaho.di.core.RowMetaAndData;
+import org.pentaho.di.core.exception.KettleDatabaseException;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.ValueMeta;
 import org.pentaho.di.core.row.ValueMetaInterface;
-import org.pentaho.di.repository.StringObjectId;
+import org.pentaho.di.repository.LongObjectId;
+import org.pentaho.di.repository.ObjectId;
+import org.pentaho.di.repository.RepositoryDirectoryInterface;
 import org.pentaho.di.repository.kdr.KettleDatabaseRepository;
+import org.pentaho.di.trans.TransMeta;
 
 /**
  * 数据库工具
@@ -20,24 +28,92 @@ public class KettleDBRepositoryClient {
 	 */
 	private final KettleDatabaseRepository repository;
 
-	public KettleDBRepositoryClient(KettleDatabaseRepository repository) {
+	/**
+	 * 资源路径
+	 */
+	private RepositoryDirectoryInterface repositoryDirectory = null;
+
+	public KettleDBRepositoryClient(KettleDatabaseRepository repository) throws KettleException {
 		this.repository = repository;
+		repositoryDirectory = repository.findDirectory("");
 	}
 
 	/**
-	 * 持久化操作:查询
+	 * 从资源库获取TransMeta
+	 *
+	 * @param name
+	 * @return
+	 * @throws KettleException
+	 */
+	public TransMeta getTransMeta(String transName) throws KettleException {
+		ObjectId transformationID = repository.getTransformationID(transName, repositoryDirectory);
+		if (transformationID == null) {
+			return null;
+		}
+		TransMeta transMeta = repository.loadTransformation(transformationID, null);
+		return transMeta;
+	}
+
+	/**
+	 * 从资源库获取TransMeta
+	 *
+	 * @param name
+	 * @return
+	 * @throws KettleException
+	 */
+	public TransMeta getTransMeta(long transID) throws KettleException {
+		TransMeta transMeta = repository.loadTransformation(new LongObjectId(transID), null);
+		return transMeta;
+	}
+
+	/**
+	 * 向资源库保存TransMeta
+	 *
+	 * @param transMeta
+	 * @throws KettleException
+	 */
+	public void saveTransMeta(TransMeta transMeta) throws KettleException {
+		transMeta.setRepositoryDirectory(repositoryDirectory);
+		repository.save(transMeta, "1", Calendar.getInstance(), null, true);
+	}
+
+	/**
+	 * 资源库删除TransMeta
+	 *
+	 * @param transMeta
+	 * @throws KettleException
+	 */
+	public void deleteTransMeta(long transID) throws KettleException {
+		repository.deleteTransformation(new LongObjectId(transID));
+	}
+
+	/**
+	 * 资源库删除TransMeta
+	 *
+	 * @param transMeta
+	 * @throws KettleException
+	 */
+	public void deleteTransMetaForce(long transID) {
+		try {
+			repository.deleteTransformation(new LongObjectId(transID));
+		} catch (KettleException e) {
+		}
+	}
+
+	/**
+	 * 持久化操作:查询转换记录
 	 * 
 	 * @throws KettleException
 	 */
-	public KettleTransResult queryTransRecord(String runID) {
+	public KettleTransResult queryTransRecord(long transID) {
 		try {
 			RowMetaAndData table = repository.connectionDelegate.getOneRow(KettleVariables.R_TRANS_RECORD,
-					KettleVariables.R_RECORD_ID_RUN, new StringObjectId(runID));
+					KettleVariables.R_RECORD_ID_TRANS, new LongObjectId(transID));
 			if (table == null || table.size() < 1) {
 				return null;
 			} else {
 				KettleTransResult kettleTransResult = new KettleTransResult();
-				kettleTransResult.setRunID(runID);
+				kettleTransResult.setTransID(transID);
 				kettleTransResult.setStatus(table.getString(KettleVariables.R_RECORD_STATUS, null));
 				return kettleTransResult;
 			}
@@ -48,13 +124,15 @@ public class KettleDBRepositoryClient {
 	}
 
 	/**
-	 * 持久化操作:Insert
+	 * 持久化操作:Insert转换记录
 	 * 
 	 * 
 	 * @throws KettleException
 	 */
 	public void insertTransRecord(KettleTransBean kettleTransBean) throws KettleException {
 		RowMetaAndData table = new RowMetaAndData();
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_ID_TRANS, ValueMetaInterface.TYPE_INTEGER),
+				kettleTransBean.getTransId());
 		table.addValue(new ValueMeta(KettleVariables.R_RECORD_NAME_TRANS, ValueMetaInterface.TYPE_STRING),
 				kettleTransBean.getTransName());
 		table.addValue(new ValueMeta(KettleVariables.R_RECORD_ID_RUN, ValueMetaInterface.TYPE_STRING),
@@ -67,26 +145,49 @@ public class KettleDBRepositoryClient {
 	}
 
 	/**
-	 * 持久化操作:更新
+	 * 持久化操作:更新转换记录
 	 * 
 	 * @throws KettleException
 	 */
-	private void updateTransRecord(KettleTransBean KettleTransBean) throws KettleException {
+	public void updateTransRecord(KettleTransBean kettleTransBean) throws KettleException {
 		RowMetaAndData table = new RowMetaAndData();
-		table.addValue(new ValueMeta(KettleVariables.R_RECORD_STATUS, ValueMetaInterface.TYPE_INTEGER),
-				KettleTransBean.getStatus());
-		repository.connectionDelegate.updateTableRow(KettleVariables.R_TRANS_RECORD, KettleVariables.R_RECORD_ID_RUN,
-				table, new StringObjectId(KettleTransBean.getRunID()));
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_STATUS, ValueMetaInterface.TYPE_STRING),
+				kettleTransBean.getStatus());
+		repository.connectionDelegate.updateTableRow(KettleVariables.R_TRANS_RECORD, KettleVariables.R_RECORD_ID_TRANS,
+				table, new LongObjectId(kettleTransBean.getTransId()));
 	}
 
 	/**
-	 * 持久化操作:删除
+	 * 持久化操作:删除转换记录
 	 * 
 	 * @throws KettleException
 	 */
-	private void deleteTransRecord(String runID) throws KettleException {
-		repository.connectionDelegate.performDelete(
-				"DELETE FROM " + KettleVariables.R_TRANS_RECORD + " WHERE " + KettleVariables.R_RECORD_ID_RUN + " = ?",
-				new StringObjectId(runID));
+	private void deleteTransRecord(long transID) throws KettleException {
+		repository.connectionDelegate.performDelete("DELETE FROM " + KettleVariables.R_TRANS_RECORD + " WHERE "
+				+ KettleVariables.R_RECORD_ID_TRANS + " = ?", new LongObjectId(transID));
+	}
+
+	public List<KettleTransBean> allRunningRecord(String hostname) throws KettleDatabaseException {
+		String sql = "SELECT " + KettleVariables.R_RECORD_ID_TRANS + "," + KettleVariables.R_RECORD_NAME_TRANS + ","
+				+ KettleVariables.R_RECORD_ID_RUN + "," + KettleVariables.R_RECORD_STATUS + ","
+				+ KettleVariables.R_RECORD_HOSTNAME + " FROM " + KettleVariables.R_TRANS_RECORD + " WHERE "
+				+ KettleVariables.R_RECORD_HOSTNAME + " = '" + hostname + "' AND " + KettleVariables.R_RECORD_STATUS
+				+ " = '" + KettleVariables.RECORD_STATUS_RUNNING + "'";
+		List<Object[]> result = repository.connectionDelegate.getRows(sql, -1);
+		List<KettleTransBean> kettleTransBeans = new ArrayList<KettleTransBean>(result.size());
+		if (result == null || result.isEmpty()) {
+			return kettleTransBeans;
+		}
+		KettleTransBean bean = null;
+		for (Object[] record : result) {
+			bean = new KettleTransBean();
+			bean.setTransId((Long) record[0]);
+			bean.setTransName((String) record[1]);
+			bean.setRunID((String) record[2]);
+			bean.setStatus((String) record[3]);
+			bean.setHostname((String) record[4]);
+			kettleTransBeans.add(bean);
+		}
+		return kettleTransBeans;
 	}
 }

@@ -7,7 +7,12 @@ public class KettleVariables {
 	public static final String R_TRANS_RECORD = "R_TRANS_RECORD";
 
 	/**
-	 * 表的转换元数据名称:唯一
+	 * 表的转换元数据ID:唯一
+	 */
+	public static final String R_RECORD_ID_TRANS = "ID_TRANSFORMATION";
+
+	/**
+	 * 表的转换元数据名称
 	 */
 	public static final String R_RECORD_NAME_TRANS = "NAME_TRANSFORMATION";
 
@@ -40,7 +45,7 @@ public class KettleVariables {
 	 * 记录的运行状态:异常
 	 */
 	public static final String RECORD_STATUS_FINISHED = "FINISHED";
-	
+
 	/**
 	 * 记录的运行状态:其他
 	 */

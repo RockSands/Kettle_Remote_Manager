@@ -1,7 +1,6 @@
 package com.kettle;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.List;
 
 import org.pentaho.di.cluster.SlaveServer;
 import org.pentaho.di.core.exception.KettleException;
@@ -30,12 +29,56 @@ public class KettleRemoteClient {
 	 */
 	private final KettleDBRepositoryClient dbRepositoryClient;
 
-	private ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(20);
+	/**
+	 * 运行中的转换记录
+	 */
+	private List<KettleTransBean> runningTransRecords;
 
-	protected KettleRemoteClient(final KettleDatabaseRepository repository, final SlaveServer remoteServer) {
+	private Runnable deamon = new Runnable() {
+		@Override
+		public void run() {
+			KettleTransBean currentBean = null;
+			for (KettleTransBean dbbean : runningTransRecords) {
+				try {
+					System.out.println("-Server[" + dbbean.getHostname() + "]->查询Record=" + dbbean.getTransId());
+					currentBean = remoteTransStatus(dbbean);
+					dealRemoteRecord(currentBean);
+				} catch (KettleException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	};
+
+	private void dealRemoteRecord(KettleTransBean currentBean) throws Exception {
+		synchronized (repository) {
+			repository.connect("admin", "admin");
+			try {
+				if (KettleVariables.RECORD_STATUS_FINISHED.equals(currentBean.getStatus())) {
+					/*
+					 * 完成
+					 */
+					dbRepositoryClient.updateTransRecord(currentBean);
+					dbRepositoryClient.deleteTransMetaForce(currentBean.getTransId());
+					remoteCleanTrans(currentBean.getTransName());
+					remoteDRemoveTran(currentBean.getTransName());
+				} else {
+					dbRepositoryClient.updateTransRecord(currentBean);
+				}
+			} finally {
+				repository.disconnect();
+			}
+		}
+	}
+
+	public KettleRemoteClient(final KettleDatabaseRepository repository, final SlaveServer remoteServer)
+			throws KettleException {
 		this.remoteServer = remoteServer;
 		this.repository = repository;
 		dbRepositoryClient = new KettleDBRepositoryClient(repository);
+		runningTransRecords = dbRepositoryClient.allRunningRecord(remoteServer.getHostname());
 	}
 
 	/**
@@ -45,7 +88,7 @@ public class KettleRemoteClient {
 	 * @throws KettleException
 	 * @throws Exception
 	 */
-	public KettleTransBean remoteSendTrans(TransMeta transMeta) throws KettleException, Exception {
+	public KettleTransBean remoteSendTrans(TransMeta transMeta) throws KettleException {
 		TransExecutionConfiguration transExecutionConfiguration = new TransExecutionConfiguration();
 		transExecutionConfiguration.setRemoteServer(remoteServer);
 		transExecutionConfiguration.setLogLevel(LogLevel.ERROR);
@@ -60,6 +103,27 @@ public class KettleRemoteClient {
 		kettleTransBean.setStatus(KettleVariables.RECORD_STATUS_RUNNING);
 		kettleTransBean.setTransName(transMeta.getName());
 		kettleTransBean.setHostname(remoteServer.getHostname());
+		/*
+		 * 插入
+		 */
+		synchronized (repository) {
+			repository.connect("admin", "admin");
+			try {
+				dbRepositoryClient.saveTransMeta(transMeta);
+				kettleTransBean.setTransId(Long.valueOf(transMeta.getObjectId().getId()));
+				dbRepositoryClient.insertTransRecord(kettleTransBean);
+			} catch (Exception ex) {
+				try {
+					remoteDRemoveTran(transMeta.getName());
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				throw new KettleException("持久化转换发生异常", ex);
+			} finally {
+				repository.disconnect();
+			}
+		}
+		runningTransRecords.add(kettleTransBean);
 		return kettleTransBean;
 	}
 
@@ -110,26 +174,25 @@ public class KettleRemoteClient {
 	 * @throws KettleException
 	 * @throws Exception
 	 */
-	public KettleTransBean remoteTransStatus(String transName) throws KettleException, Exception {
-		SlaveServerTransStatus slaveServerStatus = remoteServer.getTransStatus(transName, null, 0);
-		KettleTransBean kettleTransBean = new KettleTransBean();
-		kettleTransBean.setTransName(transName);
+	public KettleTransBean remoteTransStatus(KettleTransBean bean) throws KettleException, Exception {
+		SlaveServerTransStatus slaveServerStatus = remoteServer.getTransStatus(bean.getTransName(), null, 0);
+		System.out.println("Server[" + remoteServer.getHostname() + "]转换[" + bean.getTransName() + "]状态为:"
+				+ slaveServerStatus.getStatusDescription());
 		if (slaveServerStatus.getStatusDescription().toUpperCase().contains("ERROR")) {
-			kettleTransBean.setErrMsg(slaveServerStatus.getErrorDescription());
-			kettleTransBean.setStatus(KettleVariables.RECORD_STATUS_ERROR);
+			bean.setErrMsg(slaveServerStatus.getErrorDescription());
+			bean.setStatus(KettleVariables.RECORD_STATUS_ERROR);
 		} else if ("Finished".equalsIgnoreCase(slaveServerStatus.getStatusDescription())) {
 			for (StepStatus stepStatus : slaveServerStatus.getStepStatusList()) {
 				if (!"Finished".equalsIgnoreCase(stepStatus.getStatusDescription())) {
-					kettleTransBean.setStatus(KettleVariables.RECORD_STATUS_RUNNING);
-					return kettleTransBean;
+					bean.setStatus(KettleVariables.RECORD_STATUS_RUNNING);
+					return bean;
 				}
 			}
-			kettleTransBean.setStatus(KettleVariables.RECORD_STATUS_FINISHED);
+			bean.setStatus(KettleVariables.RECORD_STATUS_FINISHED);
 		} else {
-			System.out.println("转换[" + transName + "]状态为:" + slaveServerStatus.getStatusDescription());
-			kettleTransBean.setStatus(KettleVariables.RECORD_STATUS_OTRHER);
+			bean.setStatus(KettleVariables.RECORD_STATUS_OTRHER);
 		}
-		return kettleTransBean;
+		return bean;
 	}
 
 	/**
@@ -141,5 +204,9 @@ public class KettleRemoteClient {
 	 */
 	public void remoteDRemoveTran(String transName) throws Exception {
 		remoteServer.removeTransformation(transName, null);
+	}
+
+	protected Runnable deamon() {
+		return deamon;
 	}
 }

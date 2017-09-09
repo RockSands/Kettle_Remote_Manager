@@ -8,7 +8,11 @@ package com.kettle;
  */
 public class KettleTransBean {
 	/**
-	 * 对应Tran的Name,全局唯一
+	 * 对应Tran的Id,全局唯一
+	 */
+	private long transId;
+	/**
+	 * 对应Tran的Name
 	 */
 	private String transName;
 
@@ -39,11 +43,11 @@ public class KettleTransBean {
 		this.transName = transName;
 	}
 
-	protected String getRunID() {
+	public String getRunID() {
 		return runID;
 	}
 
-	protected void setRunID(String runID) {
+	public void setRunID(String runID) {
 		this.runID = runID;
 	}
 
@@ -69,5 +73,13 @@ public class KettleTransBean {
 
 	public void setHostname(String hostname) {
 		this.hostname = hostname;
+	}
+
+	public long getTransId() {
+		return transId;
+	}
+
+	public void setTransId(long transId) {
+		this.transId = transId;
 	}
 }

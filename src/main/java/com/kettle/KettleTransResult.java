@@ -2,9 +2,9 @@ package com.kettle;
 
 public class KettleTransResult {
 	/**
-	 * 运行ID-远程的执行ObjectID
+	 * TransID
 	 */
-	private String runID;
+	private long transID;
 	/**
 	 * 状态
 	 */
@@ -15,12 +15,12 @@ public class KettleTransResult {
 	 */
 	private String errMsg;
 
-	protected String getRunID() {
-		return runID;
+	public long getTransID() {
+		return transID;
 	}
 
-	protected void setRunID(String runID) {
-		this.runID = runID;
+	public void setTransID(long transID) {
+		this.transID = transID;
 	}
 
 	public String getStatus() {
