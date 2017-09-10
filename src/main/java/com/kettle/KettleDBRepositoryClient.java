@@ -1,7 +1,7 @@
 package com.kettle;
 
-import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.pentaho.di.core.RowMetaAndData;
@@ -105,17 +105,20 @@ public class KettleDBRepositoryClient {
 	 * 
 	 * @throws KettleException
 	 */
-	public KettleTransResult queryTransRecord(long transID) {
+	public KettleTransBean queryTransRecord(long transID) {
 		try {
 			RowMetaAndData table = repository.connectionDelegate.getOneRow(KettleVariables.R_TRANS_RECORD,
 					KettleVariables.R_RECORD_ID_TRANS, new LongObjectId(transID));
 			if (table == null || table.size() < 1) {
 				return null;
 			} else {
-				KettleTransResult kettleTransResult = new KettleTransResult();
-				kettleTransResult.setTransID(transID);
-				kettleTransResult.setStatus(table.getString(KettleVariables.R_RECORD_STATUS, null));
-				return kettleTransResult;
+				KettleTransBean kettleTransBean = new KettleTransBean();
+				kettleTransBean.setTransId(transID);
+				kettleTransBean.setTransName(table.getString(KettleVariables.R_RECORD_NAME_TRANS, null));
+				kettleTransBean.setRunID(table.getString(KettleVariables.R_RECORD_ID_RUN, null));
+				kettleTransBean.setStatus(table.getString(KettleVariables.R_RECORD_STATUS, null));
+				kettleTransBean.setHostname(table.getString(KettleVariables.R_RECORD_HOSTNAME, null));
+				return kettleTransBean;
 			}
 		} catch (KettleException e) {
 			e.printStackTrace();
@@ -162,7 +165,7 @@ public class KettleDBRepositoryClient {
 	 * 
 	 * @throws KettleException
 	 */
-	private void deleteTransRecord(long transID) throws KettleException {
+	public void deleteTransRecord(long transID) throws KettleException {
 		repository.connectionDelegate.performDelete("DELETE FROM " + KettleVariables.R_TRANS_RECORD + " WHERE "
 				+ KettleVariables.R_RECORD_ID_TRANS + " = ?", new LongObjectId(transID));
 	}
@@ -174,7 +177,7 @@ public class KettleDBRepositoryClient {
 				+ KettleVariables.R_RECORD_HOSTNAME + " = '" + hostname + "' AND " + KettleVariables.R_RECORD_STATUS
 				+ " = '" + KettleVariables.RECORD_STATUS_RUNNING + "'";
 		List<Object[]> result = repository.connectionDelegate.getRows(sql, -1);
-		List<KettleTransBean> kettleTransBeans = new ArrayList<KettleTransBean>(result.size());
+		List<KettleTransBean> kettleTransBeans = new LinkedList<KettleTransBean>();
 		if (result == null || result.isEmpty()) {
 			return kettleTransBeans;
 		}

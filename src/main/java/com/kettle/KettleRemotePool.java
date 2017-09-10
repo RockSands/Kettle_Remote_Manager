@@ -39,7 +39,7 @@ public class KettleRemotePool {
 				server.getLogChannel().setLogLevel(LogLevel.ERROR);
 				remoteClient = new KettleRemoteClient(repository, server);
 				remoteclients.add(remoteClient);
-				threadPool.scheduleAtFixedRate(remoteClient.deamon(), 10, 60, TimeUnit.SECONDS);
+				threadPool.scheduleAtFixedRate(remoteClient.deamon(), 5, 10, TimeUnit.SECONDS);
 			}
 		}
 		if (remoteclients.isEmpty()) {

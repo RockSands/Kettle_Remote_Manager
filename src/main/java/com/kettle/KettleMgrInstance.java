@@ -362,4 +362,48 @@ public class KettleMgrInstance {
 			throw new KettleException("==========!==========");
 		}
 	}
+
+	/**
+	 * 查询数据迁移
+	 * 
+	 * @param transID
+	 * @return
+	 * @throws KettleException
+	 */
+	public KettleTransResult queryDataTransfer(long transID) throws KettleException {
+		KettleTransBean bean = null;
+		synchronized (repository) {
+			try {
+				repository.connect("admin", "admin");
+				bean = dbRepositoryClient.queryTransRecord(transID);
+			} finally {
+				repository.disconnect();
+			}
+		}
+		if (bean == null) {
+			return null;
+		}
+		KettleTransResult result = new KettleTransResult();
+		result.setTransID(transID);
+		result.setStatus(bean.getStatus());
+		return result;
+	}
+
+	/**
+	 * 删除数据迁移
+	 * 
+	 * @param transID
+	 * @return
+	 * @throws KettleException
+	 */
+	public void deleteDataTransfer(long transID) throws KettleException {
+		synchronized (repository) {
+			try {
+				repository.connect("admin", "admin");
+				dbRepositoryClient.deleteTransRecord(transID);
+			} finally {
+				repository.disconnect();
+			}
+		}
+	}
 }

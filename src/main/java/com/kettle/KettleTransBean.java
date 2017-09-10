@@ -26,11 +26,6 @@ public class KettleTransBean {
 	private String status;
 
 	/**
-	 * 异常信息
-	 */
-	private String errMsg;
-
-	/**
 	 * 主机信息
 	 */
 	private String hostname;
@@ -57,14 +52,6 @@ public class KettleTransBean {
 
 	public void setStatus(String status) {
 		this.status = status;
-	}
-
-	public String getErrMsg() {
-		return errMsg;
-	}
-
-	public void setErrMsg(String errMsg) {
-		this.errMsg = errMsg;
 	}
 
 	public String getHostname() {
