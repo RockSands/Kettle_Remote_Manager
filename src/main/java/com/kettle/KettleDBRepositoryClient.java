@@ -84,7 +84,13 @@ public class KettleDBRepositoryClient {
 	 * @throws KettleException
 	 */
 	public void deleteTransMeta(long transID) throws KettleException {
-		repository.deleteTransformation(new LongObjectId(transID));
+		TransMeta transMeta = this.getTransMeta(transID);
+		if (transMeta != null) {
+			repository.deleteTransformation(new LongObjectId(transID));
+			for (String databaseName : transMeta.getDatabaseNames()) {
+				repository.deleteDatabaseMeta(databaseName);
+			}
+		}
 	}
 
 	/**
@@ -95,7 +101,13 @@ public class KettleDBRepositoryClient {
 	 */
 	public void deleteTransMetaForce(long transID) {
 		try {
+			TransMeta transMeta = this.getTransMeta(transID);
 			repository.deleteTransformation(new LongObjectId(transID));
+			if (transMeta != null) {
+				for (String databaseName : transMeta.getDatabaseNames()) {
+					repository.deleteDatabaseMeta(databaseName);
+				}
+			}
 		} catch (KettleException e) {
 		}
 	}
