@@ -22,7 +22,7 @@ public class ExcuteMain {
 		// List<String> flags = Arrays.asList("A", "B", "C", "D", "E", "F", "G",
 		// "H", "I", "J", "K", "L", "M", "N",
 		// "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
-		List<String> flags = Arrays.asList("A", "B", "C");
+		List<String> flags = Arrays.asList("A", "B", "C", "D", "E", "F", "G");
 		/*
 		 * Source的TableName无效
 		 */

@@ -1,4 +1,4 @@
-package com.kettle;
+package com.kettle.remote;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -18,6 +18,10 @@ import org.pentaho.di.trans.cluster.TransSplitter;
 import org.pentaho.di.trans.step.StepStatus;
 import org.pentaho.di.www.SlaveServerTransStatus;
 import org.pentaho.di.www.WebResult;
+
+import com.kettle.KettleDBRepositoryClient;
+import com.kettle.KettleTransBean;
+import com.kettle.KettleVariables;
 
 public class KettleRemoteClient {
 	/**
@@ -58,8 +62,7 @@ public class KettleRemoteClient {
 			for (Iterator<KettleTransBean> it = runningTransRecords.iterator(); it.hasNext();) {
 				try {
 					dbbean = it.next();
-					// System.out.println("-Server[" + dbbean.getHostname() +
-					// "]->查询Record=" + dbbean.getTransId());
+					System.out.println("-Server[" + dbbean.getHostname() + "]->查询Record=" + dbbean.getTransId());
 					currentBean = remoteTransStatus(dbbean);
 					if (dealRemoteRecord(currentBean)) {
 						it.remove();
