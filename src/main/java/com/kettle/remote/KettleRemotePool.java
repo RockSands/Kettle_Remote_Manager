@@ -24,9 +24,6 @@ import com.kettle.KettleTransBean;
 public class KettleRemotePool {
 	private final Map<String, KettleRemoteClient> remoteclients;
 
-	/**
-	 * 主机名称
-	 */
 	private final String[] hostnameArr;
 
 	/**
@@ -39,17 +36,32 @@ public class KettleRemotePool {
 	 */
 	private ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(20);
 
-	public KettleRemotePool(final KettleDatabaseRepository repository, List<SlaveServer> slaveServers)
-			throws KettleException {
+	/**
+	 * @param repository
+	 * @param includeServers
+	 * @param excludeServers
+	 * @throws KettleException
+	 */
+	public KettleRemotePool(final KettleDatabaseRepository repository, List<String> includeHostNames,
+			List<String> excludeHostNames) throws KettleException {
 		remoteclients = new HashMap<String, KettleRemoteClient>();
 		KettleRemoteClient remoteClient = null;
-		int index = 0;
-		for (SlaveServer server : slaveServers) {
+		for (SlaveServer server : repository.getSlaveServers()) {
+			if (excludeHostNames != null && excludeHostNames.contains(server.getHostname())) {
+				continue;
+			}
+			if (includeHostNames != null && !includeHostNames.contains(server.getHostname())) {
+				continue;
+			}
 			server.getLogChannel().setLogLevel(LogLevel.ERROR);
 			remoteClient = new KettleRemoteClient(repository, server);
+			if (remoteclients.containsKey(remoteClient.getHostName())) {
+				throw new KettleException("远程池启动失败,存在Hostname重复的主机!");
+			}
 			remoteclients.put(remoteClient.getHostName(), remoteClient);
 			// i作为延迟避免集中操作
-			threadPool.scheduleAtFixedRate(remoteClient.deamon(), 10 + 5 * (index++), 30, TimeUnit.SECONDS);
+			threadPool.scheduleAtFixedRate(remoteClient.deamon(), 10 + 5 * (remoteclients.size()), 30,
+					TimeUnit.SECONDS);
 		}
 		hostnameArr = remoteclients.keySet().toArray(new String[0]);
 		if (remoteclients.isEmpty()) {
@@ -77,12 +89,13 @@ public class KettleRemotePool {
 	}
 
 	/**
-	 * 远程发送并执行--指定集群必须使用此方法
+	 * 指定主机名执行
 	 * 
 	 * @param transMeta
+	 * @param hostName
 	 * @return
-	 * @throws Exception
 	 * @throws KettleException
+	 * @throws Exception
 	 */
 	public KettleTransBean remoteSendTrans(TransMeta transMeta, String hostName) throws KettleException, Exception {
 		return remoteclients.get(hostName).remoteSendTrans(transMeta);

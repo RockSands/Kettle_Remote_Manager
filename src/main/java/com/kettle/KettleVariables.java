@@ -7,29 +7,44 @@ public class KettleVariables {
 	public static final String R_TRANS_RECORD = "R_TRANS_RECORD";
 
 	/**
-	 * 表的转换元数据ID:唯一
+	 * 集群记录的表名
+	 */
+	public static final String R_TRANS_RECORD_SPLIT = "R_TRANS_RECORD_SPLIT";
+
+	/**
+	 * 记录的转换元数据ID:唯一
 	 */
 	public static final String R_RECORD_ID_TRANS = "ID_TRANSFORMATION";
 
 	/**
-	 * 表的转换元数据名称
+	 * 记录的转换元数据名称
 	 */
 	public static final String R_RECORD_NAME_TRANS = "NAME_TRANSFORMATION";
 
 	/**
-	 * 表的运行ID:唯一
+	 * 记录的运行ID:唯一
 	 */
 	public static final String R_RECORD_ID_RUN = "ID_RUN";
 
 	/**
-	 * 表的主机名
+	 * 记录的主机名
 	 */
 	public static final String R_RECORD_HOSTNAME = "HOSTNAME";
+
+	/**
+	 * 记录的集群名称
+	 */
+	public static final String R_RECORD_CLUSTERNAME = "CLUSTERNAME";
 
 	/**
 	 * 表的主机名
 	 */
 	public static final String R_RECORD_STATUS = "STATUS";
+
+	/**
+	 * ID
+	 */
+	public static final String R_TRANS_RECORD_SPLIT_ID = "ID_SPLIT";
 
 	/**
 	 * 记录的运行状态:运行中

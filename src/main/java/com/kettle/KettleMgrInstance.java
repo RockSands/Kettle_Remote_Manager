@@ -1,9 +1,11 @@
 package com.kettle;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import org.pentaho.di.cluster.ClusterSchema;
 import org.pentaho.di.core.Condition;
 import org.pentaho.di.core.KettleEnvironment;
 import org.pentaho.di.core.NotePadMeta;
@@ -26,6 +28,7 @@ import org.pentaho.di.trans.steps.tableinput.TableInputMeta;
 import org.pentaho.di.trans.steps.tableoutput.TableOutputMeta;
 import org.pentaho.di.trans.steps.update.UpdateMeta;
 
+import com.kettle.cluster.KettleClusterPool;
 import com.kettle.remote.KettleRemotePool;
 
 /**
@@ -50,6 +53,11 @@ public class KettleMgrInstance {
 	 * 远程执行池
 	 */
 	private KettleRemotePool kettleRemotePool;
+
+	/**
+	 * 集群执行池
+	 */
+	private KettleClusterPool kettleClusterPool;
 
 	/**
 	 * 资源池数据库连接
@@ -81,13 +89,10 @@ public class KettleMgrInstance {
 			repository.init(dbrepositoryMeta);
 			repository.connect("admin", "admin");
 			dbRepositoryClient = new KettleDBRepositoryClient(repository);
-			kettleRemotePool = new KettleRemotePool(repository, repository.getSlaveServers());
+			// kettleRemotePool = new KettleRemotePool(repository, null, null);
+			kettleClusterPool = new KettleClusterPool(repository, null, null);
 		} catch (KettleException ex) {
 			throw new RuntimeException("KettleMgrInstance初始化失败", ex);
-		} finally {
-			if (repository != null && repository.isConnected()) {
-				repository.disconnect();
-			}
 		}
 	}
 
@@ -109,6 +114,25 @@ public class KettleMgrInstance {
 	}
 
 	/**
+	 * 集群发送并执行
+	 * 
+	 * @param transMeta
+	 * @return
+	 * @throws Exception
+	 * @throws KettleException
+	 */
+	private KettleTransResult clusterSendTrans(TransMeta transMeta, String clustername)
+			throws KettleException, Exception {
+		KettleTransBean kettleTransBean;
+		kettleTransBean = kettleClusterPool.clusterSendTrans(transMeta, clustername);
+		KettleTransResult kettleTransResult = new KettleTransResult();
+		kettleTransResult.setTransID(kettleTransBean.getTransId());
+		kettleTransResult.setStatus(kettleTransBean.getStatus());
+		return kettleTransResult;
+
+	}
+
+	/**
 	 * @param source
 	 * @param target
 	 * @return
@@ -119,6 +143,7 @@ public class KettleMgrInstance {
 		String uuid = UUID.randomUUID().toString().replace("-", "");
 		TransMeta transMeta = null;
 		try {
+			dbRepositoryClient.connect();
 			transMeta = new TransMeta();
 			transMeta.setName("YHHX-" + uuid);
 			DatabaseMeta sourceDataBase = new DatabaseMeta("S" + uuid, source.getType(), "Native", source.getHost(),
@@ -127,8 +152,7 @@ public class KettleMgrInstance {
 			DatabaseMeta targetDatabase = new DatabaseMeta("T" + uuid, target.getType(), "Native", "192.168.80.138",
 					"person", "3306", "root", "123456");
 			transMeta.addDatabase(targetDatabase);
-			// ClusterSchema clusterSchema =
-			// kettleRemotePool.getClusterSchema("kettleCluster");
+			ClusterSchema clusterSchema = kettleClusterPool.getClusterSchema("kettleCluster");
 			/*
 			 * 获取非PK列
 			 */
@@ -238,8 +262,8 @@ public class KettleMgrInstance {
 			nochang.setLocation(950, 100);
 			nochang.setDraw(true);
 			nochang.setDescription("STEP-NOCHANGE");
-			// nochang.setClusterSchema(clusterSchema);
-			// nochang.setClusterSchemaName(clusterSchema.getName());
+			nochang.setClusterSchema(clusterSchema);
+			nochang.setClusterSchemaName(clusterSchema.getName());
 			transMeta.addStep(nochang);
 			transMeta.addTransHop(new TransHopMeta(merage, nochang));
 			/*
@@ -249,8 +273,8 @@ public class KettleMgrInstance {
 			nothing.setLocation(950, 300);
 			nothing.setDraw(true);
 			nothing.setDescription("STEP-NOTHING");
-			// nothing.setClusterSchema(clusterSchema);
-			// nothing.setClusterSchemaName(clusterSchema.getName());
+			nothing.setClusterSchema(clusterSchema);
+			nothing.setClusterSchemaName(clusterSchema.getName());
 			transMeta.addStep(nothing);
 			transMeta.addTransHop(new TransHopMeta(nochang, nothing));
 			frm_nochange.getStepIOMeta().getTargetStreams().get(0).setStepMeta(nothing);
@@ -264,8 +288,8 @@ public class KettleMgrInstance {
 			isNew.setLocation(1250, 100);
 			isNew.setDraw(true);
 			isNew.setDescription("STEP-ISNEW");
-			// isNew.setClusterSchema(clusterSchema);
-			// isNew.setClusterSchemaName(clusterSchema.getName());
+			isNew.setClusterSchema(clusterSchema);
+			isNew.setClusterSchemaName(clusterSchema.getName());
 			transMeta.addStep(isNew);
 			transMeta.addTransHop(new TransHopMeta(nochang, isNew));
 			frm_nochange.getStepIOMeta().getTargetStreams().get(1).setStepMeta(isNew);
@@ -284,8 +308,8 @@ public class KettleMgrInstance {
 			insert.setLocation(1250, 300);
 			insert.setDraw(true);
 			insert.setDescription("STEP-INSERT");
-			// insert.setClusterSchema(clusterSchema);
-			// insert.setClusterSchemaName(clusterSchema.getName());
+			insert.setClusterSchema(clusterSchema);
+			insert.setClusterSchemaName(clusterSchema.getName());
 			transMeta.addStep(insert);
 			transMeta.addTransHop(new TransHopMeta(isNew, insert));
 			frm_new.getStepIOMeta().getTargetStreams().get(0).setStepMeta(insert);
@@ -299,8 +323,8 @@ public class KettleMgrInstance {
 			isChange.setLocation(1550, 100);
 			isChange.setDraw(true);
 			isChange.setDescription("STEP-ISCHANGE");
-			// isChange.setClusterSchema(clusterSchema);
-			// isChange.setClusterSchemaName(clusterSchema.getName());
+			isChange.setClusterSchema(clusterSchema);
+			isChange.setClusterSchemaName(clusterSchema.getName());
 			transMeta.addStep(isChange);
 			transMeta.addTransHop(new TransHopMeta(isNew, isChange));
 			frm_new.getStepIOMeta().getTargetStreams().get(1).setStepMeta(isChange);
@@ -324,8 +348,8 @@ public class KettleMgrInstance {
 			update.setLocation(1850, 300);
 			update.setDraw(true);
 			update.setDescription("STEP-UPDATE");
-			// update.setClusterSchema(clusterSchema);
-			// update.setClusterSchemaName(clusterSchema.getName());
+			update.setClusterSchema(clusterSchema);
+			update.setClusterSchemaName(clusterSchema.getName());
 			transMeta.addStep(update);
 			transMeta.addTransHop(new TransHopMeta(isChange, update));
 			frm_isChange.getStepIOMeta().getTargetStreams().get(0).setStepMeta(update);
@@ -344,13 +368,13 @@ public class KettleMgrInstance {
 			delete.setLocation(1550, 300);
 			delete.setDraw(true);
 			delete.setDescription("STEP-DELETE");
-			// delete.setClusterSchema(clusterSchema);
-			// delete.setClusterSchemaName(clusterSchema.getName());
+			delete.setClusterSchema(clusterSchema);
+			delete.setClusterSchemaName(clusterSchema.getName());
 			transMeta.addStep(delete);
 			transMeta.addTransHop(new TransHopMeta(isChange, delete));
-			// transMeta.setClusterSchemas(Arrays.asList(clusterSchema));
+			transMeta.setClusterSchemas(Arrays.asList(clusterSchema));
 			frm_isChange.getStepIOMeta().getTargetStreams().get(1).setStepMeta(delete);
-			KettleTransResult result = remoteSendTrans(transMeta);
+			KettleTransResult result = clusterSendTrans(transMeta, clusterSchema.getName());
 			return result;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -366,15 +390,16 @@ public class KettleMgrInstance {
 	 * @throws KettleException
 	 */
 	public KettleTransResult queryDataTransfer(long transID) throws KettleException {
+		dbRepositoryClient.connect();
 		KettleTransBean bean = null;
-		synchronized (repository) {
-			try {
-				repository.connect("admin", "admin");
-				bean = dbRepositoryClient.queryTransRecord(transID);
-			} finally {
-				repository.disconnect();
-			}
-		}
+		// synchronized (repository) {
+		// try {
+		repository.connect("admin", "admin");
+		bean = dbRepositoryClient.queryTransRecord(transID);
+		// } finally {
+		// repository.disconnect();
+		// }
+		// }
 		if (bean == null) {
 			return null;
 		}
@@ -392,13 +417,13 @@ public class KettleMgrInstance {
 	 * @throws KettleException
 	 */
 	public void deleteDataTransfer(long transID) throws KettleException {
-		synchronized (repository) {
-			try {
-				repository.connect("admin", "admin");
-				dbRepositoryClient.deleteTransRecord(transID);
-			} finally {
-				repository.disconnect();
-			}
-		}
+		// synchronized (repository) {
+		// try {
+		repository.connect("admin", "admin");
+		dbRepositoryClient.deleteTransRecord(transID);
+		// } finally {
+		// repository.disconnect();
+		// }
+		// }
 	}
 }

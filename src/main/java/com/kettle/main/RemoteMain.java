@@ -1,10 +1,14 @@
-package com.kettle;
+package com.kettle.main;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class ExcuteMain {
+import com.kettle.KettleDBTranDescribe;
+import com.kettle.KettleMgrInstance;
+import com.kettle.KettleTransResult;
+
+public class RemoteMain {
 	/**
 	 * 需求: 将源数据库(jdbc:mysql://192.168.80.138:3306/employees 用户名:root 密码: 123456)
 	 * 的SQL --- SELECT employees.emp_no, dept_emp.dept_no, employees.first_name,
@@ -86,15 +90,15 @@ public class ExcuteMain {
 		/*
 		 * 以下为定时轮询,未完成,提供的查询接口是remoteTransStatus
 		 */
-		do {
-			Thread.sleep(2000);
-			System.out.println("------------------------------");
-			for (KettleTransResult result : results) {
-				result = KettleMgrInstance.getInstance().queryDataTransfer(result.getTransID());
-				System.out.println("=DataTransfer[" + result.getTransID() + "]=>\n" + result.getStatus());
-			}
-			System.out.println("------------------------------");
-		} while (true);
+//		do {
+//			Thread.sleep(2000);
+//			System.out.println("------------------------------");
+//			for (KettleTransResult result : results) {
+//				result = KettleMgrInstance.getInstance().queryDataTransfer(result.getTransID());
+//				System.out.println("=DataTransfer[" + result.getTransID() + "]=>\n" + result.getStatus());
+//			}
+//			System.out.println("------------------------------");
+//		} while (true);
 	}
 
 }

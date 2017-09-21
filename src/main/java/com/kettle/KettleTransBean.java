@@ -1,5 +1,8 @@
 package com.kettle;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * 数据库实体对象
  * 
@@ -29,6 +32,16 @@ public class KettleTransBean {
 	 * 主机信息
 	 */
 	private String hostname;
+
+	/**
+	 * 集群名称
+	 */
+	private String clusterName;
+
+	/**
+	 * 集群的记录
+	 */
+	private List<KettleTransSplitBean> clusterSplits;
 
 	public String getTransName() {
 		return transName;
@@ -68,5 +81,20 @@ public class KettleTransBean {
 
 	public void setTransId(long transId) {
 		this.transId = transId;
+	}
+
+	public String getClusterName() {
+		return clusterName;
+	}
+
+	public void setClusterName(String clusterName) {
+		this.clusterName = clusterName;
+	}
+
+	public List<KettleTransSplitBean> getClusterSplits() {
+		if (clusterSplits == null) {
+			clusterSplits = new ArrayList<KettleTransSplitBean>();
+		}
+		return clusterSplits;
 	}
 }
