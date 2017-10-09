@@ -12,6 +12,7 @@ import org.pentaho.di.core.NotePadMeta;
 import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.ValueMetaAndData;
+import org.pentaho.di.core.util.EnvUtil;
 import org.pentaho.di.repository.RepositoryMeta;
 import org.pentaho.di.repository.kdr.KettleDatabaseRepository;
 import org.pentaho.di.repository.kdr.KettleDatabaseRepositoryMeta;
@@ -81,16 +82,26 @@ public class KettleMgrInstance {
 
 	private void init() {
 		try {
-			KettleEnvironment.init();
+			KettleEnvironment.init(false);
 			repository = new KettleDatabaseRepository();
-			RepositoryMeta dbrepositoryMeta = new KettleDatabaseRepositoryMeta("KettleDatabaseRepository",
-					"DBRepository", "Database repository", new DatabaseMeta("DBRepo", "MySQL", "Native",
-							"192.168.80.138", "kettle", "3306", "root", "123456"));
+			RepositoryMeta dbrepositoryMeta = new KettleDatabaseRepositoryMeta(
+					EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_META_ID"),
+					EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_META_NAME"),
+					EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_META_DESCRIPTION"),
+					new DatabaseMeta(EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_DB_NAME"),
+							EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_DB_TYPE"),
+							EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_DB_ACCESS"),
+							EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_DB_HOST"),
+							EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_DB_DATABASENAME"),
+							EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_DB_PORT"),
+							EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_DB_USER"),
+							EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_DB_PASSWD")));
 			repository.init(dbrepositoryMeta);
-			repository.connect("admin", "admin");
+			repository.connect(EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_USER"),
+					EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_PASSWD"));
 			dbRepositoryClient = new KettleDBRepositoryClient(repository);
-			// kettleRemotePool = new KettleRemotePool(repository, null, null);
-			kettleClusterPool = new KettleClusterPool(repository, null, null);
+			kettleRemotePool = new KettleRemotePool(repository, null, null);
+			// kettleClusterPool = new KettleClusterPool(repository, null, null);
 		} catch (KettleException ex) {
 			throw new RuntimeException("KettleMgrInstance初始化失败", ex);
 		}
@@ -149,8 +160,8 @@ public class KettleMgrInstance {
 			DatabaseMeta sourceDataBase = new DatabaseMeta("S" + uuid, source.getType(), "Native", source.getHost(),
 					source.getDatabase(), source.getPort(), source.getUser(), source.getPasswd());
 			transMeta.addDatabase(sourceDataBase);
-			DatabaseMeta targetDatabase = new DatabaseMeta("T" + uuid, target.getType(), "Native", "192.168.80.138",
-					"person", "3306", "root", "123456");
+			DatabaseMeta targetDatabase = new DatabaseMeta("T" + uuid, target.getType(), "Native", target.getHost(),
+					target.getDatabase(), target.getPort(), target.getUser(), target.getPasswd());
 			transMeta.addDatabase(targetDatabase);
 			ClusterSchema clusterSchema = kettleClusterPool.getClusterSchema("kettleCluster");
 			/*

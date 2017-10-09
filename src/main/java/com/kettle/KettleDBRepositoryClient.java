@@ -9,6 +9,7 @@ import org.pentaho.di.core.exception.KettleDatabaseException;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.ValueMeta;
 import org.pentaho.di.core.row.ValueMetaInterface;
+import org.pentaho.di.core.util.EnvUtil;
 import org.pentaho.di.repository.LongObjectId;
 import org.pentaho.di.repository.ObjectId;
 import org.pentaho.di.repository.RepositoryDirectoryInterface;
@@ -44,7 +45,8 @@ public class KettleDBRepositoryClient {
 		synchronized (lock) {
 			if (!repository.isConnected()) {
 				try {
-					repository.connect("admin", "admin");
+					repository.connect(EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_USER"),
+							EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_PASSWD"));
 				} catch (KettleException e) {
 					throw new RuntimeException("Kettle的资源池无法连接!");
 				}
@@ -349,8 +351,8 @@ public class KettleDBRepositoryClient {
 		RowMetaAndData table = new RowMetaAndData();
 		table.addValue(new ValueMeta(KettleVariables.R_RECORD_STATUS, ValueMetaInterface.TYPE_STRING),
 				kettlesplitBean.getStatus());
-		repository.connectionDelegate.updateTableRow(KettleVariables.R_TRANS_RECORD_SPLIT, KettleVariables.R_TRANS_RECORD_SPLIT_ID,
-				table, new LongObjectId(kettlesplitBean.getSplitId()));
+		repository.connectionDelegate.updateTableRow(KettleVariables.R_TRANS_RECORD_SPLIT,
+				KettleVariables.R_TRANS_RECORD_SPLIT_ID, table, new LongObjectId(kettlesplitBean.getSplitId()));
 		repository.commit();
 	}
 
