@@ -1,0 +1,32 @@
+package com.kettle.main;
+
+import org.pentaho.di.core.exception.KettleException;
+
+import com.kettle.KettleDBTranDescribe;
+import com.kettle.KettleMgrInstance;
+import com.kettle.KettleTransResult;
+
+public class CreateDataTransfer implements Runnable {
+	KettleDBTranDescribe source = null;
+
+	KettleDBTranDescribe target = null;
+
+	KettleTransResult result = null;
+
+	CreateDataTransfer(KettleDBTranDescribe source, KettleDBTranDescribe target) {
+		this.source = source;
+		this.target = target;
+	}
+
+	@Override
+	public void run() {
+		try {
+			long now = System.currentTimeMillis();
+			result = KettleMgrInstance.getInstance().createDataTransfer(source, target);
+			System.out.println("==>SendTransfer used: " + (System.currentTimeMillis() - now));
+		} catch (KettleException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+}

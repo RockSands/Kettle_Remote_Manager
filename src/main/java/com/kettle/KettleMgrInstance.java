@@ -1,11 +1,9 @@
 package com.kettle;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import org.pentaho.di.cluster.ClusterSchema;
 import org.pentaho.di.core.Condition;
 import org.pentaho.di.core.KettleEnvironment;
 import org.pentaho.di.core.NotePadMeta;
@@ -82,7 +80,7 @@ public class KettleMgrInstance {
 
 	private void init() {
 		try {
-			KettleEnvironment.init(false);
+			KettleEnvironment.init();
 			repository = new KettleDatabaseRepository();
 			RepositoryMeta dbrepositoryMeta = new KettleDatabaseRepositoryMeta(
 					EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_META_ID"),
@@ -100,7 +98,7 @@ public class KettleMgrInstance {
 			repository.connect(EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_USER"),
 					EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_PASSWD"));
 			dbRepositoryClient = new KettleDBRepositoryClient(repository);
-			kettleRemotePool = new KettleRemotePool(repository, null, null);
+			kettleRemotePool = new KettleRemotePool(dbRepositoryClient, null, null);
 			// kettleClusterPool = new KettleClusterPool(repository, null, null);
 		} catch (KettleException ex) {
 			throw new RuntimeException("KettleMgrInstance初始化失败", ex);
@@ -157,13 +155,16 @@ public class KettleMgrInstance {
 			dbRepositoryClient.connect();
 			transMeta = new TransMeta();
 			transMeta.setName("YHHX-" + uuid);
-			DatabaseMeta sourceDataBase = new DatabaseMeta("S" + uuid, source.getType(), "Native", source.getHost(),
-					source.getDatabase(), source.getPort(), source.getUser(), source.getPasswd());
+			DatabaseMeta sourceDataBase = new DatabaseMeta(source.getHost() + "_" + source.getDatabase(),
+					source.getType(), "Native", source.getHost(), source.getDatabase(), source.getPort(),
+					source.getUser(), source.getPasswd());
 			transMeta.addDatabase(sourceDataBase);
-			DatabaseMeta targetDatabase = new DatabaseMeta("T" + uuid, target.getType(), "Native", target.getHost(),
-					target.getDatabase(), target.getPort(), target.getUser(), target.getPasswd());
+			DatabaseMeta targetDatabase = new DatabaseMeta(target.getHost() + "_" + target.getDatabase(),
+					target.getType(), "Native", target.getHost(), target.getDatabase(), target.getPort(),
+					target.getUser(), target.getPasswd());
 			transMeta.addDatabase(targetDatabase);
-			ClusterSchema clusterSchema = kettleClusterPool.getClusterSchema("kettleCluster");
+			// ClusterSchema clusterSchema =
+			// kettleClusterPool.getClusterSchema("kettleCluster");
 			/*
 			 * 获取非PK列
 			 */
@@ -273,8 +274,8 @@ public class KettleMgrInstance {
 			nochang.setLocation(950, 100);
 			nochang.setDraw(true);
 			nochang.setDescription("STEP-NOCHANGE");
-			nochang.setClusterSchema(clusterSchema);
-			nochang.setClusterSchemaName(clusterSchema.getName());
+			// nochang.setClusterSchema(clusterSchema);
+			// nochang.setClusterSchemaName(clusterSchema.getName());
 			transMeta.addStep(nochang);
 			transMeta.addTransHop(new TransHopMeta(merage, nochang));
 			/*
@@ -284,8 +285,8 @@ public class KettleMgrInstance {
 			nothing.setLocation(950, 300);
 			nothing.setDraw(true);
 			nothing.setDescription("STEP-NOTHING");
-			nothing.setClusterSchema(clusterSchema);
-			nothing.setClusterSchemaName(clusterSchema.getName());
+			// nothing.setClusterSchema(clusterSchema);
+			// nothing.setClusterSchemaName(clusterSchema.getName());
 			transMeta.addStep(nothing);
 			transMeta.addTransHop(new TransHopMeta(nochang, nothing));
 			frm_nochange.getStepIOMeta().getTargetStreams().get(0).setStepMeta(nothing);
@@ -299,8 +300,8 @@ public class KettleMgrInstance {
 			isNew.setLocation(1250, 100);
 			isNew.setDraw(true);
 			isNew.setDescription("STEP-ISNEW");
-			isNew.setClusterSchema(clusterSchema);
-			isNew.setClusterSchemaName(clusterSchema.getName());
+			// isNew.setClusterSchema(clusterSchema);
+			// isNew.setClusterSchemaName(clusterSchema.getName());
 			transMeta.addStep(isNew);
 			transMeta.addTransHop(new TransHopMeta(nochang, isNew));
 			frm_nochange.getStepIOMeta().getTargetStreams().get(1).setStepMeta(isNew);
@@ -319,8 +320,8 @@ public class KettleMgrInstance {
 			insert.setLocation(1250, 300);
 			insert.setDraw(true);
 			insert.setDescription("STEP-INSERT");
-			insert.setClusterSchema(clusterSchema);
-			insert.setClusterSchemaName(clusterSchema.getName());
+			// insert.setClusterSchema(clusterSchema);
+			// insert.setClusterSchemaName(clusterSchema.getName());
 			transMeta.addStep(insert);
 			transMeta.addTransHop(new TransHopMeta(isNew, insert));
 			frm_new.getStepIOMeta().getTargetStreams().get(0).setStepMeta(insert);
@@ -334,8 +335,8 @@ public class KettleMgrInstance {
 			isChange.setLocation(1550, 100);
 			isChange.setDraw(true);
 			isChange.setDescription("STEP-ISCHANGE");
-			isChange.setClusterSchema(clusterSchema);
-			isChange.setClusterSchemaName(clusterSchema.getName());
+			// isChange.setClusterSchema(clusterSchema);
+			// isChange.setClusterSchemaName(clusterSchema.getName());
 			transMeta.addStep(isChange);
 			transMeta.addTransHop(new TransHopMeta(isNew, isChange));
 			frm_new.getStepIOMeta().getTargetStreams().get(1).setStepMeta(isChange);
@@ -359,8 +360,8 @@ public class KettleMgrInstance {
 			update.setLocation(1850, 300);
 			update.setDraw(true);
 			update.setDescription("STEP-UPDATE");
-			update.setClusterSchema(clusterSchema);
-			update.setClusterSchemaName(clusterSchema.getName());
+			// update.setClusterSchema(clusterSchema);
+			// update.setClusterSchemaName(clusterSchema.getName());
 			transMeta.addStep(update);
 			transMeta.addTransHop(new TransHopMeta(isChange, update));
 			frm_isChange.getStepIOMeta().getTargetStreams().get(0).setStepMeta(update);
@@ -379,13 +380,13 @@ public class KettleMgrInstance {
 			delete.setLocation(1550, 300);
 			delete.setDraw(true);
 			delete.setDescription("STEP-DELETE");
-			delete.setClusterSchema(clusterSchema);
-			delete.setClusterSchemaName(clusterSchema.getName());
+			// delete.setClusterSchema(clusterSchema);
+			// delete.setClusterSchemaName(clusterSchema.getName());
 			transMeta.addStep(delete);
 			transMeta.addTransHop(new TransHopMeta(isChange, delete));
-			transMeta.setClusterSchemas(Arrays.asList(clusterSchema));
+			// transMeta.setClusterSchemas(Arrays.asList(clusterSchema));
 			frm_isChange.getStepIOMeta().getTargetStreams().get(1).setStepMeta(delete);
-			KettleTransResult result = clusterSendTrans(transMeta, clusterSchema.getName());
+			KettleTransResult result = remoteSendTrans(transMeta);
 			return result;
 		} catch (Exception e) {
 			e.printStackTrace();

@@ -3,6 +3,8 @@ package com.kettle.main;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.kettle.KettleDBTranDescribe;
 import com.kettle.KettleMgrInstance;
@@ -23,10 +25,9 @@ public class RemoteMain {
 	 */
 	public static void main(String[] args) throws Exception {
 
-		// List<String> flags = Arrays.asList("A", "B", "C", "D", "E", "F", "G",
-		// "H", "I", "J", "K", "L", "M", "N",
-		// "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
-		List<String> flags = Arrays.asList("A", "B", "C", "D", "E", "F", "G");
+		List<String> flags = Arrays.asList("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
+				"P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
+		// List<String> flags = Arrays.asList("A");
 		/*
 		 * Source的TableName无效
 		 */
@@ -59,7 +60,7 @@ public class RemoteMain {
 			// 目标配置
 			target = new KettleDBTranDescribe();
 			target.setType("MySQL");
-			target.setHost("192.168.80.138");
+			target.setHost("192.168.80.139");
 			target.setPort("3306");
 			target.setDatabase("person");
 			target.setUser("root");
@@ -76,8 +77,21 @@ public class RemoteMain {
 			targets.add(target);
 		}
 		List<KettleTransResult> results = new ArrayList<KettleTransResult>(flags.size());
+		ExecutorService threadPool = Executors.newFixedThreadPool(flags.size());
 		for (int i = 0; i < flags.size(); i++) {
-			results.add(KettleMgrInstance.getInstance().createDataTransfer(sources.get(i), targets.get(i)));
+			threadPool.execute(new CreateDataTransfer(sources.get(i), targets.get(i)));
+		}
+		threadPool.shutdown();
+		while (threadPool.isTerminated()) {
+			do {
+				Thread.sleep(20000);
+				System.out.println("------------------------------");
+				for (KettleTransResult result : results) {
+					result = KettleMgrInstance.getInstance().queryDataTransfer(result.getTransID());
+					System.out.println("=DataTransfer[" + result.getTransID() + "]=>\n" + result.getStatus());
+				}
+				System.out.println("------------------------------");
+			} while (true);
 		}
 		/*
 		 * Kettle的repository是实时的验证
@@ -90,15 +104,6 @@ public class RemoteMain {
 		/*
 		 * 以下为定时轮询,未完成,提供的查询接口是remoteTransStatus
 		 */
-//		do {
-//			Thread.sleep(2000);
-//			System.out.println("------------------------------");
-//			for (KettleTransResult result : results) {
-//				result = KettleMgrInstance.getInstance().queryDataTransfer(result.getTransID());
-//				System.out.println("=DataTransfer[" + result.getTransID() + "]=>\n" + result.getStatus());
-//			}
-//			System.out.println("------------------------------");
-//		} while (true);
-	}
 
+	}
 }

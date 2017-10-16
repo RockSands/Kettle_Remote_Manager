@@ -1,3 +1,4 @@
+
 package com.kettle;
 
 import java.util.Calendar;
@@ -107,7 +108,7 @@ public class KettleDBRepositoryClient {
 	 * @param transMeta
 	 * @throws KettleException
 	 */
-	public void saveTransMeta(TransMeta transMeta) throws KettleException {
+	public synchronized void saveTransMeta(TransMeta transMeta) throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}
@@ -191,7 +192,7 @@ public class KettleDBRepositoryClient {
 	 * 
 	 * @throws KettleException
 	 */
-	public void insertTransRecord(KettleTransBean kettleTransBean) throws KettleException {
+	public synchronized void insertTransRecord(KettleTransBean kettleTransBean) throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}
@@ -215,7 +216,7 @@ public class KettleDBRepositoryClient {
 	 * 
 	 * @throws KettleException
 	 */
-	public void updateTransRecord(KettleTransBean kettleTransBean) throws KettleException {
+	public synchronized void updateTransRecord(KettleTransBean kettleTransBean) throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}
@@ -232,7 +233,7 @@ public class KettleDBRepositoryClient {
 	 * 
 	 * @throws KettleException
 	 */
-	public void updateTransRecords(List<KettleTransBean> kettleTransBeans) throws KettleException {
+	public synchronized void updateTransRecords(List<KettleTransBean> kettleTransBeans) throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}
@@ -294,7 +295,7 @@ public class KettleDBRepositoryClient {
 	 * 
 	 * @throws KettleException
 	 */
-	public void insertClusterRecord(KettleTransBean kettleTransBean) throws KettleException {
+	public synchronized void insertClusterRecord(KettleTransBean kettleTransBean) throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}
@@ -344,7 +345,7 @@ public class KettleDBRepositoryClient {
 	 * 
 	 * @throws KettleException
 	 */
-	public void updateClusterTransSplit(KettleTransSplitBean kettlesplitBean) throws KettleException {
+	public synchronized void updateClusterTransSplit(KettleTransSplitBean kettlesplitBean) throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}
@@ -361,7 +362,7 @@ public class KettleDBRepositoryClient {
 	 * 
 	 * @throws KettleException
 	 */
-	public void updateClusterTransSplits(List<KettleTransSplitBean> kettlesplitBeans) throws KettleException {
+	public synchronized void updateClusterTransSplits(List<KettleTransSplitBean> kettlesplitBeans) throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}
@@ -374,5 +375,9 @@ public class KettleDBRepositoryClient {
 					KettleVariables.R_TRANS_RECORD_SPLIT_ID, table, new LongObjectId(kettlesplitBean.getSplitId()));
 		}
 		repository.commit();
+	}
+
+	public KettleDatabaseRepository getRepository() {
+		return repository;
 	}
 }

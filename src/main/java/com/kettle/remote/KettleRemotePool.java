@@ -10,9 +10,9 @@ import java.util.concurrent.TimeUnit;
 import org.pentaho.di.cluster.SlaveServer;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.logging.LogLevel;
-import org.pentaho.di.repository.kdr.KettleDatabaseRepository;
 import org.pentaho.di.trans.TransMeta;
 
+import com.kettle.KettleDBRepositoryClient;
 import com.kettle.KettleTransBean;
 
 /**
@@ -37,16 +37,16 @@ public class KettleRemotePool {
 	private ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(20);
 
 	/**
-	 * @param repository
+	 * @param dbRepositoryClient
 	 * @param includeServers
 	 * @param excludeServers
 	 * @throws KettleException
 	 */
-	public KettleRemotePool(final KettleDatabaseRepository repository, List<String> includeHostNames,
+	public KettleRemotePool(final KettleDBRepositoryClient dbRepositoryClient, List<String> includeHostNames,
 			List<String> excludeHostNames) throws KettleException {
 		remoteclients = new HashMap<String, KettleRemoteClient>();
 		KettleRemoteClient remoteClient = null;
-		for (SlaveServer server : repository.getSlaveServers()) {
+		for (SlaveServer server : dbRepositoryClient.getRepository().getSlaveServers()) {
 			if (excludeHostNames != null && excludeHostNames.contains(server.getHostname())) {
 				continue;
 			}
@@ -54,13 +54,13 @@ public class KettleRemotePool {
 				continue;
 			}
 			server.getLogChannel().setLogLevel(LogLevel.ERROR);
-			remoteClient = new KettleRemoteClient(repository, server);
+			remoteClient = new KettleRemoteClient(dbRepositoryClient, server);
 			if (remoteclients.containsKey(remoteClient.getHostName())) {
 				throw new KettleException("远程池启动失败,存在Hostname重复的主机!");
 			}
 			remoteclients.put(remoteClient.getHostName(), remoteClient);
 			// i作为延迟避免集中操作
-			threadPool.scheduleAtFixedRate(remoteClient.deamon(), 10 + 5 * (remoteclients.size()), 30,
+			threadPool.scheduleAtFixedRate(remoteClient.deamon(), 1, 1,
 					TimeUnit.SECONDS);
 		}
 		hostnameArr = remoteclients.keySet().toArray(new String[0]);
