@@ -3,8 +3,8 @@ package com.kettle.main;
 import org.pentaho.di.core.exception.KettleException;
 
 import com.kettle.KettleDBTranDescribe;
-import com.kettle.KettleMgrInstance;
-import com.kettle.KettleTransResult;
+import com.kettle.bean.KettleTransResult;
+import com.kettle.core.instance.KettleMgrInstance;
 
 public class CreateDataTransfer implements Runnable {
 	KettleDBTranDescribe source = null;

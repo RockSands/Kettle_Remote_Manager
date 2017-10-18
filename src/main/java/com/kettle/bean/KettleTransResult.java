@@ -1,4 +1,4 @@
-package com.kettle;
+package com.kettle.bean;
 
 public class KettleTransResult {
 	/**
@@ -9,6 +9,11 @@ public class KettleTransResult {
 	 * 状态
 	 */
 	private String status;
+
+	/**
+	 * 异常信息
+	 */
+	private String errMsg;
 
 	public long getTransID() {
 		return transID;
@@ -24,5 +29,13 @@ public class KettleTransResult {
 
 	public void setStatus(String status) {
 		this.status = status;
+	}
+
+	public String getErrMsg() {
+		return errMsg;
+	}
+
+	public void setErrMsg(String errMsg) {
+		this.errMsg = errMsg;
 	}
 }

@@ -7,8 +7,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.kettle.KettleDBTranDescribe;
-import com.kettle.KettleMgrInstance;
-import com.kettle.KettleTransResult;
+import com.kettle.bean.KettleTransResult;
+import com.kettle.core.instance.KettleMgrInstance;
 
 public class RemoteMain {
 	/**

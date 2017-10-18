@@ -1,7 +1,6 @@
-package com.kettle;
+package com.kettle.bean;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.sql.Timestamp;
 
 /**
  * 数据库实体对象
@@ -9,7 +8,7 @@ import java.util.List;
  * @author Administrator
  *
  */
-public class KettleTransBean {
+public class KettleTransRecord {
 	/**
 	 * 对应Tran的Id,全局唯一
 	 */
@@ -36,12 +35,12 @@ public class KettleTransBean {
 	/**
 	 * 集群名称
 	 */
-	private String clusterName;
+	private Timestamp createTime;
 
 	/**
-	 * 集群的记录
+	 * 异常信息
 	 */
-	private List<KettleTransSplitBean> clusterSplits;
+	private String errMsg;
 
 	public String getTransName() {
 		return transName;
@@ -83,18 +82,19 @@ public class KettleTransBean {
 		this.transId = transId;
 	}
 
-	public String getClusterName() {
-		return clusterName;
+	public Timestamp getCreateTime() {
+		return createTime;
 	}
 
-	public void setClusterName(String clusterName) {
-		this.clusterName = clusterName;
+	public void setCreateTime(Timestamp createTime) {
+		this.createTime = createTime;
 	}
 
-	public List<KettleTransSplitBean> getClusterSplits() {
-		if (clusterSplits == null) {
-			clusterSplits = new ArrayList<KettleTransSplitBean>();
-		}
-		return clusterSplits;
+	public String getErrMsg() {
+		return errMsg;
+	}
+
+	public void setErrMsg(String errMsg) {
+		this.errMsg = errMsg;
 	}
 }

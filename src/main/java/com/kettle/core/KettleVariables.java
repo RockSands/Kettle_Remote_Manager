@@ -1,4 +1,4 @@
-package com.kettle;
+package com.kettle.core;
 
 public class KettleVariables {
 	/**
@@ -65,4 +65,14 @@ public class KettleVariables {
 	 * 记录的运行状态:其他
 	 */
 	public static final String RECORD_STATUS_OTRHER = "OTRHER";
+
+	/**
+	 * 远端的运行状态:异常
+	 */
+	public static final String REMOTE_STATUS_ERROR = "ERROR";
+
+	/**
+	 * 远端的运行状态:正常
+	 */
+	public static final String REMOTE_STATUS_RUNNING = "RUNNING";
 }

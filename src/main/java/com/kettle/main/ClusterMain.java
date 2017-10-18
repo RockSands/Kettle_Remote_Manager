@@ -5,8 +5,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.kettle.KettleDBTranDescribe;
-import com.kettle.KettleMgrInstance;
-import com.kettle.KettleTransResult;
+import com.kettle.bean.KettleTransResult;
+import com.kettle.core.instance.KettleMgrInstance;
 
 public class ClusterMain {
 	/**

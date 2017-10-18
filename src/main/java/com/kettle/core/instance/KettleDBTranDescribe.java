@@ -1,4 +1,4 @@
-package com.kettle;
+package com.kettle.core.instance;
 
 import java.util.List;
 

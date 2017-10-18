@@ -10,10 +10,10 @@ import java.util.concurrent.TimeUnit;
 import org.pentaho.di.cluster.SlaveServer;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.logging.LogLevel;
-import org.pentaho.di.trans.TransMeta;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.kettle.KettleDBRepositoryClient;
-import com.kettle.KettleTransBean;
+import com.kettle.core.repo.KettleDBRepositoryClient;
 
 /**
  * 保存远程运行池
@@ -22,14 +22,10 @@ import com.kettle.KettleTransBean;
  *
  */
 public class KettleRemotePool {
+
+	Logger logger = LoggerFactory.getLogger(KettleRemoteClient.class);
+
 	private final Map<String, KettleRemoteClient> remoteclients;
-
-	private final String[] hostnameArr;
-
-	/**
-	 * 保证第一次为第一个
-	 */
-	private int index = 0;
 
 	/**
 	 * 线程池
@@ -59,45 +55,60 @@ public class KettleRemotePool {
 				throw new KettleException("远程池启动失败,存在Hostname重复的主机!");
 			}
 			remoteclients.put(remoteClient.getHostName(), remoteClient);
-			// i作为延迟避免集中操作
-			threadPool.scheduleAtFixedRate(remoteClient.deamon(), 1, 1,
-					TimeUnit.SECONDS);
 		}
-		hostnameArr = remoteclients.keySet().toArray(new String[0]);
 		if (remoteclients.isEmpty()) {
 			throw new RuntimeException("KettleRemotePool初始化失败,未找到可用的远端服务!");
 		}
 	}
 
-	public synchronized String getOneClient() {
-		if (index >= hostnameArr.length) {
-			index = 0;
+	/**
+	 * 添加Kettle远端
+	 * 
+	 * @param remoteClient
+	 */
+	private void addRemoteClient(KettleRemoteClient remoteClient) {
+		synchronized (remoteclients) {
+			if (remoteClient.checkStatus() && remoteclients.containsKey(remoteClient.getHostName())) {
+				logger.info("Kettle的远程池添加Client[" + remoteClient.getHostName() + "]");
+				remoteclients.put(remoteClient.getHostName(), remoteClient);
+			}
 		}
-		return hostnameArr[index++];
 	}
 
 	/**
-	 * 远程发送并执行
+	 * 处理Kettle远端
 	 * 
-	 * @param transMeta
-	 * @return
-	 * @throws Exception
-	 * @throws KettleException
+	 * @param remoteClient
 	 */
-	public KettleTransBean remoteSendTrans(TransMeta transMeta) throws KettleException, Exception {
-		return remoteSendTrans(transMeta, getOneClient());
+	private void dealErrRemoteClient(KettleRemoteClient remoteClient) {
+		if (!remoteClient.checkStatus() && remoteclients.containsKey(remoteClient.getHostName())) {
+			synchronized (remoteclients) {
+				threadPool.scheduleAtFixedRate(new RemoteClientRecoveryStatusDaemon(remoteClient), 1, 10,
+						TimeUnit.MINUTES);
+				logger.info("Kettle的远程池暂停使用异常Client[" + remoteClient.getHostName() + "]");
+			}
+		}
 	}
 
 	/**
-	 * 指定主机名执行
+	 * Kettle远端重启动
 	 * 
-	 * @param transMeta
-	 * @param hostName
-	 * @return
-	 * @throws KettleException
-	 * @throws Exception
+	 * @author Administrator
+	 *
 	 */
-	public KettleTransBean remoteSendTrans(TransMeta transMeta, String hostName) throws KettleException, Exception {
-		return remoteclients.get(hostName).remoteSendTrans(transMeta);
+	private class RemoteClientRecoveryStatusDaemon implements Runnable {
+
+		KettleRemoteClient remoteClient = null;
+
+		RemoteClientRecoveryStatusDaemon(KettleRemoteClient remoteClient) {
+			this.remoteClient = remoteClient;
+		}
+
+		@Override
+		public void run() {
+			remoteClient.recoveryStatus();
+			addRemoteClient(remoteClient);
+		}
 	}
+
 }
