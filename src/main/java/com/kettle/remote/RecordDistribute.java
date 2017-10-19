@@ -74,23 +74,4 @@ public class RecordDistribute {
 			}
 		}
 	}
-
-	class RemoteRecordDaemon implements Runnable {
-
-		private KettleRemoteClient remote;
-
-		private int maxRecord = 4;
-
-		private List<String> recordnames = new LinkedList<String>();
-
-		public RemoteRecordDaemon(KettleRemoteClient remote) {
-			this.remote = remote;
-		}
-
-		@Override
-		public void run() {
-
-		}
-	}
-
 }

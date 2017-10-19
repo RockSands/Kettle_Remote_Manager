@@ -9,6 +9,7 @@ import org.pentaho.di.job.JobMeta;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransExecutionConfiguration;
 import org.pentaho.di.trans.TransMeta;
+import org.pentaho.di.www.SlaveServerJobStatus;
 import org.pentaho.di.www.SlaveServerStatus;
 import org.pentaho.di.www.SlaveServerTransStatus;
 import org.pentaho.di.www.WebResult;
@@ -206,15 +207,37 @@ public class KettleRemoteClient {
 	 * @throws KettleException
 	 * @throws Exception
 	 */
-	public String remoteTransStatus(String transName) throws KettleException, Exception {
-		SlaveServerTransStatus slaveServerStatus = remoteServer.getTransStatus(transName, "", 0);
-		System.out.println("Server[" + remoteServer.getHostname() + "]转换[" + transName + "]状态为:"
-				+ slaveServerStatus.getStatusDescription());
-		if (slaveServerStatus == null || slaveServerStatus.getStatusDescription() == null) {
+	public String remoteTransStatus(String transName) throws Exception {
+		SlaveServerTransStatus transStatus = remoteServer.getTransStatus(transName, "", 0);
+		logger.debug("Kettle Remote[" + remoteServer.getHostname() + "]转换[" + transName + "]状态为:"
+				+ transStatus.getStatusDescription());
+		if (transStatus == null || transStatus.getStatusDescription() == null) {
 			return KettleVariables.RECORD_STATUS_ERROR;
-		} else if (slaveServerStatus.getStatusDescription().toUpperCase().contains("ERROR")) {
+		} else if (transStatus.getStatusDescription().toUpperCase().contains("ERROR")) {
 			return KettleVariables.RECORD_STATUS_ERROR;
-		} else if ("Finished".equalsIgnoreCase(slaveServerStatus.getStatusDescription())) {
+		} else if ("Finished".equalsIgnoreCase(transStatus.getStatusDescription())) {
+			return KettleVariables.RECORD_STATUS_FINISHED;
+		} else {
+			return KettleVariables.RECORD_STATUS_RUNNING;
+		}
+	}
+
+	/**
+	 * 获取远端的状态
+	 * 
+	 * @param jobname
+	 * @return
+	 * @throws Exception
+	 */
+	public String remoteJobStatus(String jobname) throws Exception {
+		SlaveServerJobStatus jobStatus = remoteServer.getJobStatus(jobname, "", 0);
+		logger.debug("Kettle Remote[" + remoteServer.getHostname() + "]转换[" + jobname + "]状态为:"
+				+ jobStatus.getStatusDescription());
+		if (jobStatus == null || jobStatus.getStatusDescription() == null) {
+			return KettleVariables.RECORD_STATUS_ERROR;
+		} else if (jobStatus.getStatusDescription().toUpperCase().contains("ERROR")) {
+			return KettleVariables.RECORD_STATUS_ERROR;
+		} else if ("Finished".equalsIgnoreCase(jobStatus.getStatusDescription())) {
 			return KettleVariables.RECORD_STATUS_FINISHED;
 		} else {
 			return KettleVariables.RECORD_STATUS_RUNNING;
@@ -244,4 +267,5 @@ public class KettleRemoteClient {
 	public String getHostName() {
 		return this.remoteServer.getHostname();
 	}
+
 }
