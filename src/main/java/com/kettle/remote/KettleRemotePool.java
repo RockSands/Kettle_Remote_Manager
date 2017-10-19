@@ -1,8 +1,9 @@
 package com.kettle.remote;
 
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -10,9 +11,17 @@ import java.util.concurrent.TimeUnit;
 import org.pentaho.di.cluster.SlaveServer;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.logging.LogLevel;
+import org.pentaho.di.job.JobMeta;
+import org.pentaho.di.job.entries.special.JobEntrySpecial;
+import org.pentaho.di.job.entry.JobEntryCopy;
+import org.pentaho.di.repository.kdr.KettleDatabaseRepository;
+import org.pentaho.di.trans.TransMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.kettle.bean.KettleJobRecord;
+import com.kettle.bean.KettleTransRecord;
+import com.kettle.core.KettleVariables;
 import com.kettle.core.repo.KettleDBRepositoryClient;
 
 /**
@@ -25,12 +34,16 @@ public class KettleRemotePool {
 
 	Logger logger = LoggerFactory.getLogger(KettleRemoteClient.class);
 
-	private final Map<String, KettleRemoteClient> remoteclients;
+	private final ConcurrentMap<String, KettleRemoteClient> remoteclients;
+
+	private final KettleDBRepositoryClient dbRepositoryClient;
+
+	private final RecordDistribute recordDistribute;
 
 	/**
 	 * 线程池
 	 */
-	private ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(20);
+	private final ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(32);
 
 	/**
 	 * @param dbRepositoryClient
@@ -40,8 +53,9 @@ public class KettleRemotePool {
 	 */
 	public KettleRemotePool(final KettleDBRepositoryClient dbRepositoryClient, List<String> includeHostNames,
 			List<String> excludeHostNames) throws KettleException {
-		remoteclients = new HashMap<String, KettleRemoteClient>();
-		KettleRemoteClient remoteClient = null;
+		this.remoteclients = new ConcurrentHashMap<String, KettleRemoteClient>();
+		this.dbRepositoryClient = dbRepositoryClient;
+		this.recordDistribute = new RecordDistribute(this);
 		for (SlaveServer server : dbRepositoryClient.getRepository().getSlaveServers()) {
 			if (excludeHostNames != null && excludeHostNames.contains(server.getHostname())) {
 				continue;
@@ -50,15 +64,88 @@ public class KettleRemotePool {
 				continue;
 			}
 			server.getLogChannel().setLogLevel(LogLevel.ERROR);
-			remoteClient = new KettleRemoteClient(dbRepositoryClient, server);
-			if (remoteclients.containsKey(remoteClient.getHostName())) {
-				throw new KettleException("远程池启动失败,存在Hostname重复的主机!");
-			}
-			remoteclients.put(remoteClient.getHostName(), remoteClient);
+			addRemoteClient(new KettleRemoteClient(this, server));
 		}
-		if (remoteclients.isEmpty()) {
-			throw new RuntimeException("KettleRemotePool初始化失败,未找到可用的远端服务!");
+	}
+
+	/**
+	 * 验证池子是否可用
+	 * 
+	 * @return
+	 */
+	public boolean getRemotePoolStatus() {
+		return remoteclients.size() > 0;
+	}
+
+	/**
+	 * 验证池子是否可用
+	 * 
+	 * @return
+	 * @throws KettleException
+	 */
+	public void checkRemotePool() throws KettleException {
+		if (!getRemotePoolStatus()) {
+			throw new KettleException("Kettle远程池无法使用,原因:没有可用的远端节点!");
 		}
+	}
+
+	/**
+	 * 接受转换
+	 * 
+	 * @param transMeta
+	 * @return
+	 * @throws KettleException
+	 */
+	public KettleTransRecord applyTransMeta(TransMeta transMeta) throws KettleException {
+		checkRemotePool();
+		KettleTransRecord record = new KettleTransRecord();
+		record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
+		record.setName(transMeta.getName());
+		try {
+			dbRepositoryClient.saveTransMeta(transMeta);
+			record.setId(Long.valueOf(transMeta.getObjectId().getId()));
+			dbRepositoryClient.insertTransRecord(record);
+			recordDistribute.addTransRecords(transMeta, record);
+		} catch (KettleException e) {
+			logger.error("Trans[" + transMeta.getName() + "]持久化发生异常!", e);
+			throw new KettleException("Trans[" + transMeta.getName() + "]持久化发生异常!");
+		}
+		return record;
+	}
+
+	/**
+	 * 接受作业
+	 * 
+	 * @param transMeta
+	 * @return
+	 * @throws KettleException
+	 */
+	public KettleJobRecord applyJobMeta(JobMeta jobMeta) throws KettleException {
+		checkRemotePool();
+		KettleJobRecord record = new KettleJobRecord();
+		JobEntryCopy jec = jobMeta.getStart();
+		if (jec == null) {
+			throw new KettleException("JobMeta[" + jobMeta.getName() + "]没有定义Start,无法处理!");
+		}
+		JobEntrySpecial jobStart = (JobEntrySpecial) jec.getEntry();
+		if (!jobStart.isRepeat() && jobStart.getSchedulerType() != JobEntrySpecial.NOSCHEDULING) {
+			throw new KettleException("Kettle远程池仅接受重复或即时任务!");
+		}
+		record.setType(
+				jobStart.isRepeat() ? KettleVariables.JOB_RECORD_TYPE_REPEAT : KettleVariables.JOB_RECORD_TYPE_ONCE);
+		jobStart.isRepeat();
+		record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
+		record.setName(jobMeta.getName());
+		try {
+			dbRepositoryClient.saveJobMeta(jobMeta);
+			record.setId(Long.valueOf(jobMeta.getObjectId().getId()));
+			dbRepositoryClient.insertJobRecord(record);
+			recordDistribute.addJobRecords(jobMeta, record);
+		} catch (KettleException e) {
+			logger.error("Trans[" + jobMeta.getName() + "]持久化发生异常!", e);
+			throw new KettleException("Trans[" + jobMeta.getName() + "]持久化发生异常!");
+		}
+		return record;
 	}
 
 	/**
@@ -67,27 +154,59 @@ public class KettleRemotePool {
 	 * @param remoteClient
 	 */
 	private void addRemoteClient(KettleRemoteClient remoteClient) {
-		synchronized (remoteclients) {
-			if (remoteClient.checkStatus() && remoteclients.containsKey(remoteClient.getHostName())) {
-				logger.info("Kettle的远程池添加Client[" + remoteClient.getHostName() + "]");
+		if (!remoteClient.checkRemoteStatus()) {
+			logger.error("Kettle的远程池添加Client[" + remoteClient.getHostName() + "]失败,状态不可用!");
+			dealErrRemoteClient(remoteClient.getHostName());
+		} else {
+			if (remoteclients.containsKey(remoteClient.getHostName())) {
+				logger.error("Kettle的远程池添加Client[" + remoteClient.getHostName() + "]失败,该主机已存在!");
+			} else {
 				remoteclients.put(remoteClient.getHostName(), remoteClient);
+				logger.info("Kettle的远程池添加Client[" + remoteClient.getHostName() + "]成功!");
 			}
 		}
 	}
 
 	/**
-	 * 处理Kettle远端
+	 * 处理Kettle异常远端
 	 * 
 	 * @param remoteClient
 	 */
-	private void dealErrRemoteClient(KettleRemoteClient remoteClient) {
-		if (!remoteClient.checkStatus() && remoteclients.containsKey(remoteClient.getHostName())) {
-			synchronized (remoteclients) {
-				threadPool.scheduleAtFixedRate(new RemoteClientRecoveryStatusDaemon(remoteClient), 1, 10,
-						TimeUnit.MINUTES);
-				logger.info("Kettle的远程池暂停使用异常Client[" + remoteClient.getHostName() + "]");
-			}
+	protected void dealErrRemoteClient(String hostName) {
+		KettleRemoteClient remoteClient = remoteclients.get(hostName);
+		if (remoteClient != null && !remoteClient.checkRemoteStatus()) {
+			remoteclients.remove(hostName);
+			logger.info("Kettle的远程池暂停使用异常Client[" + remoteClient.getHostName() + "],开始定时查看!");
+			threadPool.schedule(new RemoteClientRecoveryStatusDaemon(remoteClient), 20, TimeUnit.SECONDS);
 		}
+	}
+
+	/**
+	 * 在守护进程中
+	 * 
+	 * @param remoteClientRecoveryStatusDaemon
+	 */
+	private void recoveryRemoteClient(RemoteClientRecoveryStatusDaemon remoteClientRecoveryStatusDaemon) {
+		if (remoteClientRecoveryStatusDaemon.remoteClient.checkRemoteStatus()) {
+			logger.info(
+					"Kettle的远程池添加Client[" + remoteClientRecoveryStatusDaemon.remoteClient.getHostName() + "]状态为可用!");
+			addRemoteClient(remoteClientRecoveryStatusDaemon.remoteClient);
+		} else {
+			threadPool.schedule(remoteClientRecoveryStatusDaemon, 10, TimeUnit.MINUTES);
+		}
+	}
+
+	public KettleDatabaseRepository getDbRepository() {
+		return dbRepositoryClient.getRepository();
+	}
+
+	/**
+	 * 获取所有Client
+	 * 
+	 * @return
+	 */
+	public Collection<KettleRemoteClient> getAllRemoteclients() {
+		return remoteclients.values();
 	}
 
 	/**
@@ -96,9 +215,11 @@ public class KettleRemotePool {
 	 * @author Administrator
 	 *
 	 */
-	private class RemoteClientRecoveryStatusDaemon implements Runnable {
+	protected class RemoteClientRecoveryStatusDaemon implements Runnable {
 
 		KettleRemoteClient remoteClient = null;
+
+		int dealCount = 0;
 
 		RemoteClientRecoveryStatusDaemon(KettleRemoteClient remoteClient) {
 			this.remoteClient = remoteClient;
@@ -107,7 +228,12 @@ public class KettleRemotePool {
 		@Override
 		public void run() {
 			remoteClient.recoveryStatus();
-			addRemoteClient(remoteClient);
+			recoveryRemoteClient(this);
+			dealCount++;
+		}
+
+		public int getDealCount() {
+			return dealCount;
 		}
 	}
 

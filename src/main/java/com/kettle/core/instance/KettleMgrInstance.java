@@ -27,7 +27,7 @@ import org.pentaho.di.trans.steps.tableinput.TableInputMeta;
 import org.pentaho.di.trans.steps.tableoutput.TableOutputMeta;
 import org.pentaho.di.trans.steps.update.UpdateMeta;
 
-import com.kettle.bean.KettleTransRecord;
+import com.kettle.bean.KettleRecord;
 import com.kettle.bean.KettleTransResult;
 import com.kettle.core.repo.KettleDBRepositoryClient;
 import com.kettle.remote.KettleRemotePool;
@@ -112,7 +112,7 @@ public class KettleMgrInstance {
 	 * @throws KettleException
 	 */
 	public KettleTransResult remoteSendTrans(TransMeta transMeta) throws KettleException, Exception {
-		KettleTransRecord kettleTransBean;
+		KettleRecord kettleTransBean;
 		kettleTransBean = kettleRemotePool.remoteSendTrans(transMeta);
 		KettleTransResult kettleTransResult = new KettleTransResult();
 		kettleTransResult.setTransID(kettleTransBean.getTransId());
@@ -357,7 +357,7 @@ public class KettleMgrInstance {
 	 */
 	public KettleTransResult queryDataTransfer(long transID) throws KettleException {
 		dbRepositoryClient.connect();
-		KettleTransRecord bean = null;
+		KettleRecord bean = null;
 		repository.connect("admin", "admin");
 		bean = dbRepositoryClient.queryTransRecord(transID);
 		if (bean == null) {

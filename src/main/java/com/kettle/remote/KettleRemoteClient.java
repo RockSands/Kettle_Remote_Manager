@@ -16,12 +16,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kettle.core.KettleVariables;
-import com.kettle.core.repo.KettleDBRepositoryClient;
 
 public class KettleRemoteClient {
 
 	Logger logger = LoggerFactory.getLogger(KettleRemoteClient.class);
 
+	/**
+	 * 远程池
+	 */
+	private final KettleRemotePool kettleRemotePool;
+
+	/**
+	 * 远端状态
+	 */
 	private String remoteStatus = null;
 
 	/**
@@ -29,16 +36,11 @@ public class KettleRemoteClient {
 	 */
 	private final SlaveServer remoteServer;
 
-	/**
-	 * 资源池数据库连接
-	 */
-	private final KettleDBRepositoryClient dbRepositoryClient;
-
-	public KettleRemoteClient(final KettleDBRepositoryClient dbRepositoryClient, final SlaveServer remoteServer)
+	public KettleRemoteClient(KettleRemotePool kettleRemotePool, final SlaveServer remoteServer)
 			throws KettleException {
-		this.dbRepositoryClient = dbRepositoryClient;
+		this.kettleRemotePool = kettleRemotePool;
 		this.remoteServer = remoteServer;
-		checkStatus();
+		checkRemoteStatus();
 	}
 
 	/**
@@ -61,7 +63,7 @@ public class KettleRemoteClient {
 	 * 
 	 * @return true 正常;false 非正常
 	 */
-	public boolean checkStatus() {
+	public boolean checkRemoteStatus() {
 		synchronized (remoteStatus) {
 			if (KettleVariables.REMOTE_STATUS_ERROR.equals(remoteStatus)) {
 				return false;
@@ -105,7 +107,7 @@ public class KettleRemoteClient {
 		transExecutionConfiguration.setExecutingRemotely(true);
 		transExecutionConfiguration.setExecutingLocally(false);
 		String runID = Trans.sendToSlaveServer(transMeta, transExecutionConfiguration,
-				dbRepositoryClient.getRepository(), dbRepositoryClient.getRepository().getMetaStore());
+				kettleRemotePool.getDbRepository(), kettleRemotePool.getDbRepository().getMetaStore());
 		return runID;
 	}
 
@@ -123,8 +125,8 @@ public class KettleRemoteClient {
 		jobExecutionConfiguration.setPassingExport(false);
 		jobExecutionConfiguration.setExecutingRemotely(true);
 		jobExecutionConfiguration.setExecutingLocally(false);
-		String runid = Job.sendToSlaveServer(jobMeta, jobExecutionConfiguration, dbRepositoryClient.getRepository(),
-				dbRepositoryClient.getRepository().getMetaStore());
+		String runid = Job.sendToSlaveServer(jobMeta, jobExecutionConfiguration, kettleRemotePool.getDbRepository(),
+				kettleRemotePool.getDbRepository().getMetaStore());
 		return runid;
 	}
 

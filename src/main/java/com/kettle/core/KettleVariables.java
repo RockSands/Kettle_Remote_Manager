@@ -2,54 +2,64 @@ package com.kettle.core;
 
 public class KettleVariables {
 	/**
-	 * 记录的表名
+	 * 转换记录的表名
 	 */
 	public static final String R_TRANS_RECORD = "R_TRANS_RECORD";
 
 	/**
-	 * 集群记录的表名
+	 * 工作记录的表名
 	 */
-	public static final String R_TRANS_RECORD_SPLIT = "R_TRANS_RECORD_SPLIT";
+	public static final String R_JOB_RECORD = "R_JOB_RECORD";
 
 	/**
-	 * 记录的转换元数据ID:唯一
+	 * 转换记录的元数据ID:唯一
 	 */
-	public static final String R_RECORD_ID_TRANS = "ID_TRANSFORMATION";
+	public static final String R_TRANS_RECORD_ID_TRANS = "ID_TRANSFORMATION";
 
 	/**
-	 * 记录的转换元数据名称
+	 * 工作记录的元数据ID:唯一
 	 */
-	public static final String R_RECORD_NAME_TRANS = "NAME_TRANSFORMATION";
+	public static final String R_JOB_RECORD_ID_JOB = "ID_JOB";
 
 	/**
-	 * 记录的运行ID:唯一
+	 * 转换记录的元数据名称
+	 */
+	public static final String R_TRANS_RECORD_NAME_TRANS = "NAME_TRANSFORMATION";
+
+	/**
+	 * 工作记录的元数据名称
+	 */
+	public static final String R_JOB_RECORD_NAME_JOB = "NAME_JOB";
+
+	/**
+	 * 工作或转换记录的运行ID:唯一
 	 */
 	public static final String R_RECORD_ID_RUN = "ID_RUN";
 
 	/**
-	 * 记录的主机名
+	 * 工作或转换记录的主机名
 	 */
 	public static final String R_RECORD_HOSTNAME = "HOSTNAME";
 
 	/**
-	 * 记录的集群名称
-	 */
-	public static final String R_RECORD_CLUSTERNAME = "CLUSTERNAME";
-
-	/**
-	 * 表的主机名
+	 * 工作或转换记录的状态
 	 */
 	public static final String R_RECORD_STATUS = "STATUS";
 
 	/**
-	 * ID
+	 * 工作记录的类型
 	 */
-	public static final String R_TRANS_RECORD_SPLIT_ID = "ID_SPLIT";
+	public static final String R_JOB_RECORD_TYPE = "TYPE";
 
 	/**
 	 * 记录的运行状态:运行中
 	 */
 	public static final String RECORD_STATUS_RUNNING = "RUNNING";
+
+	/**
+	 * 记录的运行状态:受理
+	 */
+	public static final String RECORD_STATUS_APPLY = "APPLY";
 
 	/**
 	 * 记录的运行状态:异常
@@ -65,6 +75,16 @@ public class KettleVariables {
 	 * 记录的运行状态:其他
 	 */
 	public static final String RECORD_STATUS_OTRHER = "OTRHER";
+
+	/**
+	 * 工作记录的类型:重复
+	 */
+	public static final String JOB_RECORD_TYPE_REPEAT = "REPEAT";
+
+	/**
+	 * 工作记录的类型:执行一次
+	 */
+	public static final String JOB_RECORD_TYPE_ONCE = "ONCE";
 
 	/**
 	 * 远端的运行状态:异常
