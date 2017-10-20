@@ -6,6 +6,7 @@ import org.pentaho.di.core.logging.LogLevel;
 import org.pentaho.di.job.Job;
 import org.pentaho.di.job.JobExecutionConfiguration;
 import org.pentaho.di.job.JobMeta;
+import org.pentaho.di.repository.RepositoryElementInterface;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransExecutionConfiguration;
 import org.pentaho.di.trans.TransMeta;
@@ -90,6 +91,16 @@ public class KettleRemoteClient {
 			} else {
 				remoteStatus = KettleVariables.REMOTE_STATUS_RUNNING;
 			}
+		}
+	}
+
+	public String remoteSendREI(RepositoryElementInterface rei) throws KettleException {
+		if (TransMeta.class.isInstance(rei)) {
+			return remoteSendTrans(((TransMeta) rei));
+		} else if (JobMeta.class.isInstance(rei)) {
+			return remoteSendJob(((JobMeta) rei));
+		} else {
+			throw new KettleException("Kettle远端仅能处理转换或工作类型,无法处理" + (rei == null ? "Null" : rei.getClass().getName()));
 		}
 	}
 

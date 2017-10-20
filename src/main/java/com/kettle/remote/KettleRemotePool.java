@@ -19,10 +19,10 @@ import org.pentaho.di.trans.TransMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.kettle.bean.KettleJobRecord;
-import com.kettle.bean.KettleTransRecord;
 import com.kettle.core.KettleVariables;
 import com.kettle.core.repo.KettleDBRepositoryClient;
+import com.kettle.record.KettleJobRecord;
+import com.kettle.record.KettleTransRecord;
 
 /**
  * 保存远程运行池
@@ -37,8 +37,6 @@ public class KettleRemotePool {
 	private final ConcurrentMap<String, KettleRemoteClient> remoteclients;
 
 	private final KettleDBRepositoryClient dbRepositoryClient;
-
-	private final RecordDistribute recordDistribute;
 
 	/**
 	 * 线程池
@@ -55,7 +53,6 @@ public class KettleRemotePool {
 			List<String> excludeHostNames) throws KettleException {
 		this.remoteclients = new ConcurrentHashMap<String, KettleRemoteClient>();
 		this.dbRepositoryClient = dbRepositoryClient;
-		this.recordDistribute = new RecordDistribute(this);
 		for (SlaveServer server : dbRepositoryClient.getRepository().getSlaveServers()) {
 			if (excludeHostNames != null && excludeHostNames.contains(server.getHostname())) {
 				continue;
@@ -105,7 +102,6 @@ public class KettleRemotePool {
 			dbRepositoryClient.saveTransMeta(transMeta);
 			record.setId(Long.valueOf(transMeta.getObjectId().getId()));
 			dbRepositoryClient.insertTransRecord(record);
-			recordDistribute.addTransRecords(transMeta, record);
 		} catch (KettleException e) {
 			logger.error("Trans[" + transMeta.getName() + "]持久化发生异常!", e);
 			throw new KettleException("Trans[" + transMeta.getName() + "]持久化发生异常!");
@@ -140,7 +136,6 @@ public class KettleRemotePool {
 			dbRepositoryClient.saveJobMeta(jobMeta);
 			record.setId(Long.valueOf(jobMeta.getObjectId().getId()));
 			dbRepositoryClient.insertJobRecord(record);
-			recordDistribute.addJobRecords(jobMeta, record);
 		} catch (KettleException e) {
 			logger.error("Trans[" + jobMeta.getName() + "]持久化发生异常!", e);
 			throw new KettleException("Trans[" + jobMeta.getName() + "]持久化发生异常!");
@@ -236,5 +231,4 @@ public class KettleRemotePool {
 			return dealCount;
 		}
 	}
-
 }

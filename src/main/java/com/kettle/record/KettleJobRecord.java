@@ -1,4 +1,4 @@
-package com.kettle.bean;
+package com.kettle.record;
 
 /**
  * 数据库实体对象

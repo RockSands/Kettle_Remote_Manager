@@ -18,9 +18,10 @@ import org.pentaho.di.repository.RepositoryDirectoryInterface;
 import org.pentaho.di.repository.kdr.KettleDatabaseRepository;
 import org.pentaho.di.trans.TransMeta;
 
-import com.kettle.bean.KettleJobRecord;
-import com.kettle.bean.KettleTransRecord;
 import com.kettle.core.KettleVariables;
+import com.kettle.record.KettleJobRecord;
+import com.kettle.record.KettleRecord;
+import com.kettle.record.KettleTransRecord;
 
 /**
  * 数据库工具
@@ -303,15 +304,52 @@ public class KettleDBRepositoryClient {
 	 * 
 	 * @throws KettleException
 	 */
-	public synchronized void updateTransRecord(KettleTransRecord kettleTransBean) throws KettleException {
+	public void updateRecord(KettleRecord record) throws KettleException {
+		if (!repository.isConnected()) {
+			connect();
+		}
+		if (KettleTransRecord.class.isInstance(record)) {
+			updateTransRecord((KettleTransRecord) record);
+		}
+		if (KettleJobRecord.class.isInstance(record)) {
+			updateJobRecord((KettleJobRecord) record);
+		}
+	}
+
+	public synchronized void updateJobRecord(KettleJobRecord record) throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}
 		RowMetaAndData table = new RowMetaAndData();
 		table.addValue(new ValueMeta(KettleVariables.R_RECORD_STATUS, ValueMetaInterface.TYPE_STRING),
-				kettleTransBean.getStatus());
+				record.getStatus());
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_ID_RUN, ValueMetaInterface.TYPE_STRING),
+				record.getRunID());
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_HOSTNAME, ValueMetaInterface.TYPE_STRING),
+				record.getHostname());
+		repository.connectionDelegate.updateTableRow(KettleVariables.R_JOB_RECORD, KettleVariables.R_JOB_RECORD_ID_JOB,
+				table, new LongObjectId(record.getId()));
+		repository.commit();
+	}
+
+	/**
+	 * 持久化操作:更新转换记录
+	 * 
+	 * @throws KettleException
+	 */
+	public synchronized void updateTransRecord(KettleTransRecord record) throws KettleException {
+		if (!repository.isConnected()) {
+			connect();
+		}
+		RowMetaAndData table = new RowMetaAndData();
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_STATUS, ValueMetaInterface.TYPE_STRING),
+				record.getStatus());
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_ID_RUN, ValueMetaInterface.TYPE_STRING),
+				record.getRunID());
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_HOSTNAME, ValueMetaInterface.TYPE_STRING),
+				record.getHostname());
 		repository.connectionDelegate.updateTableRow(KettleVariables.R_TRANS_RECORD,
-				KettleVariables.R_TRANS_RECORD_ID_TRANS, table, new LongObjectId(kettleTransBean.getId()));
+				KettleVariables.R_TRANS_RECORD_ID_TRANS, table, new LongObjectId(record.getId()));
 		repository.commit();
 	}
 

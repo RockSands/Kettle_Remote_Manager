@@ -1,8 +1,10 @@
-package com.kettle.bean;
+package com.kettle.record;
 
 import java.sql.Timestamp;
 
-public class KettleRecord {
+import com.kettle.core.KettleVariables;
+
+public abstract class KettleRecord {
 	/**
 	 * 对应job的Id,全局唯一
 	 */
@@ -90,5 +92,14 @@ public class KettleRecord {
 
 	public void setErrMsg(String errMsg) {
 		this.errMsg = errMsg;
+	}
+
+	/**
+	 * 是否运行中
+	 * 
+	 * @return
+	 */
+	public boolean isRunning() {
+		return KettleVariables.RECORD_STATUS_RUNNING.equals(this.getStatus());
 	}
 }

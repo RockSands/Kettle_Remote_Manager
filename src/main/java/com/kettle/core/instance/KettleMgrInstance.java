@@ -27,9 +27,9 @@ import org.pentaho.di.trans.steps.tableinput.TableInputMeta;
 import org.pentaho.di.trans.steps.tableoutput.TableOutputMeta;
 import org.pentaho.di.trans.steps.update.UpdateMeta;
 
-import com.kettle.bean.KettleRecord;
 import com.kettle.bean.KettleTransResult;
 import com.kettle.core.repo.KettleDBRepositoryClient;
+import com.kettle.record.KettleRecord;
 import com.kettle.remote.KettleRemotePool;
 
 /**

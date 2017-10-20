@@ -72,11 +72,6 @@ public class KettleVariables {
 	public static final String RECORD_STATUS_FINISHED = "FINISHED";
 
 	/**
-	 * 记录的运行状态:其他
-	 */
-	public static final String RECORD_STATUS_OTRHER = "OTRHER";
-
-	/**
 	 * 工作记录的类型:重复
 	 */
 	public static final String JOB_RECORD_TYPE_REPEAT = "REPEAT";
