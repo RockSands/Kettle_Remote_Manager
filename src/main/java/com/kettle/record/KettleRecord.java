@@ -5,13 +5,9 @@ import java.sql.Timestamp;
 import com.kettle.core.KettleVariables;
 
 public abstract class KettleRecord {
-	/**
-	 * 对应job的Id,全局唯一
-	 */
+
 	private long id;
-	/**
-	 * 对应job的Name
-	 */
+
 	private String name;
 
 	/**

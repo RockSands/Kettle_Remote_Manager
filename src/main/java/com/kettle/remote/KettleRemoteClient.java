@@ -1,12 +1,15 @@
 package com.kettle.remote;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import org.pentaho.di.cluster.SlaveServer;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.logging.LogLevel;
 import org.pentaho.di.job.Job;
 import org.pentaho.di.job.JobExecutionConfiguration;
 import org.pentaho.di.job.JobMeta;
-import org.pentaho.di.repository.RepositoryElementInterface;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransExecutionConfiguration;
 import org.pentaho.di.trans.TransMeta;
@@ -18,6 +21,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kettle.core.KettleVariables;
+import com.kettle.record.KettleJobRecord;
+import com.kettle.record.KettleRecord;
+import com.kettle.record.KettleTransRecord;
+import com.kettle.remote.record.distribute.RemoteRecordDaemon;
 
 public class KettleRemoteClient {
 
@@ -37,6 +44,16 @@ public class KettleRemoteClient {
 	 * 远程服务
 	 */
 	private final SlaveServer remoteServer;
+
+	/**
+	 * 线程池
+	 */
+	private final ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(10);
+
+	/**
+	 * 查看任务状态的线程
+	 */
+	private RemoteRecordDaemon[] daemons = new RemoteRecordDaemon[6];
 
 	public KettleRemoteClient(KettleRemotePool kettleRemotePool, final SlaveServer remoteServer)
 			throws KettleException {
@@ -94,14 +111,38 @@ public class KettleRemoteClient {
 		}
 	}
 
-	public String remoteSendREI(RepositoryElementInterface rei) throws KettleException {
-		if (TransMeta.class.isInstance(rei)) {
-			return remoteSendTrans(((TransMeta) rei));
-		} else if (JobMeta.class.isInstance(rei)) {
-			return remoteSendJob(((JobMeta) rei));
-		} else {
-			throw new KettleException("Kettle远端仅能处理转换或工作类型,无法处理" + (rei == null ? "Null" : rei.getClass().getName()));
+	/**
+	 * 分配任务
+	 * 
+	 * @param record
+	 * @return true 接受;false 繁忙
+	 */
+	public boolean distributerRecord(KettleRecord record) {
+		if (KettleJobRecord.class.isInstance(record)) {
+
 		}
+		if (KettleTransRecord.class.isInstance(record)) {
+
+		}
+		RemoteRecordDaemon selectDaemon = null;
+		synchronized (daemons) {
+			for (RemoteRecordDaemon daemon : daemons) {
+				if (daemon == null) {
+					daemon = new RemoteRecordDaemon(this);
+					daemon.setRecord(record);
+					selectDaemon = daemon;
+					break;
+				} else if (daemon.isFree()) {
+					daemon.setRecord(record);
+					selectDaemon = daemon;
+					break;
+				}
+			}
+		}
+		if (selectDaemon != null) {
+			threadPool.schedule(selectDaemon, 30, TimeUnit.SECONDS);
+		}
+		return selectDaemon != null;
 	}
 
 	/**
@@ -277,6 +318,10 @@ public class KettleRemoteClient {
 
 	public String getHostName() {
 		return this.remoteServer.getHostname();
+	}
+
+	public void recordHasSync(KettleRecord record) {
+		
 	}
 
 }

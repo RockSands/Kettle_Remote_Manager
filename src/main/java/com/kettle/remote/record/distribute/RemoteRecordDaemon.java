@@ -6,9 +6,8 @@ import com.kettle.record.KettleRecord;
 import com.kettle.record.KettleTransRecord;
 import com.kettle.remote.KettleRemoteClient;
 
-class RemoteRecordDaemon implements Runnable {
+public class RemoteRecordDaemon implements Runnable {
 
-	private RecordDistributer recordDistributer;
 	/**
 	 * 远端连接
 	 */
@@ -19,9 +18,8 @@ class RemoteRecordDaemon implements Runnable {
 	 */
 	private KettleRecord record;
 
-	public RemoteRecordDaemon(KettleRemoteClient remote, RecordDistributer recordDistributer) {
+	public RemoteRecordDaemon(KettleRemoteClient remote) {
 		this.remote = remote;
-		this.recordDistributer = recordDistributer;
 	}
 
 	/**
@@ -59,7 +57,7 @@ class RemoteRecordDaemon implements Runnable {
 				status = KettleVariables.RECORD_STATUS_ERROR;
 				record.setStatus(status);
 			}
-			recordDistributer.dealRecordDaemon(this);
+			remote.recordHasSync(record);
 		}
 	}
 

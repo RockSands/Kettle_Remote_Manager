@@ -22,6 +22,8 @@ import org.slf4j.LoggerFactory;
 import com.kettle.core.KettleVariables;
 import com.kettle.core.repo.KettleDBRepositoryClient;
 import com.kettle.record.KettleJobRecord;
+import com.kettle.record.KettleRecord;
+import com.kettle.record.KettleRecordPool;
 import com.kettle.record.KettleTransRecord;
 
 /**
@@ -34,9 +36,20 @@ public class KettleRemotePool {
 
 	Logger logger = LoggerFactory.getLogger(KettleRemoteClient.class);
 
+	/**
+	 * 远程连接
+	 */
 	private final ConcurrentMap<String, KettleRemoteClient> remoteclients;
 
+	/**
+	 * 资源链接
+	 */
 	private final KettleDBRepositoryClient dbRepositoryClient;
+
+	/**
+	 * 任务池
+	 */
+	private final KettleRecordPool kettleRecordPool = new KettleRecordPool();
 
 	/**
 	 * 线程池
@@ -94,19 +107,17 @@ public class KettleRemotePool {
 	 * @throws KettleException
 	 */
 	public KettleTransRecord applyTransMeta(TransMeta transMeta) throws KettleException {
-		checkRemotePool();
-		KettleTransRecord record = new KettleTransRecord();
-		record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
-		record.setName(transMeta.getName());
 		try {
 			dbRepositoryClient.saveTransMeta(transMeta);
-			record.setId(Long.valueOf(transMeta.getObjectId().getId()));
+			KettleTransRecord record = new KettleTransRecord(transMeta);
+			record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
 			dbRepositoryClient.insertTransRecord(record);
+			kettleRecordPool.addRecords(record);
+			return record;
 		} catch (KettleException e) {
 			logger.error("Trans[" + transMeta.getName() + "]持久化发生异常!", e);
 			throw new KettleException("Trans[" + transMeta.getName() + "]持久化发生异常!");
 		}
-		return record;
 	}
 
 	/**
@@ -117,8 +128,7 @@ public class KettleRemotePool {
 	 * @throws KettleException
 	 */
 	public KettleJobRecord applyJobMeta(JobMeta jobMeta) throws KettleException {
-		checkRemotePool();
-		KettleJobRecord record = new KettleJobRecord();
+		KettleJobRecord record = new KettleJobRecord(jobMeta);
 		JobEntryCopy jec = jobMeta.getStart();
 		if (jec == null) {
 			throw new KettleException("JobMeta[" + jobMeta.getName() + "]没有定义Start,无法处理!");
@@ -136,11 +146,22 @@ public class KettleRemotePool {
 			dbRepositoryClient.saveJobMeta(jobMeta);
 			record.setId(Long.valueOf(jobMeta.getObjectId().getId()));
 			dbRepositoryClient.insertJobRecord(record);
+			kettleRecordPool.addRecords(record);
 		} catch (KettleException e) {
 			logger.error("Trans[" + jobMeta.getName() + "]持久化发生异常!", e);
 			throw new KettleException("Trans[" + jobMeta.getName() + "]持久化发生异常!");
 		}
 		return record;
+	}
+
+	/**
+	 * 分派任务
+	 */
+	private void distributerRecord() {
+		KettleRecord record = kettleRecordPool.take();
+		if (record != null) {
+			
+		}
 	}
 
 	/**
