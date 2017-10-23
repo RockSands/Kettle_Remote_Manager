@@ -91,11 +91,38 @@ public abstract class KettleRecord {
 	}
 
 	/**
-	 * 是否运行中
+	 * 是否运行状态
 	 * 
 	 * @return
 	 */
 	public boolean isRunning() {
 		return KettleVariables.RECORD_STATUS_RUNNING.equals(this.getStatus());
+	}
+
+	/**
+	 * 是否受理状态
+	 * 
+	 * @return
+	 */
+	public boolean isApply() {
+		return KettleVariables.RECORD_STATUS_APPLY.equals(this.getStatus());
+	}
+
+	/**
+	 * 是否异常状态
+	 * 
+	 * @return
+	 */
+	public boolean isError() {
+		return KettleVariables.RECORD_STATUS_ERROR.equals(this.getStatus());
+	}
+
+	/**
+	 * 是否完成中
+	 * 
+	 * @return
+	 */
+	public boolean isFinished() {
+		return KettleVariables.RECORD_STATUS_FINISHED.equals(this.getStatus());
 	}
 }

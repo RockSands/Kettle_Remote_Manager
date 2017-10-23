@@ -1,13 +1,13 @@
 package com.kettle.record;
 
-import java.util.concurrent.BlockingQueue;
+import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class KettleRecordPool {
 	/**
 	 * Tran/Job 保存记录名称,队列
 	 */
-	private final BlockingQueue<KettleRecord> recordQueue = new LinkedBlockingQueue<KettleRecord>();
+	private final Queue<KettleRecord> recordQueue = new LinkedBlockingQueue<KettleRecord>();
 
 	/**
 	 * 添加的转换任务
@@ -16,22 +16,17 @@ public class KettleRecordPool {
 	 * @param record
 	 */
 	public void addRecords(KettleRecord record) {
-		recordQueue.offer(record);
+		if (record != null) {
+			recordQueue.add(record);
+		}
 	}
 
 	/**
-	 * 获取下一个
+	 * 获取下一个,并在Pool中删除
 	 * 
 	 * @return
 	 */
-	public synchronized KettleRecord take() {
-		if (recordQueue.isEmpty()) {
-			return null;
-		}
-		try {
-			return recordQueue.take();
-		} catch (InterruptedException e) {
-			return null;
-		}
+	public synchronized KettleRecord nextRecord() {
+		return recordQueue.poll();
 	}
 }
