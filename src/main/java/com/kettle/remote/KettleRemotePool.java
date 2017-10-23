@@ -1,10 +1,13 @@
 package com.kettle.remote;
 
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -54,7 +57,9 @@ public class KettleRemotePool {
 	/**
 	 * 线程池
 	 */
-	private final ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(32);
+	private final ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(10);
+
+	private final BlockingQueue<String> recordClientQueue = new LinkedBlockingQueue<String>();
 
 	/**
 	 * @param dbRepositoryClient
@@ -100,6 +105,56 @@ public class KettleRemotePool {
 	}
 
 	/**
+	 * @return
+	 */
+	private String getNextClientName() {
+		String hostName;
+		try {
+			hostName = recordClientQueue.take();
+			recordClientQueue.offer(hostName);
+			return hostName;
+		} catch (InterruptedException e) {
+			return null;
+		}
+	}
+
+	/**
+	 * 分配任务
+	 * 
+	 * @param record
+	 */
+	public void distributeRecord(KettleTransRecord record) {
+		synchronized (recordClientQueue) {
+			if (!recordClientQueue.isEmpty()) {// 可以记录执行
+				String hostName = null;
+				KettleRemoteClient remoteClient;
+				for (int i = 0, size = remoteclients.size(); i < size; i++) {
+					hostName = getNextClientName();
+					if (hostName != null) {
+						remoteClient = remoteclients.get(hostName);
+						if (remoteClient != null && remoteClient.distributerRecord(record)) {
+							break;
+						}
+					}
+				}
+			} else {
+				// 如果无法直接执行,放入队列
+				kettleRecordPool.addRecords(record);
+			}
+		}
+	}
+
+	public void remoteSendRecord(KettleRemoteClient remoteClient, KettleRecord record) {
+		if (KettleJobRecord.class.isInstance(record)) {
+			KettleJobRecord job = (KettleJobRecord) record;
+			remoteClient.remoteSendJob(job.getKettleMeta());
+		} else if (KettleTransRecord.class.isInstance(record)) {
+			KettleTransRecord trans = (KettleTransRecord) record;
+			remoteClient.remoteSendTrans(trans);
+		}
+	}
+
+	/**
 	 * 接受转换
 	 * 
 	 * @param transMeta
@@ -112,7 +167,7 @@ public class KettleRemotePool {
 			KettleTransRecord record = new KettleTransRecord(transMeta);
 			record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
 			dbRepositoryClient.insertTransRecord(record);
-			kettleRecordPool.addRecords(record);
+			distributeRecord(record);
 			return record;
 		} catch (KettleException e) {
 			logger.error("Trans[" + transMeta.getName() + "]持久化发生异常!", e);
@@ -155,12 +210,19 @@ public class KettleRemotePool {
 	}
 
 	/**
-	 * 分派任务
+	 * 更新完成的任务
+	 * 
+	 * @param record
+	 * @return 是否成功
 	 */
-	private void distributerRecord() {
-		KettleRecord record = kettleRecordPool.take();
-		if (record != null) {
-			
+	public boolean updateEndRecord(KettleRecord record) {
+		try {
+			dbRepositoryClient.updateRecord(record);
+			recordClientQueue.offer(record.getHostname());
+			return true;
+		} catch (KettleException e) {
+			this.logger.error("KettleRecord[" + record.getName() + "]持久化更新失败!", e);
+			return false;
 		}
 	}
 
@@ -210,6 +272,14 @@ public class KettleRemotePool {
 		} else {
 			threadPool.schedule(remoteClientRecoveryStatusDaemon, 10, TimeUnit.MINUTES);
 		}
+	}
+
+	public KettleRecordPool getKettleRecordPool() {
+		return kettleRecordPool;
+	}
+
+	public KettleDBRepositoryClient getDbRepositoryClient() {
+		return dbRepositoryClient;
 	}
 
 	public KettleDatabaseRepository getDbRepository() {

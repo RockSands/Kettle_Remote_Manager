@@ -1,5 +1,7 @@
 package com.kettle.remote;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -24,7 +26,6 @@ import com.kettle.core.KettleVariables;
 import com.kettle.record.KettleJobRecord;
 import com.kettle.record.KettleRecord;
 import com.kettle.record.KettleTransRecord;
-import com.kettle.remote.record.distribute.RemoteRecordDaemon;
 
 public class KettleRemoteClient {
 
@@ -49,6 +50,8 @@ public class KettleRemoteClient {
 	 * 线程池
 	 */
 	private final ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(10);
+
+	private List<KettleJobRecord> repeatRecords = new LinkedList<KettleJobRecord>();
 
 	/**
 	 * 查看任务状态的线程
@@ -116,19 +119,22 @@ public class KettleRemoteClient {
 	 * 
 	 * @param record
 	 * @return true 接受;false 繁忙
+	 * @throws KettleException 
 	 */
-	public boolean distributerRecord(KettleRecord record) {
+	public boolean distributerRecord(KettleRecord record) throws KettleException {
 		if (KettleJobRecord.class.isInstance(record)) {
-
-		}
-		if (KettleTransRecord.class.isInstance(record)) {
-
+			KettleJobRecord kettleJobRecord = (KettleJobRecord) record;
+			if (KettleVariables.JOB_RECORD_TYPE_REPEAT.equals(kettleJobRecord.getType())) {
+				repeatRecords.add(kettleJobRecord);
+				remoteSendJob(kettleJobRecord.getKettleMeta());
+				return true;
+			}
 		}
 		RemoteRecordDaemon selectDaemon = null;
 		synchronized (daemons) {
 			for (RemoteRecordDaemon daemon : daemons) {
 				if (daemon == null) {
-					daemon = new RemoteRecordDaemon(this);
+					daemon = new RemoteRecordDaemon();
 					daemon.setRecord(record);
 					selectDaemon = daemon;
 					break;
@@ -320,8 +326,66 @@ public class KettleRemoteClient {
 		return this.remoteServer.getHostname();
 	}
 
-	public void recordHasSync(KettleRecord record) {
-		
+	/**
+	 * @param record
+	 */
+	public void dealRemoteRecordDaemon(RemoteRecordDaemon daemon) {
+		if (daemon.getRecord() == null) {
+			KettleRecord record = kettleRemotePool.getKettleRecordPool().take();
+			daemon.setRecord(record);
+		} else {
+			if (!KettleVariables.RECORD_STATUS_RUNNING.equals(daemon.getRecord().getStatus())) {
+				kettleRemotePool.updateEndRecord(daemon.getRecord());
+				daemon.setRecord(null);
+			} else {
+				threadPool.schedule(daemon, 30, TimeUnit.SECONDS);
+			}
+		}
 	}
 
+	/**
+	 * 该任务
+	 * 
+	 * @author Administrator
+	 *
+	 */
+	private class RemoteRecordDaemon implements Runnable {
+		/**
+		 * 记录
+		 */
+		private KettleRecord record;
+
+		@Override
+		public void run() {
+			if (record != null && record.isRunning()) {
+				String status = null;
+				try {
+					if (KettleTransRecord.class.isInstance(record)) {
+						status = remoteTransStatus(record.getName());
+					} else if (KettleJobRecord.class.isInstance(record)) {
+						status = remoteJobStatus(record.getName());
+					} else {
+						status = KettleVariables.RECORD_STATUS_ERROR;
+					}
+					record.setStatus(status);
+				} catch (Exception ex) {
+					status = KettleVariables.RECORD_STATUS_ERROR;
+					record.setStatus(status);
+				}
+			}
+			dealRemoteRecordDaemon(this);
+		}
+
+		public boolean isFree() {
+			return record == null;
+		}
+
+		void setRecord(KettleRecord record) {
+			this.record = record;
+		}
+
+		KettleRecord getRecord() {
+			return record;
+		}
+	}
 }
