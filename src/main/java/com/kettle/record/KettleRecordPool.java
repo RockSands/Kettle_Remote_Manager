@@ -10,14 +10,31 @@ public class KettleRecordPool {
 	private final Queue<KettleRecord> recordQueue = new LinkedBlockingQueue<KettleRecord>();
 
 	/**
+	 * Tran/Job 保存记录名称,优先队列
+	 */
+	private final Queue<KettleRecord> recordPrioritizeQueue = new LinkedBlockingQueue<KettleRecord>();
+
+	/**
 	 * 添加的转换任务
 	 * 
 	 * @param transMeta
 	 * @param record
 	 */
-	public void addRecords(KettleRecord record) {
+	public void addRecord(KettleRecord record) {
 		if (record != null) {
 			recordQueue.add(record);
+		}
+	}
+
+	/**
+	 * 添加的转换任务-优先
+	 * 
+	 * @param transMeta
+	 * @param record
+	 */
+	public void addPrioritizeRecord(KettleRecord record) {
+		if (record != null) {
+			recordPrioritizeQueue.add(record);
 		}
 	}
 
@@ -27,6 +44,12 @@ public class KettleRecordPool {
 	 * @return
 	 */
 	public synchronized KettleRecord nextRecord() {
-		return recordQueue.poll();
+		KettleRecord record = recordPrioritizeQueue.poll();
+		if (record == null) {
+			return recordQueue.poll();
+		} else {
+			return record;
+		}
+
 	}
 }

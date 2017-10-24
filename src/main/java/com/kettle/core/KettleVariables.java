@@ -40,6 +40,11 @@ public class KettleVariables {
 	 * 工作或转换记录的主机名
 	 */
 	public static final String R_RECORD_HOSTNAME = "HOSTNAME";
+	
+	/**
+	 * 工作或转换记录的异常信息
+	 */
+	public static final String R_RECORD_ERRORMSG = "ERROR_MSG";
 
 	/**
 	 * 工作或转换记录的状态

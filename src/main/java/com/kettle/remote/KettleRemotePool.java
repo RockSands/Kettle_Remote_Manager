@@ -1,16 +1,11 @@
 package com.kettle.remote;
 
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.pentaho.di.cluster.SlaveServer;
 import org.pentaho.di.core.exception.KettleException;
@@ -26,7 +21,6 @@ import org.slf4j.LoggerFactory;
 import com.kettle.core.KettleVariables;
 import com.kettle.core.repo.KettleDBRepositoryClient;
 import com.kettle.record.KettleJobRecord;
-import com.kettle.record.KettleRecord;
 import com.kettle.record.KettleRecordPool;
 import com.kettle.record.KettleTransRecord;
 
@@ -54,11 +48,6 @@ public class KettleRemotePool {
 	 * 任务池
 	 */
 	private final KettleRecordPool kettleRecordPool = new KettleRecordPool();
-
-	/**
-	 * 线程池
-	 */
-	private final ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(10);
 
 	/**
 	 * hostNames
@@ -89,6 +78,17 @@ public class KettleRemotePool {
 	}
 
 	/**
+	 * 验证池子是否可用
+	 * 
+	 * @return
+	 */
+	public boolean checkRemotePoolStatus() {
+		return remoteclients.size() > 0;
+	}
+
+	/**
+	 * 获取下一个FreeClient
+	 * 
 	 * @return
 	 */
 	public KettleRemoteClient getNextFreeClient() {
@@ -105,49 +105,6 @@ public class KettleRemotePool {
 	}
 
 	/**
-	 * 验证池子是否可用
-	 * 
-	 * @return
-	 */
-	public boolean getRemotePoolStatus() {
-		return remoteclients.size() > 0;
-	}
-
-	/**
-	 * 验证池子是否可用
-	 * 
-	 * @return
-	 * @throws KettleException
-	 */
-	public void checkRemotePool() throws KettleException {
-		if (!getRemotePoolStatus()) {
-			throw new KettleException("Kettle远程池无法使用,原因:没有可用的远端节点!");
-		}
-	}
-
-	/**
-	 * 分配任务
-	 * 
-	 * @param record
-	 */
-	public void distributeRecord(KettleTransRecord record) {
-		// 放入队列池
-		kettleRecordPool.addRecords(record);
-		KettleRemoteClient client = getNextFreeClient();
-		client.newRecordApply();
-	}
-
-	public void remoteSendRecord(KettleRemoteClient remoteClient, KettleRecord record) {
-		if (KettleJobRecord.class.isInstance(record)) {
-			KettleJobRecord job = (KettleJobRecord) record;
-			remoteClient.remoteSendJob(job.getKettleMeta());
-		} else if (KettleTransRecord.class.isInstance(record)) {
-			KettleTransRecord trans = (KettleTransRecord) record;
-			remoteClient.remoteSendTrans(trans);
-		}
-	}
-
-	/**
 	 * 接受转换
 	 * 
 	 * @param transMeta
@@ -160,7 +117,6 @@ public class KettleRemotePool {
 			KettleTransRecord record = new KettleTransRecord(transMeta);
 			record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
 			dbRepositoryClient.insertTransRecord(record);
-			distributeRecord(record);
 			return record;
 		} catch (KettleException e) {
 			logger.error("Trans[" + transMeta.getName() + "]持久化发生异常!", e);
@@ -194,7 +150,7 @@ public class KettleRemotePool {
 			dbRepositoryClient.saveJobMeta(jobMeta);
 			record.setId(Long.valueOf(jobMeta.getObjectId().getId()));
 			dbRepositoryClient.insertJobRecord(record);
-			kettleRecordPool.addRecords(record);
+			kettleRecordPool.addRecord(record);
 		} catch (KettleException e) {
 			logger.error("Trans[" + jobMeta.getName() + "]持久化发生异常!", e);
 			throw new KettleException("Trans[" + jobMeta.getName() + "]持久化发生异常!");
@@ -210,7 +166,6 @@ public class KettleRemotePool {
 	private void addRemoteClient(KettleRemoteClient remoteClient) {
 		if (!remoteClient.checkRemoteStatus()) {
 			logger.error("Kettle的远程池添加Client[" + remoteClient.getHostName() + "]失败,状态不可用!");
-			dealErrRemoteClient(remoteClient.getHostName());
 		} else {
 			if (remoteclients.containsKey(remoteClient.getHostName())) {
 				logger.error("Kettle的远程池添加Client[" + remoteClient.getHostName() + "]失败,该主机已存在!");
@@ -222,42 +177,22 @@ public class KettleRemotePool {
 	}
 
 	/**
-	 * 处理Kettle异常远端
-	 * 
-	 * @param remoteClient
+	 * @return
 	 */
-	protected void dealErrRemoteClient(String hostName) {
-		KettleRemoteClient remoteClient = remoteclients.get(hostName);
-		if (remoteClient != null && !remoteClient.checkRemoteStatus()) {
-			remoteclients.remove(hostName);
-			logger.info("Kettle的远程池暂停使用异常Client[" + remoteClient.getHostName() + "],开始定时查看!");
-			threadPool.schedule(new RemoteClientRecoveryStatusDaemon(remoteClient), 20, TimeUnit.SECONDS);
-		}
-	}
-
-	/**
-	 * 在守护进程中
-	 * 
-	 * @param remoteClientRecoveryStatusDaemon
-	 */
-	private void recoveryRemoteClient(RemoteClientRecoveryStatusDaemon remoteClientRecoveryStatusDaemon) {
-		if (remoteClientRecoveryStatusDaemon.remoteClient.checkRemoteStatus()) {
-			logger.info(
-					"Kettle的远程池添加Client[" + remoteClientRecoveryStatusDaemon.remoteClient.getHostName() + "]状态为可用!");
-			addRemoteClient(remoteClientRecoveryStatusDaemon.remoteClient);
-		} else {
-			threadPool.schedule(remoteClientRecoveryStatusDaemon, 10, TimeUnit.MINUTES);
-		}
-	}
-
 	public KettleRecordPool getKettleRecordPool() {
 		return kettleRecordPool;
 	}
 
+	/**
+	 * @return
+	 */
 	public KettleDBRepositoryClient getDbRepositoryClient() {
 		return dbRepositoryClient;
 	}
 
+	/**
+	 * @return
+	 */
 	public KettleDatabaseRepository getDbRepository() {
 		return dbRepositoryClient.getRepository();
 	}
@@ -269,33 +204,5 @@ public class KettleRemotePool {
 	 */
 	public Collection<KettleRemoteClient> getAllRemoteclients() {
 		return remoteclients.values();
-	}
-
-	/**
-	 * Kettle远端重启动
-	 * 
-	 * @author Administrator
-	 *
-	 */
-	protected class RemoteClientRecoveryStatusDaemon implements Runnable {
-
-		KettleRemoteClient remoteClient = null;
-
-		int dealCount = 0;
-
-		RemoteClientRecoveryStatusDaemon(KettleRemoteClient remoteClient) {
-			this.remoteClient = remoteClient;
-		}
-
-		@Override
-		public void run() {
-			remoteClient.recoveryStatus();
-			recoveryRemoteClient(this);
-			dealCount++;
-		}
-
-		public int getDealCount() {
-			return dealCount;
-		}
 	}
 }
