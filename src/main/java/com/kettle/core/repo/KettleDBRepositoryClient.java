@@ -332,22 +332,24 @@ public class KettleDBRepositoryClient {
 	 * @throws KettleException
 	 */
 	private void insertHistory(KettleRecord record) throws KettleException {
-		RowMetaAndData table = new RowMetaAndData();
-		table.addValue(new ValueMeta(KettleVariables.R_HISTORY_RECORD_ID, ValueMetaInterface.TYPE_INTEGER),
-				record.getId());
-		table.addValue(new ValueMeta(KettleVariables.R_HISTORY_RECORD_NAME, ValueMetaInterface.TYPE_STRING),
-				record.getName());
-		table.addValue(new ValueMeta(KettleVariables.R_HISTORY_RECORD_TYPE, ValueMetaInterface.TYPE_STRING),
-				record.getRecordType());
-		table.addValue(new ValueMeta(KettleVariables.R_RECORD_ID_RUN, ValueMetaInterface.TYPE_STRING),
-				record.getRunID());
-		table.addValue(new ValueMeta(KettleVariables.R_RECORD_STATUS, ValueMetaInterface.TYPE_STRING),
-				record.getStatus());
-		table.addValue(new ValueMeta(KettleVariables.R_RECORD_HOSTNAME, ValueMetaInterface.TYPE_STRING),
-				record.getHostname());
-		table.addValue(new ValueMeta(KettleVariables.R_RECORD_ERRORMSG, ValueMetaInterface.TYPE_STRING),
-				record.getErrMsg());
-		repository.connectionDelegate.insertTableRow(KettleVariables.R_HISTORY_RECORD, table);
+		if (record.isFinished() || record.isError()) {
+			RowMetaAndData table = new RowMetaAndData();
+			table.addValue(new ValueMeta(KettleVariables.R_HISTORY_RECORD_ID, ValueMetaInterface.TYPE_INTEGER),
+					record.getId());
+			table.addValue(new ValueMeta(KettleVariables.R_HISTORY_RECORD_NAME, ValueMetaInterface.TYPE_STRING),
+					record.getName());
+			table.addValue(new ValueMeta(KettleVariables.R_HISTORY_RECORD_TYPE, ValueMetaInterface.TYPE_STRING),
+					record.getRecordType());
+			table.addValue(new ValueMeta(KettleVariables.R_RECORD_ID_RUN, ValueMetaInterface.TYPE_STRING),
+					record.getRunID());
+			table.addValue(new ValueMeta(KettleVariables.R_RECORD_STATUS, ValueMetaInterface.TYPE_STRING),
+					record.getStatus());
+			table.addValue(new ValueMeta(KettleVariables.R_RECORD_HOSTNAME, ValueMetaInterface.TYPE_STRING),
+					record.getHostname());
+			table.addValue(new ValueMeta(KettleVariables.R_RECORD_ERRORMSG, ValueMetaInterface.TYPE_STRING),
+					record.getErrMsg());
+			repository.connectionDelegate.insertTableRow(KettleVariables.R_HISTORY_RECORD, table);
+		}
 	}
 
 	/**
@@ -380,7 +382,7 @@ public class KettleDBRepositoryClient {
 	 * 
 	 * @throws KettleException
 	 */
-	public synchronized void updateRecords(KettleTransRecord record) throws KettleException {
+	public synchronized void updateTransRecord(KettleTransRecord record) throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}

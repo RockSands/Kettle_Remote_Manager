@@ -22,7 +22,7 @@ public class KettleRecordPool {
 	 */
 	public void addRecord(KettleRecord record) {
 		if (record != null) {
-			recordQueue.add(record);
+			recordQueue.offer(record);
 		}
 	}
 
@@ -34,7 +34,7 @@ public class KettleRecordPool {
 	 */
 	public void addPrioritizeRecord(KettleRecord record) {
 		if (record != null) {
-			recordPrioritizeQueue.add(record);
+			recordPrioritizeQueue.offer(record);
 		}
 	}
 
@@ -44,12 +44,15 @@ public class KettleRecordPool {
 	 * @return
 	 */
 	public synchronized KettleRecord nextRecord() {
-		KettleRecord record = recordPrioritizeQueue.poll();
-		if (record == null) {
-			return recordQueue.poll();
-		} else {
+		KettleRecord record = null;
+		if (!recordPrioritizeQueue.isEmpty()) {
+			record = recordPrioritizeQueue.poll();
 			return record;
 		}
-
+		if (record == null && !recordQueue.isEmpty()) {
+			record = recordQueue.poll();
+			return record;
+		}
+		return null;
 	}
 }

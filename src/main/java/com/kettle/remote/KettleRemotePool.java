@@ -116,6 +116,7 @@ public class KettleRemotePool {
 			record.setName(transMeta.getName());
 			record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
 			dbRepositoryClient.insertTransRecord(record);
+			kettleRecordPool.addRecord(record);
 			KettleTransResult result = new KettleTransResult();
 			result.setStatus(record.getStatus());
 			result.setTransID(record.getId());
@@ -134,7 +135,6 @@ public class KettleRemotePool {
 	 * @throws KettleException
 	 */
 	public KettleJobResult applyJobMeta(JobMeta jobMeta) throws KettleException {
-		KettleJobRecord record = new KettleJobRecord(jobMeta);
 		JobEntryCopy jec = jobMeta.getStart();
 		if (jec == null) {
 			throw new KettleException("JobMeta[" + jobMeta.getName() + "]没有定义Start,无法受理!");
@@ -143,17 +143,13 @@ public class KettleRemotePool {
 		if (jobStart.isRepeat() || jobStart.getSchedulerType() != JobEntrySpecial.NOSCHEDULING) {
 			throw new KettleException("Kettle远程池仅受理即时任务!");
 		}
-		record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
+		dbRepositoryClient.saveJobMeta(jobMeta);
+		KettleJobRecord record = new KettleJobRecord(jobMeta);
+		record.setId(Long.valueOf(jobMeta.getObjectId().getId()));
 		record.setName(jobMeta.getName());
-		try {
-			dbRepositoryClient.saveJobMeta(jobMeta);
-			record.setId(Long.valueOf(jobMeta.getObjectId().getId()));
-			dbRepositoryClient.insertJobRecord(record);
-			kettleRecordPool.addRecord(record);
-		} catch (KettleException e) {
-			logger.error("Trans[" + jobMeta.getName() + "]持久化发生异常!", e);
-			throw new KettleException("Trans[" + jobMeta.getName() + "]持久化发生异常!");
-		}
+		record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
+		dbRepositoryClient.insertJobRecord(record);
+		kettleRecordPool.addRecord(record);
 		KettleJobResult result = new KettleJobResult();
 		result.setStatus(record.getStatus());
 		result.setJobID(record.getId());
