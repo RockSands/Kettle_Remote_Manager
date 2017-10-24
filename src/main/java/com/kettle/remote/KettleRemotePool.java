@@ -112,6 +112,8 @@ public class KettleRemotePool {
 		try {
 			dbRepositoryClient.saveTransMeta(transMeta);
 			KettleTransRecord record = new KettleTransRecord(transMeta);
+			record.setId(Long.valueOf(transMeta.getObjectId().getId()));
+			record.setName(transMeta.getName());
 			record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
 			dbRepositoryClient.insertTransRecord(record);
 			KettleTransResult result = new KettleTransResult();

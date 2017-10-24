@@ -119,5 +119,5 @@ public class KettleVariables {
 	/**
 	 * 远端的运行状态:正常
 	 */
-	public static final String REMOTE_STATUS_RUNNING = "RUNNING";
+	public static final String REMOTE_STATUS_RUNNING = "Online";
 }

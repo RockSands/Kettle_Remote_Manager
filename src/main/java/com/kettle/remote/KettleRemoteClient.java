@@ -82,7 +82,7 @@ public class KettleRemoteClient {
 		threadPool.execute(new Runnable() {
 			@Override
 			public void run() {
-				remoteStatus();
+				checkRemoteStatus();
 			}
 		});
 		threadPool.scheduleAtFixedRate(new RemoteRecordDaemon(), initialDelay, 20, TimeUnit.SECONDS);
@@ -96,6 +96,7 @@ public class KettleRemoteClient {
 	private String remoteStatus() {
 		try {
 			SlaveServerStatus status = remoteServer.getStatus();
+			logger.debug("Kettle远端[" + getHostName() + "]状态:" + status);
 			return status.getStatusDescription();
 		} catch (Exception e) {
 			logger.error("Kettle远端[" + getHostName() + "]查看状态发生异常\n", e);
@@ -111,11 +112,11 @@ public class KettleRemoteClient {
 	public boolean checkRemoteStatus() {
 		if (KettleVariables.REMOTE_STATUS_ERROR.equals(remoteStatus)) {
 			return false;
-		} else if (KettleVariables.REMOTE_STATUS_ERROR.equals(remoteStatus())) {
-			remoteStatus = KettleVariables.REMOTE_STATUS_ERROR;
+		} else if (KettleVariables.REMOTE_STATUS_RUNNING.equals(remoteStatus())) {
+			remoteStatus = KettleVariables.REMOTE_STATUS_RUNNING;
 			return false;
 		} else {
-			remoteStatus = KettleVariables.REMOTE_STATUS_RUNNING;
+			remoteStatus = KettleVariables.REMOTE_STATUS_ERROR;
 			return true;
 		}
 	}

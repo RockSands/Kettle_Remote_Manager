@@ -277,21 +277,23 @@ public class KettleDBRepositoryClient {
 	 * 
 	 * @throws KettleException
 	 */
-	public synchronized void insertTransRecord(KettleTransRecord kettleTransBean) throws KettleException {
+	public synchronized void insertTransRecord(KettleTransRecord record) throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}
 		RowMetaAndData table = new RowMetaAndData();
 		table.addValue(new ValueMeta(KettleVariables.R_TRANS_RECORD_ID_TRANS, ValueMetaInterface.TYPE_INTEGER),
-				kettleTransBean.getId());
+				record.getId());
 		table.addValue(new ValueMeta(KettleVariables.R_TRANS_RECORD_NAME_TRANS, ValueMetaInterface.TYPE_STRING),
-				kettleTransBean.getName());
+				record.getName());
 		table.addValue(new ValueMeta(KettleVariables.R_RECORD_ID_RUN, ValueMetaInterface.TYPE_STRING),
-				kettleTransBean.getRunID());
+				record.getRunID());
 		table.addValue(new ValueMeta(KettleVariables.R_RECORD_STATUS, ValueMetaInterface.TYPE_STRING),
-				kettleTransBean.getStatus());
+				record.getStatus());
 		table.addValue(new ValueMeta(KettleVariables.R_RECORD_HOSTNAME, ValueMetaInterface.TYPE_STRING),
-				kettleTransBean.getHostname());
+				record.getHostname());
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_ERRORMSG, ValueMetaInterface.TYPE_STRING),
+				record.getErrMsg());
 		repository.connectionDelegate.insertTableRow(KettleVariables.R_TRANS_RECORD, table);
 		repository.commit();
 	}
@@ -317,6 +319,8 @@ public class KettleDBRepositoryClient {
 				record.getStatus());
 		table.addValue(new ValueMeta(KettleVariables.R_RECORD_HOSTNAME, ValueMetaInterface.TYPE_STRING),
 				record.getHostname());
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_ERRORMSG, ValueMetaInterface.TYPE_STRING),
+				record.getErrMsg());
 		repository.connectionDelegate.insertTableRow(KettleVariables.R_JOB_RECORD, table);
 		repository.commit();
 	}
@@ -510,7 +514,7 @@ public class KettleDBRepositoryClient {
 		}
 		String sql = "SELECT " + KettleVariables.R_JOB_RECORD_ID_JOB + "," + KettleVariables.R_JOB_RECORD_NAME_JOB + ","
 				+ KettleVariables.R_RECORD_ID_RUN + "," + KettleVariables.R_RECORD_STATUS + ","
-				+ KettleVariables.R_RECORD_HOSTNAME + KettleVariables.R_RECORD_CREATETIME + ","
+				+ KettleVariables.R_RECORD_HOSTNAME + "," + KettleVariables.R_RECORD_CREATETIME + ","
 				+ KettleVariables.R_RECORD_ERRORMSG + " FROM " + KettleVariables.R_JOB_RECORD + " WHERE "
 				+ KettleVariables.R_RECORD_HOSTNAME + " in (" + hostNamesSql.toString() + ") AND "
 				+ KettleVariables.R_RECORD_STATUS + " in ('" + KettleVariables.RECORD_STATUS_RUNNING + "', '"
