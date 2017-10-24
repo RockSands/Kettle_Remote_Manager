@@ -2,7 +2,7 @@ package com.kettle.main;
 
 import org.pentaho.di.core.exception.KettleException;
 
-import com.kettle.bean.KettleTransResult;
+import com.kettle.core.bean.KettleTransResult;
 import com.kettle.core.instance.KettleDBTranDescribe;
 import com.kettle.core.instance.KettleMgrInstance;
 

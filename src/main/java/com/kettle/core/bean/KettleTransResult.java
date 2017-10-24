@@ -1,4 +1,4 @@
-package com.kettle.bean;
+package com.kettle.core.bean;
 
 public class KettleTransResult {
 	/**

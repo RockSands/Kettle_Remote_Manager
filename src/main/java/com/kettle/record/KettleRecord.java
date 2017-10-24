@@ -6,8 +6,14 @@ import com.kettle.core.KettleVariables;
 
 public abstract class KettleRecord {
 
+	/**
+	 * ID
+	 */
 	private long id;
 
+	/**
+	 * 名称
+	 */
 	private String name;
 
 	/**
@@ -33,6 +39,12 @@ public abstract class KettleRecord {
 	 * 异常信息
 	 */
 	private String errMsg;
+
+	/**
+	 * 获取类型
+	 * @return
+	 */
+	public abstract String getRecordType();
 
 	public long getId() {
 		return id;
@@ -87,6 +99,9 @@ public abstract class KettleRecord {
 	}
 
 	public void setErrMsg(String errMsg) {
+		if (errMsg.length() > 500) {
+			this.errMsg = errMsg.substring(0, 500);
+		}
 		this.errMsg = errMsg;
 	}
 

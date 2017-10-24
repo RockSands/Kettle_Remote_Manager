@@ -27,7 +27,7 @@ import org.pentaho.di.trans.steps.tableinput.TableInputMeta;
 import org.pentaho.di.trans.steps.tableoutput.TableOutputMeta;
 import org.pentaho.di.trans.steps.update.UpdateMeta;
 
-import com.kettle.bean.KettleTransResult;
+import com.kettle.core.bean.KettleTransResult;
 import com.kettle.core.repo.KettleDBRepositoryClient;
 import com.kettle.record.KettleRecord;
 import com.kettle.remote.KettleRemotePool;
@@ -96,28 +96,9 @@ public class KettleMgrInstance {
 					EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_PASSWD"));
 			dbRepositoryClient = new KettleDBRepositoryClient(repository);
 			kettleRemotePool = new KettleRemotePool(dbRepositoryClient, null, null);
-			// kettleClusterPool = new KettleClusterPool(repository, null,
-			// null);
 		} catch (KettleException ex) {
 			throw new RuntimeException("KettleMgrInstance初始化失败", ex);
 		}
-	}
-
-	/**
-	 * 远程发送并执行
-	 * 
-	 * @param transMeta
-	 * @return
-	 * @throws Exception
-	 * @throws KettleException
-	 */
-	public KettleTransResult remoteSendTrans(TransMeta transMeta) throws KettleException, Exception {
-		KettleRecord kettleTransBean;
-		kettleTransBean = kettleRemotePool.remoteSendTrans(transMeta);
-		KettleTransResult kettleTransResult = new KettleTransResult();
-		kettleTransResult.setTransID(kettleTransBean.getTransId());
-		kettleTransResult.setStatus(kettleTransBean.getStatus());
-		return kettleTransResult;
 	}
 
 	/**
@@ -340,7 +321,7 @@ public class KettleMgrInstance {
 			transMeta.addStep(delete);
 			transMeta.addTransHop(new TransHopMeta(isChange, delete));
 			frm_isChange.getStepIOMeta().getTargetStreams().get(1).setStepMeta(delete);
-			KettleTransResult result = remoteSendTrans(transMeta);
+			KettleTransResult result = kettleRemotePool.applyTransMeta(transMeta);
 			return result;
 		} catch (Exception e) {
 			e.printStackTrace();

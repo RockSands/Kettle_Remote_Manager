@@ -2,6 +2,8 @@ package com.kettle.record;
 
 import org.pentaho.di.job.JobMeta;
 
+import com.kettle.core.KettleVariables;
+
 /**
  * 数据库实体对象
  * 
@@ -9,11 +11,6 @@ import org.pentaho.di.job.JobMeta;
  *
  */
 public class KettleJobRecord extends KettleRecord {
-	/**
-	 * 类型
-	 */
-	private String type;
-
 	/**
 	 * Job元数据
 	 */
@@ -36,19 +33,16 @@ public class KettleJobRecord extends KettleRecord {
 		return KettleMeta.getName();
 	}
 
-	public String getType() {
-		return type;
-	}
-
-	public void setType(String type) {
-		this.type = type;
-	}
-
 	public JobMeta getKettleMeta() {
 		return KettleMeta;
 	}
 
 	public void setKettleMeta(JobMeta kettleMeta) {
 		KettleMeta = kettleMeta;
+	}
+
+	@Override
+	public String getRecordType() {
+		return KettleVariables.R_HISTORY_RECORD_TYPE_JOB;
 	}
 }

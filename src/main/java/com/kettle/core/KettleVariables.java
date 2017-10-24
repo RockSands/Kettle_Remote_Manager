@@ -4,12 +4,42 @@ public class KettleVariables {
 	/**
 	 * 转换记录的表名
 	 */
-	public static final String R_TRANS_RECORD = "R_TRANS_RECORD";
+	public static final String R_TRANS_RECORD = "R_RECORD_TRANS";
 
 	/**
 	 * 工作记录的表名
 	 */
-	public static final String R_JOB_RECORD = "R_JOB_RECORD";
+	public static final String R_JOB_RECORD = "R_RECORD_JOB";
+
+	/**
+	 * 历史记录的表名
+	 */
+	public static final String R_HISTORY_RECORD = "R_RECORD_HISTORY";
+
+	/**
+	 * 历史记录的ID
+	 */
+	public static final String R_HISTORY_RECORD_ID = "ID";
+
+	/**
+	 * 历史记录的NAME
+	 */
+	public static final String R_HISTORY_RECORD_NAME = "NAME";
+
+	/**
+	 * 历史记录的TYPE
+	 */
+	public static final String R_HISTORY_RECORD_TYPE = "TYPE";
+
+	/**
+	 * 历史记录的TYPE:TRANS
+	 */
+	public static final String R_HISTORY_RECORD_TYPE_TRANS = "TRANS";
+
+	/**
+	 * 历史记录的TYPE:JOB
+	 */
+	public static final String R_HISTORY_RECORD_TYPE_JOB = "JOB";
 
 	/**
 	 * 转换记录的元数据ID:唯一
@@ -40,7 +70,12 @@ public class KettleVariables {
 	 * 工作或转换记录的主机名
 	 */
 	public static final String R_RECORD_HOSTNAME = "HOSTNAME";
-	
+
+	/**
+	 * 工作或转换记录的创建时间
+	 */
+	public static final String R_RECORD_CREATETIME = "CREATE_TIME";
+
 	/**
 	 * 工作或转换记录的异常信息
 	 */
@@ -75,16 +110,6 @@ public class KettleVariables {
 	 * 记录的运行状态:异常
 	 */
 	public static final String RECORD_STATUS_FINISHED = "FINISHED";
-
-	/**
-	 * 工作记录的类型:重复
-	 */
-	public static final String JOB_RECORD_TYPE_REPEAT = "REPEAT";
-
-	/**
-	 * 工作记录的类型:执行一次
-	 */
-	public static final String JOB_RECORD_TYPE_ONCE = "ONCE";
 
 	/**
 	 * 远端的运行状态:异常

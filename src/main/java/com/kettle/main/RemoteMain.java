@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.kettle.bean.KettleTransResult;
+import com.kettle.core.bean.KettleTransResult;
 import com.kettle.core.instance.KettleDBTranDescribe;
 import com.kettle.core.instance.KettleMgrInstance;
 
@@ -93,17 +93,5 @@ public class RemoteMain {
 				System.out.println("------------------------------");
 			} while (true);
 		}
-		/*
-		 * Kettle的repository是实时的验证
-		 */
-		// for(int i=0;i<10 ; i++){
-		// KettleMgrInstance.getInstance().connect();
-		// System.out.println(KettleMgrInstance.getInstance().isConnected());
-		// KettleMgrInstance.getInstance().disconnect();
-		// }
-		/*
-		 * 以下为定时轮询,未完成,提供的查询接口是remoteTransStatus
-		 */
-
 	}
 }

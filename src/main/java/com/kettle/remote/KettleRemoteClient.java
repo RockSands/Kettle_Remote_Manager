@@ -31,6 +31,9 @@ import com.kettle.record.KettleTransRecord;
 
 public class KettleRemoteClient {
 
+	/**
+	 * 日志
+	 */
 	Logger logger = LoggerFactory.getLogger(KettleRemoteClient.class);
 
 	/**
@@ -68,16 +71,21 @@ public class KettleRemoteClient {
 	 */
 	private final KettleRecordPool kettleRecordPool = new KettleRecordPool();
 
-	public KettleRemoteClient(KettleRemotePool kettleRemotePool, final SlaveServer remoteServer)
+	public KettleRemoteClient(KettleRemotePool kettleRemotePool, final SlaveServer remoteServer, int initialDelay)
 			throws KettleException {
 		this.kettleRemotePool = kettleRemotePool;
 		this.remoteServer = remoteServer;
 		this.dbRepositoryClient = kettleRemotePool.getDbRepositoryClient();
 		int maxRecord = 6;
-		threadPool = Executors.newScheduledThreadPool(maxRecord);
+		threadPool = Executors.newSingleThreadScheduledExecutor();
 		recordArr = new KettleRecord[maxRecord];
-		remoteStatus();
-		threadPool.scheduleAtFixedRate(new RemoteRecordDaemon(), 10, 20, TimeUnit.SECONDS);
+		threadPool.execute(new Runnable() {
+			@Override
+			public void run() {
+				remoteStatus();
+			}
+		});
+		threadPool.scheduleAtFixedRate(new RemoteRecordDaemon(), initialDelay, 20, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -289,7 +297,7 @@ public class KettleRemoteClient {
 	 * @param runid
 	 * @throws Exception
 	 */
-	public void remoteRemoveTran(String transName, String runid) throws Exception {
+	public void remoteRemoveTrans(String transName, String runid) throws Exception {
 		remoteServer.removeTransformation(transName, runid);
 	}
 
@@ -377,12 +385,40 @@ public class KettleRemoteClient {
 			if (!updateRecords.isEmpty()) {
 				try {
 					dbRepositoryClient.updateRecords(updateRecords);
+					cleanRecords();
 					updateRecords.clear();
 				} catch (KettleException e) {
 					logger.error("Record" + updateRecords + "更新记录发生异常", e);
 				}
 			}
 
+		}
+
+		/**
+		 * @param 清理
+		 */
+		private void cleanRecords() {
+			if (checkRemoteStatus()) {
+				for (KettleRecord roll : updateRecords) {
+					if (KettleJobRecord.class.isInstance(roll)) {
+						KettleJobRecord job = (KettleJobRecord) roll;
+						try {
+							remoteRemoveJob(job.getKettleMeta().getName(), null);
+						} catch (Exception e) {
+							logger.error("Kettle远端[" + getHostName() + "]清理Job[" + job.getId() + "]发生异常", e);
+						}
+					}
+					if (KettleTransRecord.class.isInstance(roll)) {
+						KettleTransRecord trans = (KettleTransRecord) roll;
+						try {
+							remoteCleanTrans(trans.getKettleMeta().getName(), null);
+							remoteRemoveTrans(trans.getKettleMeta().getName(), null);
+						} catch (Exception e) {
+							logger.error("Kettle远端[" + getHostName() + "]清理Trans[" + trans.getId() + "]发生异常\n", e);
+						}
+					}
+				}
+			}
 		}
 
 		/**
@@ -452,7 +488,7 @@ public class KettleRemoteClient {
 						job.setStatus(KettleVariables.REMOTE_STATUS_ERROR);
 						job.setErrMsg("Kettle远端[" + getHostName() + "]发送Job[" + job.getId() + "]发生异常");
 					}
-					updateRecords.add(job);
+					updateRecords.add(roll);
 				}
 				if (KettleTransRecord.class.isInstance(roll)) {
 					KettleTransRecord trans = (KettleTransRecord) roll;
@@ -466,7 +502,7 @@ public class KettleRemoteClient {
 						trans.setStatus(KettleVariables.REMOTE_STATUS_ERROR);
 						trans.setErrMsg("Kettle远端[" + getHostName() + "]发送Trans[" + trans.getId() + "]发生异常");
 					}
-					updateRecords.add(trans);
+					updateRecords.add(roll);
 				}
 			}
 		}
