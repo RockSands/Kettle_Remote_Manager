@@ -27,9 +27,9 @@ public class KettleVariables {
 	public static final String R_HISTORY_RECORD_NAME = "NAME";
 
 	/**
-	 * 历史记录的TYPE
+	 * 记录的RECORD_TYPE
 	 */
-	public static final String R_HISTORY_RECORD_TYPE = "TYPE";
+	public static final String R_RECORD_RECORD_TYPE = "RECORD_TYPE";
 
 	/**
 	 * 历史记录的TYPE:TRANS
@@ -75,6 +75,11 @@ public class KettleVariables {
 	 * 工作或转换记录的创建时间
 	 */
 	public static final String R_RECORD_CREATETIME = "CREATE_TIME";
+
+	/**
+	 * 工作或转换记录的更新时间
+	 */
+	public static final String R_RECORD_UPDATETIME = "UPDATE_TIME";
 
 	/**
 	 * 工作或转换记录的异常信息

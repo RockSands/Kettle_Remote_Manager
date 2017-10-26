@@ -338,7 +338,7 @@ public class KettleDBRepositoryClient {
 					record.getId());
 			table.addValue(new ValueMeta(KettleVariables.R_HISTORY_RECORD_NAME, ValueMetaInterface.TYPE_STRING),
 					record.getName());
-			table.addValue(new ValueMeta(KettleVariables.R_HISTORY_RECORD_TYPE, ValueMetaInterface.TYPE_STRING),
+			table.addValue(new ValueMeta(KettleVariables.R_RECORD_RECORD_TYPE, ValueMetaInterface.TYPE_STRING),
 					record.getRecordType());
 			table.addValue(new ValueMeta(KettleVariables.R_RECORD_ID_RUN, ValueMetaInterface.TYPE_STRING),
 					record.getRunID());
@@ -371,6 +371,7 @@ public class KettleDBRepositoryClient {
 				record.getHostname());
 		table.addValue(new ValueMeta(KettleVariables.R_RECORD_ERRORMSG, ValueMetaInterface.TYPE_STRING),
 				record.getErrMsg());
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_UPDATETIME, ValueMetaInterface.TYPE_TIMESTAMP), null);
 		repository.connectionDelegate.updateTableRow(KettleVariables.R_JOB_RECORD, KettleVariables.R_JOB_RECORD_ID_JOB,
 				table, new LongObjectId(record.getId()));
 		insertHistory(record);
@@ -395,6 +396,7 @@ public class KettleDBRepositoryClient {
 				record.getHostname());
 		table.addValue(new ValueMeta(KettleVariables.R_RECORD_ERRORMSG, ValueMetaInterface.TYPE_STRING),
 				record.getErrMsg());
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_UPDATETIME, ValueMetaInterface.TYPE_TIMESTAMP), null);
 		if (KettleTransRecord.class.isInstance(record)) {
 			repository.connectionDelegate.updateTableRow(KettleVariables.R_TRANS_RECORD,
 					KettleVariables.R_TRANS_RECORD_ID_TRANS, table, new LongObjectId(record.getId()));
@@ -427,6 +429,7 @@ public class KettleDBRepositoryClient {
 					record.getHostname());
 			table.addValue(new ValueMeta(KettleVariables.R_RECORD_ERRORMSG, ValueMetaInterface.TYPE_STRING),
 					record.getErrMsg());
+			table.addValue(new ValueMeta(KettleVariables.R_RECORD_UPDATETIME, ValueMetaInterface.TYPE_TIMESTAMP), null);
 			repository.connectionDelegate.updateTableRow(KettleVariables.R_TRANS_RECORD,
 					KettleVariables.R_TRANS_RECORD_ID_TRANS, table, new LongObjectId(record.getId()));
 			insertHistory(record);
