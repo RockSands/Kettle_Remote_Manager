@@ -96,7 +96,7 @@ public class KettleMgrInstance {
 					EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_PASSWD"));
 			dbRepositoryClient = new KettleDBRepositoryClient(repository);
 			kettleRemotePool = new KettleRemotePool(dbRepositoryClient, null, null);
-		} catch (KettleException ex) {
+		} catch (Exception ex) {
 			throw new RuntimeException("KettleMgrInstance初始化失败", ex);
 		}
 	}

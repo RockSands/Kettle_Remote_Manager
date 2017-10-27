@@ -32,6 +32,11 @@ public class KettleVariables {
 	public static final String R_RECORD_RECORD_TYPE = "RECORD_TYPE";
 
 	/**
+	 * 记录的CRON表达式
+	 */
+	public static final String R_RECORD_CRON_EXPRESSION = "CRON_EXPRESSION";
+
+	/**
 	 * 历史记录的TYPE:TRANS
 	 */
 	public static final String R_HISTORY_RECORD_TYPE_TRANS = "TRANS";

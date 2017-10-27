@@ -31,9 +31,19 @@ public abstract class KettleRecord {
 	private String hostname;
 
 	/**
+	 * CRON表达式
+	 */
+	private String cronExpression;
+
+	/**
 	 * 创建时间
 	 */
 	private Timestamp createTime;
+
+	/**
+	 * 更新时间
+	 */
+	private Timestamp updateTime;
 
 	/**
 	 * 异常信息
@@ -42,6 +52,7 @@ public abstract class KettleRecord {
 
 	/**
 	 * 获取类型
+	 * 
 	 * @return
 	 */
 	public abstract String getRecordType();
@@ -103,6 +114,22 @@ public abstract class KettleRecord {
 			this.errMsg = errMsg.substring(0, 500);
 		}
 		this.errMsg = errMsg;
+	}
+
+	public String getCronExpression() {
+		return cronExpression;
+	}
+
+	public void setCronExpression(String cronExpression) {
+		this.cronExpression = cronExpression;
+	}
+
+	public Timestamp getUpdateTime() {
+		return updateTime;
+	}
+
+	public void setUpdateTime(Timestamp updateTime) {
+		this.updateTime = updateTime;
 	}
 
 	/**

@@ -8,11 +8,13 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.Job;
 import org.quartz.JobBuilder;
+import org.quartz.JobDataMap;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+import org.quartz.SchedulerException;
 import org.quartz.SchedulerFactory;
-import org.quartz.impl.JobDetailImpl;
+import org.quartz.Trigger;
 import org.quartz.impl.StdSchedulerFactory;
 
 public class KettleRecordPool {
@@ -35,6 +37,20 @@ public class KettleRecordPool {
 	 */
 	private final Queue<KettleRecord> recordPrioritizeQueue = new LinkedBlockingQueue<KettleRecord>();
 
+	public KettleRecordPool() throws Exception {
+		schedulerFactory.getScheduler().start();
+	}
+
+	/**
+	 * 任务数量
+	 * 
+	 * @return
+	 */
+	public int size() {
+		return recordQueue.size() + recordPrioritizeQueue.size();
+
+	}
+
 	/**
 	 * @param record
 	 * @return
@@ -55,10 +71,11 @@ public class KettleRecordPool {
 	}
 
 	/**
-	 * 添加的转换任务
+	 * 添加的转换任务,该任务仅执行一次
 	 * 
 	 * @param record
 	 * @return 是否添加成功
+	 * @throws Exception
 	 */
 	public synchronized boolean addRecord(KettleRecord record) {
 		if (record != null) {
@@ -67,6 +84,23 @@ public class KettleRecordPool {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * 添加定时任务
+	 * 
+	 * @param record
+	 * @throws SchedulerException
+	 */
+	public void addSchedulerRecord(KettleRecord record) throws Exception {
+		if (record == null || record.getCronExpression() == null) {
+			throw new Exception("添加SchedulerRecord[" + record.getName() + "]失败,未找到CRON表达式!");
+		}
+		Trigger scheduleTrigger = CronScheduleBuilder.cronSchedule(record.getCronExpression()).build();
+		JobDataMap newJobDataMap = new JobDataMap();
+		newJobDataMap.put("RECORD", record);
+		JobDetail jobDetail = JobBuilder.newJob(RecordSchedulerJob.class).setJobData(newJobDataMap).build();
+		schedulerFactory.getScheduler().scheduleJob(jobDetail, scheduleTrigger);
 	}
 
 	/**
@@ -104,27 +138,15 @@ public class KettleRecordPool {
 	}
 
 	/**
-	 * 任务记录
-	 * 
-	 * @param record
-	 */
-	public void addRecordSchedule(RecordScheduler scheduler) {
-		JobDetail jobDetail = JobBuilder.newJob(RecordSchedulerJob.class).build();
-		SimpleTrigger simpleTrigger = new SimpleTrigger("simpleTrigger", "triggerGroup-s1");
-		CronScheduleBuilder.cronSchedule(scheduler.getCronExpression());
-	}
-
-	/**
+	 * 定时调度,将record放入优先队列
 	 * 
 	 * @author Administrator
-	 *
 	 */
 	private class RecordSchedulerJob implements Job {
-
 		@Override
 		public void execute(JobExecutionContext arg0) throws JobExecutionException {
-
+			KettleRecord record = (KettleRecord) arg0.get("RECORD");
+			addPrioritizeRecord(record);
 		}
-
 	}
 }
