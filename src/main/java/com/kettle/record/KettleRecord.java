@@ -2,11 +2,9 @@ package com.kettle.record;
 
 import java.sql.Timestamp;
 
-import org.pentaho.di.repository.RepositoryElementInterface;
-
 import com.kettle.core.KettleVariables;
 
-public abstract class KettleRecord<E extends RepositoryElementInterface> {
+public abstract class KettleRecord {
 
 	/**
 	 * ID
@@ -53,32 +51,11 @@ public abstract class KettleRecord<E extends RepositoryElementInterface> {
 	private String errMsg;
 
 	/**
-	 * Kettle元数据
-	 */
-	private E kettleMeta;
-
-	/**
 	 * 获取类型
 	 * 
 	 * @return
 	 */
 	public abstract String getRecordType();
-
-	/**
-	 * 获取Kettle元数据
-	 * 
-	 * @return
-	 */
-	public E getKettleMeta() {
-		return kettleMeta;
-	}
-
-	/**
-	 * 设置Kettle元数据
-	 */
-	public void setKettleMeta(E kettleMeta) {
-		this.kettleMeta = kettleMeta;
-	}
 
 	public long getId() {
 		return id;

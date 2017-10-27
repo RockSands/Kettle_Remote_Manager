@@ -15,7 +15,6 @@ import org.pentaho.di.job.JobMeta;
 import org.pentaho.di.repository.LongObjectId;
 import org.pentaho.di.repository.ObjectId;
 import org.pentaho.di.repository.RepositoryDirectoryInterface;
-import org.pentaho.di.repository.RepositoryElementInterface;
 import org.pentaho.di.repository.kdr.KettleDatabaseRepository;
 import org.pentaho.di.trans.TransMeta;
 
@@ -338,7 +337,7 @@ public class KettleDBRepositoryClient {
 	 * @param record
 	 * @throws KettleException
 	 */
-	private void insertHistory(KettleRecord<? extends RepositoryElementInterface> record) throws KettleException {
+	private void insertHistory(KettleRecord record) throws KettleException {
 		if (record.isFinished() || record.isError()) {
 			RowMetaAndData table = new RowMetaAndData();
 			table.addValue(new ValueMeta(KettleVariables.R_HISTORY_RECORD_ID, ValueMetaInterface.TYPE_INTEGER),
@@ -421,13 +420,12 @@ public class KettleDBRepositoryClient {
 	 * 
 	 * @throws KettleException
 	 */
-	public synchronized void updateRecords(List<KettleRecord<? extends RepositoryElementInterface>> kettleRecords)
-			throws KettleException {
+	public synchronized void updateRecords(List<KettleRecord> kettleRecords) throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}
 		RowMetaAndData table;
-		for (KettleRecord<? extends RepositoryElementInterface> record : kettleRecords) {
+		for (KettleRecord record : kettleRecords) {
 			table = new RowMetaAndData();
 			table.addValue(new ValueMeta(KettleVariables.R_RECORD_STATUS, ValueMetaInterface.TYPE_STRING),
 					record.getStatus());

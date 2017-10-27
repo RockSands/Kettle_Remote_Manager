@@ -10,13 +10,26 @@ import com.kettle.core.KettleVariables;
  * @author Administrator
  *
  */
-public class KettleTransRecord extends KettleRecord<TransMeta> {
+public class KettleTransRecord extends KettleRecord {
+
+	/**
+	 * Job元数据
+	 */
+	private TransMeta KettleMeta;
 
 	public KettleTransRecord() {
 	}
 
-	public KettleTransRecord(TransMeta transMeta) {
-		super.setKettleMeta(transMeta);
+	public KettleTransRecord(TransMeta KettleMeta) {
+		this.KettleMeta = KettleMeta;
+	}
+
+	public TransMeta getKettleMeta() {
+		return KettleMeta;
+	}
+
+	public void setKettleMeta(TransMeta kettleMeta) {
+		KettleMeta = kettleMeta;
 	}
 
 	@Override
