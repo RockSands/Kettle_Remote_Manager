@@ -10,35 +10,13 @@ import com.kettle.core.KettleVariables;
  * @author Administrator
  *
  */
-public class KettleJobRecord extends KettleRecord {
-	/**
-	 * Job元数据
-	 */
-	private JobMeta KettleMeta;
+public class KettleJobRecord extends KettleRecord<JobMeta> {
 
 	public KettleJobRecord() {
 	}
 
-	public KettleJobRecord(JobMeta KettleMeta) {
-		this.KettleMeta = KettleMeta;
-	}
-
-	@Override
-	public long getId() {
-		return Long.valueOf(KettleMeta.getObjectId().getId());
-	}
-
-	@Override
-	public String getName() {
-		return KettleMeta.getName();
-	}
-
-	public JobMeta getKettleMeta() {
-		return KettleMeta;
-	}
-
-	public void setKettleMeta(JobMeta kettleMeta) {
-		KettleMeta = kettleMeta;
+	public KettleJobRecord(JobMeta kettleMeta) {
+		super.setKettleMeta(kettleMeta);
 	}
 
 	@Override
