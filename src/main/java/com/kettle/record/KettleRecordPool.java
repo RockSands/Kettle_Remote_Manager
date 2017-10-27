@@ -15,6 +15,7 @@ import org.quartz.JobExecutionException;
 import org.quartz.SchedulerException;
 import org.quartz.SchedulerFactory;
 import org.quartz.Trigger;
+import org.quartz.TriggerBuilder;
 import org.quartz.impl.StdSchedulerFactory;
 
 public class KettleRecordPool {
@@ -37,6 +38,10 @@ public class KettleRecordPool {
 	 */
 	private final Queue<KettleRecord> recordPrioritizeQueue = new LinkedBlockingQueue<KettleRecord>();
 
+	/**
+	 * 
+	 * @throws Exception
+	 */
 	public KettleRecordPool() throws Exception {
 		schedulerFactory.getScheduler().start();
 	}
@@ -96,11 +101,12 @@ public class KettleRecordPool {
 		if (record == null || record.getCronExpression() == null) {
 			throw new Exception("添加SchedulerRecord[" + record.getName() + "]失败,未找到CRON表达式!");
 		}
-		Trigger scheduleTrigger = CronScheduleBuilder.cronSchedule(record.getCronExpression()).build();
+		Trigger trigger = TriggerBuilder.newTrigger().startNow()
+				.withSchedule(CronScheduleBuilder.cronSchedule(record.getCronExpression())).build();
 		JobDataMap newJobDataMap = new JobDataMap();
 		newJobDataMap.put("RECORD", record);
 		JobDetail jobDetail = JobBuilder.newJob(RecordSchedulerJob.class).setJobData(newJobDataMap).build();
-		schedulerFactory.getScheduler().scheduleJob(jobDetail, scheduleTrigger);
+		schedulerFactory.getScheduler().scheduleJob(jobDetail, trigger);
 	}
 
 	/**
@@ -142,10 +148,10 @@ public class KettleRecordPool {
 	 * 
 	 * @author Administrator
 	 */
-	private class RecordSchedulerJob implements Job {
+	public class RecordSchedulerJob implements Job {
 		@Override
 		public void execute(JobExecutionContext arg0) throws JobExecutionException {
-			KettleRecord record = (KettleRecord) arg0.get("RECORD");
+			KettleRecord record = (KettleRecord) arg0.getJobDetail().getJobDataMap().get("RECORD");
 			addPrioritizeRecord(record);
 		}
 	}
