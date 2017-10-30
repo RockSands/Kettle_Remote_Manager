@@ -2,6 +2,8 @@ package com.kettle.record;
 
 import java.sql.Timestamp;
 
+import org.pentaho.di.repository.RepositoryElementInterface;
+
 import com.kettle.core.KettleVariables;
 
 public abstract class KettleRecord {
@@ -10,6 +12,11 @@ public abstract class KettleRecord {
 	 * ID
 	 */
 	private long id;
+
+	/**
+	 * UUID
+	 */
+	private String uuid;
 
 	/**
 	 * 名称
@@ -55,7 +62,22 @@ public abstract class KettleRecord {
 	 * 
 	 * @return
 	 */
+	public abstract RepositoryElementInterface getKettleMeta();
+
+	/**
+	 * 获取类型
+	 * 
+	 * @return
+	 */
 	public abstract String getRecordType();
+
+	public String getUuid() {
+		return uuid;
+	}
+
+	public void setUuid(String uuid) {
+		this.uuid = uuid;
+	}
 
 	public long getId() {
 		return id;

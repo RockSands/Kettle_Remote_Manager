@@ -2,6 +2,10 @@ package com.kettle.core.bean;
 
 public class KettleTransResult {
 	/**
+	 * uuid
+	 */
+	private String uuid;
+	/**
 	 * TransID
 	 */
 	private long transID;
@@ -14,6 +18,14 @@ public class KettleTransResult {
 	 * 异常信息
 	 */
 	private String errMsg;
+	
+	public String getUuid() {
+		return uuid;
+	}
+
+	public void setUuid(String uuid) {
+		this.uuid = uuid;
+	}
 
 	public long getTransID() {
 		return transID;

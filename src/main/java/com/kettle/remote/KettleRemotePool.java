@@ -4,6 +4,7 @@ import java.text.ParseException;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -23,6 +24,7 @@ import com.kettle.core.bean.KettleJobResult;
 import com.kettle.core.bean.KettleTransResult;
 import com.kettle.core.repo.KettleDBRepositoryClient;
 import com.kettle.record.KettleJobRecord;
+import com.kettle.record.KettleRecord;
 import com.kettle.record.KettleRecordPool;
 import com.kettle.record.KettleTransRecord;
 
@@ -132,6 +134,7 @@ public class KettleRemotePool {
 			record.setId(Long.valueOf(transMeta.getObjectId().getId()));
 			record.setName(transMeta.getName());
 			record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
+			record.setUuid(UUID.randomUUID().toString().replace("-", ""));
 			dbRepositoryClient.insertTransRecord(record);
 			kettleRecordPool.addRecord(record);
 			KettleTransResult result = new KettleTransResult();
@@ -163,6 +166,7 @@ public class KettleRemotePool {
 			record.setName(transMeta.getName());
 			record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
 			record.setCronExpression(cronExpression);
+			record.setUuid(UUID.randomUUID().toString().replace("-", ""));
 			dbRepositoryClient.insertTransRecord(record);
 			kettleRecordPool.addSchedulerRecord(record);
 			KettleTransResult result = new KettleTransResult();
@@ -174,6 +178,21 @@ public class KettleRemotePool {
 			DeleteTransMetaForce(transMeta);
 			throw new KettleException("Trans[" + transMeta.getName() + "]执行Apply操作发生异常!");
 		}
+	}
+
+	/**
+	 * 更新任务Cron
+	 * 
+	 * @throws Exception
+	 */
+	public void modifyRecordSchedule(String uuid, String newCron) throws Exception {
+		KettleRecord record = dbRepositoryClient.queryRecord(uuid);
+		if (record == null) {
+			throw new KettleException("Kettle不存在UUID为[" + uuid + "]的记录!");
+		}
+		kettleRecordPool.modifySchedulerRecord(uuid, newCron);
+		record.setCronExpression(newCron);
+
 	}
 
 	/**
@@ -198,6 +217,7 @@ public class KettleRemotePool {
 			dbRepositoryClient.saveJobMeta(jobMeta);
 			record = new KettleJobRecord(jobMeta);
 			record.setId(Long.valueOf(jobMeta.getObjectId().getId()));
+			record.setUuid(UUID.randomUUID().toString().replace("-", ""));
 			record.setName(jobMeta.getName());
 			record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
 			dbRepositoryClient.insertJobRecord(record);
@@ -235,6 +255,7 @@ public class KettleRemotePool {
 			dbRepositoryClient.saveJobMeta(jobMeta);
 			record = new KettleJobRecord(jobMeta);
 			record.setId(Long.valueOf(jobMeta.getObjectId().getId()));
+			record.setUuid(UUID.randomUUID().toString().replace("-", ""));
 			record.setName(jobMeta.getName());
 			record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
 			record.setCronExpression(cronExpression);

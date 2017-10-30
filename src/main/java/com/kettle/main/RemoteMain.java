@@ -78,10 +78,10 @@ public class RemoteMain {
 			}
 			targets.add(target);
 		}
-		List<CreateDataTransfer> createDataTransfers = new ArrayList<CreateDataTransfer>(flags.size());
+		List<CreateSTDThread> createDataTransfers = new ArrayList<CreateSTDThread>(flags.size());
 		ExecutorService threadPool = Executors.newFixedThreadPool(flags.size());
 		for (int i = 0; i < flags.size(); i++) {
-			CreateDataTransfer cdt = new CreateDataTransfer(sources.get(i), targets.get(i));
+			CreateSTDThread cdt = new CreateSTDThread(sources.get(i), targets.get(i));
 			threadPool.execute(cdt);
 			createDataTransfers.add(cdt);
 		}
@@ -89,7 +89,7 @@ public class RemoteMain {
 		do {
 			Thread.sleep(1000);
 			System.out.println("------------------------------");
-			for (CreateDataTransfer createDataTransfer : createDataTransfers) {
+			for (CreateSTDThread createDataTransfer : createDataTransfers) {
 				if (createDataTransfer.getResult() != null) {
 					KettleTransResult result = KettleMgrInstance.getInstance()
 							.queryDataTransfer(createDataTransfer.getResult().getTransID());

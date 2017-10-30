@@ -6,14 +6,14 @@ import com.kettle.core.bean.KettleTransResult;
 import com.kettle.core.instance.KettleDBTranDescribe;
 import com.kettle.core.instance.KettleMgrInstance;
 
-public class CreateDataTransfer implements Runnable {
+public class CreateSTDThread implements Runnable {
 	KettleDBTranDescribe source = null;
 
 	KettleDBTranDescribe target = null;
 
 	KettleTransResult result = null;
 
-	CreateDataTransfer(KettleDBTranDescribe source, KettleDBTranDescribe target) {
+	CreateSTDThread(KettleDBTranDescribe source, KettleDBTranDescribe target) {
 		this.source = source;
 		this.target = target;
 	}
@@ -22,7 +22,7 @@ public class CreateDataTransfer implements Runnable {
 	public void run() {
 		try {
 			long now = System.currentTimeMillis();
-			result = KettleMgrInstance.getInstance().createDataTransfer(source, target);
+			result = KettleMgrInstance.getInstance().syncTablesDatas(source, target);
 			System.out.println("==>SendTransfer used: " + (System.currentTimeMillis() - now));
 		} catch (KettleException e) {
 			e.printStackTrace();
@@ -32,5 +32,5 @@ public class CreateDataTransfer implements Runnable {
 	public KettleTransResult getResult() {
 		return result;
 	}
-	
+
 }

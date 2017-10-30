@@ -16,6 +16,7 @@ import org.quartz.SchedulerException;
 import org.quartz.SchedulerFactory;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
+import org.quartz.TriggerKey;
 import org.quartz.impl.StdSchedulerFactory;
 
 public class KettleRecordPool {
@@ -64,7 +65,7 @@ public class KettleRecordPool {
 		if (record == null) {
 			return true;
 		}
-		return recordQueueSet.contains(record.getRecordType() + "_" + record.getId());
+		return recordQueueSet.contains(record.getUuid());
 	}
 
 	/**
@@ -72,7 +73,7 @@ public class KettleRecordPool {
 	 * @return
 	 */
 	public void removeRecordFlag(KettleRecord record) {
-		recordQueueSet.remove(record.getRecordType() + "_" + record.getId());
+		recordQueueSet.remove(record.getUuid());
 	}
 
 	/**
@@ -101,12 +102,32 @@ public class KettleRecordPool {
 		if (record == null || record.getCronExpression() == null) {
 			throw new Exception("添加SchedulerRecord[" + record.getName() + "]失败,未找到CRON表达式!");
 		}
-		Trigger trigger = TriggerBuilder.newTrigger().startNow()
+		Trigger trigger = TriggerBuilder.newTrigger().withIdentity(record.getUuid()).startNow()
 				.withSchedule(CronScheduleBuilder.cronSchedule(record.getCronExpression())).build();
 		JobDataMap newJobDataMap = new JobDataMap();
 		newJobDataMap.put("RECORD", record);
-		JobDetail jobDetail = JobBuilder.newJob(RecordSchedulerJob.class).setJobData(newJobDataMap).build();
+		JobDetail jobDetail = JobBuilder.newJob(RecordSchedulerJob.class).withIdentity(record.getUuid())
+				.setJobData(newJobDataMap).build();
 		schedulerFactory.getScheduler().scheduleJob(jobDetail, trigger);
+	}
+
+	/**
+	 * 更新
+	 * 
+	 * @param uuid
+	 * @param newCron
+	 * @throws Exception
+	 */
+	public void modifySchedulerRecord(String uuid, String newCron) throws Exception {
+		if (uuid == null || newCron == null || "".equals(newCron.trim())) {
+			throw new Exception("修改SchedulerRecord[" + uuid + "]未找到或CRON表达式为空!");
+		}
+		Trigger newTrigger = TriggerBuilder.newTrigger().withIdentity(uuid).startNow()
+				.withSchedule(CronScheduleBuilder.cronSchedule(newCron)).build();
+		TriggerKey triggerKey = new TriggerKey(uuid);
+		if (schedulerFactory.getScheduler().checkExists(triggerKey)) {
+			schedulerFactory.getScheduler().rescheduleJob(triggerKey, newTrigger);
+		}
 	}
 
 	/**

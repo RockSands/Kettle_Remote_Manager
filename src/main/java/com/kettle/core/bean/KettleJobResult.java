@@ -2,6 +2,10 @@ package com.kettle.core.bean;
 
 public class KettleJobResult {
 	/**
+	 * uuid
+	 */
+	private String uuid;
+	/**
 	 * jobID
 	 */
 	private long jobID;
@@ -14,6 +18,14 @@ public class KettleJobResult {
 	 * 异常信息
 	 */
 	private String errMsg;
+
+	public String getUuid() {
+		return uuid;
+	}
+
+	public void setUuid(String uuid) {
+		this.uuid = uuid;
+	}
 
 	public long getJobID() {
 		return jobID;

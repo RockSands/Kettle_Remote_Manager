@@ -412,7 +412,8 @@ public class KettleRemoteClient {
 		 */
 		private void cleanRecords() {
 			for (KettleRecord roll : updateRecords) {
-				if (roll.isError() || roll.isFinished()) {
+				// 完成的进行清理
+				if (roll.isFinished()) {
 					if (KettleJobRecord.class.isInstance(roll)) {
 						KettleJobRecord job = (KettleJobRecord) roll;
 						try {
@@ -494,7 +495,7 @@ public class KettleRemoteClient {
 					} catch (Exception e) {
 						logger.error("Kettle远端[" + getHostName() + "]发送Job[" + job.getId() + "]发生异常\n", e);
 						roll.setStatus(KettleVariables.REMOTE_STATUS_ERROR);
-						roll.setErrMsg(e.getMessage());
+						roll.setErrMsg("Kettle远端[" + getHostName() + "]发送Job[" + job.getId() + "]发生异常");
 						roll.setHostname(getHostName());
 						updateRecords.add(job);
 					}
@@ -513,7 +514,7 @@ public class KettleRemoteClient {
 					} catch (Exception e) {
 						logger.error("Kettle远端[" + getHostName() + "]发送Trans[" + trans.getId() + "]发生异常\n", e);
 						roll.setStatus(KettleVariables.REMOTE_STATUS_ERROR);
-						roll.setErrMsg(e.getMessage());
+						roll.setErrMsg("Kettle远端[" + getHostName() + "]发送Job[" + trans.getId() + "]发生异常");
 						roll.setHostname(getHostName());
 						updateRecords.add(trans);
 					}
