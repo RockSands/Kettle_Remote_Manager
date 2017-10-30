@@ -118,7 +118,7 @@ public class KettleDBRepositoryClient {
 	 * @return
 	 * @throws KettleException
 	 */
-	public TransMeta getTransMeta(long transID) throws KettleException {
+	public synchronized TransMeta getTransMeta(long transID) throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}
@@ -133,7 +133,7 @@ public class KettleDBRepositoryClient {
 	 * @return
 	 * @throws KettleException
 	 */
-	public JobMeta getJobMeta(long jobID) throws KettleException {
+	public synchronized JobMeta getJobMeta(long jobID) throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}
@@ -464,26 +464,17 @@ public class KettleDBRepositoryClient {
 	 * @return
 	 * @throws KettleException
 	 */
-	public List<KettleTransRecord> allHandleTransRecord(List<String> hostnames) throws KettleException {
+	public List<KettleTransRecord> allHandleTransRecord() throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
-		}
-		StringBuffer hostNamesSql = new StringBuffer();
-		for (String hostName : hostnames) {
-			if (hostNamesSql.length() > 0) {
-				hostNamesSql.append(", '").append(hostName).append("'");
-			} else {
-				hostNamesSql.append("'").append(hostName).append("'");
-			}
 		}
 		String sql = "SELECT " + KettleVariables.R_TRANS_RECORD_ID_TRANS + ","
 				+ KettleVariables.R_TRANS_RECORD_NAME_TRANS + "," + KettleVariables.R_RECORD_ID_RUN + ","
 				+ KettleVariables.R_RECORD_STATUS + "," + KettleVariables.R_RECORD_HOSTNAME + ","
-				+ KettleVariables.R_RECORD_CREATETIME + "," + KettleVariables.R_RECORD_ERRORMSG + ","
-				+ KettleVariables.R_RECORD_CRON_EXPRESSION + " FROM " + KettleVariables.R_TRANS_RECORD + " WHERE "
-				+ KettleVariables.R_RECORD_HOSTNAME + " in (" + hostNamesSql.toString() + ") AND "
-				+ KettleVariables.R_RECORD_STATUS + " in ('" + KettleVariables.RECORD_STATUS_RUNNING + "', '"
-				+ KettleVariables.RECORD_STATUS_APPLY + "')";
+				+ KettleVariables.R_RECORD_CREATETIME + "," + KettleVariables.R_RECORD_UPDATETIME + ","
+				+ KettleVariables.R_RECORD_ERRORMSG + "," + KettleVariables.R_RECORD_CRON_EXPRESSION + " FROM "
+				+ KettleVariables.R_TRANS_RECORD + " WHERE " + KettleVariables.R_RECORD_STATUS + " in ('"
+				+ KettleVariables.RECORD_STATUS_RUNNING + "', '" + KettleVariables.RECORD_STATUS_APPLY + "')";
 		List<Object[]> result = repository.connectionDelegate.getRows(sql, -1);
 		List<KettleTransRecord> kettleTransBeans = new LinkedList<KettleTransRecord>();
 		if (result == null || result.isEmpty()) {
@@ -496,11 +487,12 @@ public class KettleDBRepositoryClient {
 			bean.setName((String) record[1]);
 			bean.setRunID((String) record[2]);
 			bean.setStatus((String) record[3]);
-			bean.setHostname((String) record[4]);
+			bean.setHostname(record[4] == null ? null : (String) record[4]);
 			bean.setCreateTime((Timestamp) record[5]);
-			bean.setErrMsg((String) record[6]);
-			bean.setCronExpression((String) record[7]);
-			bean.setKettleMeta(getTransMeta(Long.valueOf(bean.getId())));
+			bean.setUpdateTime((Timestamp) record[6]);
+			bean.setErrMsg(record[7] == null ? null : (String) record[7]);
+			bean.setCronExpression(record[8] == null ? null : (String) record[8]);
+			// bean.setKettleMeta(getTransMeta(Long.valueOf(bean.getId())));
 			kettleTransBeans.add(bean);
 		}
 		return kettleTransBeans;
@@ -513,25 +505,17 @@ public class KettleDBRepositoryClient {
 	 * @return
 	 * @throws KettleException
 	 */
-	public List<KettleJobRecord> allHandleJobRecord(List<String> hostnames) throws KettleException {
+	public List<KettleJobRecord> allHandleJobRecord() throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
-		}
-		StringBuffer hostNamesSql = new StringBuffer();
-		for (String hostName : hostnames) {
-			if (hostNamesSql.length() > 0) {
-				hostNamesSql.append(", '").append(hostName).append("'");
-			} else {
-				hostNamesSql.append("'").append(hostName).append("'");
-			}
 		}
 		String sql = "SELECT " + KettleVariables.R_JOB_RECORD_ID_JOB + "," + KettleVariables.R_JOB_RECORD_NAME_JOB + ","
 				+ KettleVariables.R_RECORD_ID_RUN + "," + KettleVariables.R_RECORD_STATUS + ","
 				+ KettleVariables.R_RECORD_HOSTNAME + "," + KettleVariables.R_RECORD_CREATETIME + ","
-				+ KettleVariables.R_RECORD_ERRORMSG + "," + KettleVariables.R_RECORD_CRON_EXPRESSION + " FROM "
-				+ KettleVariables.R_JOB_RECORD + " WHERE " + KettleVariables.R_RECORD_HOSTNAME + " in ("
-				+ hostNamesSql.toString() + ") AND " + KettleVariables.R_RECORD_STATUS + " in ('"
-				+ KettleVariables.RECORD_STATUS_RUNNING + "', '" + KettleVariables.RECORD_STATUS_APPLY + "')";
+				+ KettleVariables.R_RECORD_UPDATETIME + "," + KettleVariables.R_RECORD_ERRORMSG + ","
+				+ KettleVariables.R_RECORD_CRON_EXPRESSION + " FROM " + KettleVariables.R_JOB_RECORD + " WHERE "
+				+ KettleVariables.R_RECORD_STATUS + " in ('" + KettleVariables.RECORD_STATUS_RUNNING + "', '"
+				+ KettleVariables.RECORD_STATUS_APPLY + "')";
 		List<Object[]> result = repository.connectionDelegate.getRows(sql, -1);
 		List<KettleJobRecord> kettleJobBeans = new LinkedList<KettleJobRecord>();
 		if (result == null || result.isEmpty()) {
@@ -544,11 +528,12 @@ public class KettleDBRepositoryClient {
 			bean.setName((String) record[1]);
 			bean.setRunID((String) record[2]);
 			bean.setStatus((String) record[3]);
-			bean.setHostname((String) record[4]);
+			bean.setHostname(record[4] == null ? null : (String) record[4]);
 			bean.setCreateTime((Timestamp) record[5]);
-			bean.setErrMsg((String) record[6]);
-			bean.setCronExpression((String) record[7]);
-			bean.setKettleMeta(getJobMeta(Long.valueOf(bean.getId())));
+			bean.setUpdateTime((Timestamp) record[6]);
+			bean.setErrMsg(record[7] == null ? null : (String) record[7]);
+			bean.setCronExpression(record[8] == null ? null : (String) record[8]);
+			// bean.setKettleMeta(getJobMeta(Long.valueOf(bean.getId())));
 			kettleJobBeans.add(bean);
 		}
 		return kettleJobBeans;

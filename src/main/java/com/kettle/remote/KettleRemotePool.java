@@ -84,8 +84,8 @@ public class KettleRemotePool {
 			i++;
 		}
 		logger.info("Kettle远程池已经加载Client" + remoteclients.keySet());
-		List<KettleJobRecord> jobs = dbRepositoryClient.allHandleJobRecord(hostNames);
-		List<KettleTransRecord> trans = dbRepositoryClient.allHandleTransRecord(hostNames);
+		List<KettleJobRecord> jobs = dbRepositoryClient.allHandleJobRecord();
+		List<KettleTransRecord> trans = dbRepositoryClient.allHandleTransRecord();
 		for (KettleJobRecord job : jobs) {
 			kettleRecordPool.addPrioritizeRecord(job);
 		}
@@ -103,10 +103,10 @@ public class KettleRemotePool {
 	public void checkRemotePoolStatus() throws KettleException {
 		boolean remoteClientsStatus = false;
 		for (KettleRemoteClient client : remoteclients.values()) {
+			remoteClientsStatus = client.isRunning();
 			if (remoteClientsStatus) {
 				break;
 			}
-			remoteClientsStatus = client.isRunning();
 		}
 		if (!remoteClientsStatus) {
 			throw new KettleException("没有可用的远程Client,无法接受任务!");

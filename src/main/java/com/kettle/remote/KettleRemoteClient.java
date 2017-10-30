@@ -361,6 +361,7 @@ public class KettleRemoteClient {
 		@Override
 		public void run() {
 			logger.debug("Kettle远端[" + getHostName() + "]定时任务轮询启动!");
+			updateRecords.clear();
 			if (checkRemoteStatus()) {
 				for (int i = 0; i < recordArr.length; i++) {
 					if (recordArr[i] != null) {
@@ -399,7 +400,6 @@ public class KettleRemoteClient {
 				try {
 					dbRepositoryClient.updateRecords(updateRecords);
 					cleanRecords();
-					updateRecords.clear();
 				} catch (KettleException e) {
 					logger.error("Record" + updateRecords + "更新记录发生异常", e);
 				}
@@ -486,30 +486,40 @@ public class KettleRemoteClient {
 				if (KettleJobRecord.class.isInstance(roll)) {
 					KettleJobRecord job = (KettleJobRecord) roll;
 					try {
+						if (job.getKettleMeta() == null) {
+							job.setKettleMeta(dbRepositoryClient.getJobMeta(job.getId()));
+						}
 						String runID = remoteSendJob(job.getKettleMeta());
-						job.setRunID(runID);
-						job.setHostname(getHostName());
-						job.setStatus(KettleVariables.RECORD_STATUS_RUNNING);
+						roll.setRunID(runID);
+						roll.setHostname(getHostName());
+						roll.setStatus(KettleVariables.RECORD_STATUS_RUNNING);
+						updateRecords.add(roll);
 					} catch (Exception e) {
 						logger.error("Kettle远端[" + getHostName() + "]发送Job[" + job.getId() + "]发生异常\n", e);
-						job.setStatus(KettleVariables.REMOTE_STATUS_ERROR);
-						job.setErrMsg("Kettle远端[" + getHostName() + "]发送Job[" + job.getId() + "]发生异常");
+						roll.setStatus(KettleVariables.REMOTE_STATUS_ERROR);
+						roll.setErrMsg(e.getMessage());
+						roll.setHostname(getHostName());
+						updateRecords.add(job);
 					}
-					updateRecords.add(roll);
 				}
 				if (KettleTransRecord.class.isInstance(roll)) {
 					KettleTransRecord trans = (KettleTransRecord) roll;
 					try {
+						if (trans.getKettleMeta() == null) {
+							trans.setKettleMeta(dbRepositoryClient.getTransMeta(trans.getId()));
+						}
 						String runID = remoteSendTrans(trans.getKettleMeta());
-						trans.setRunID(runID);
-						trans.setHostname(getHostName());
-						trans.setStatus(KettleVariables.RECORD_STATUS_RUNNING);
+						roll.setRunID(runID);
+						roll.setHostname(getHostName());
+						roll.setStatus(KettleVariables.RECORD_STATUS_RUNNING);
+						updateRecords.add(roll);
 					} catch (Exception e) {
 						logger.error("Kettle远端[" + getHostName() + "]发送Trans[" + trans.getId() + "]发生异常\n", e);
-						trans.setStatus(KettleVariables.REMOTE_STATUS_ERROR);
-						trans.setErrMsg("Kettle远端[" + getHostName() + "]发送Trans[" + trans.getId() + "]发生异常");
+						roll.setStatus(KettleVariables.REMOTE_STATUS_ERROR);
+						roll.setErrMsg(e.getMessage());
+						roll.setHostname(getHostName());
+						updateRecords.add(trans);
 					}
-					updateRecords.add(roll);
 				}
 			}
 		}

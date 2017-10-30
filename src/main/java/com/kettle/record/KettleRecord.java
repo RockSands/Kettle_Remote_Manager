@@ -110,10 +110,13 @@ public abstract class KettleRecord {
 	}
 
 	public void setErrMsg(String errMsg) {
-		if (errMsg.length() > 500) {
-			this.errMsg = errMsg.substring(0, 500);
+		if (errMsg != null) {
+			if (errMsg.length() > 500) {
+				this.errMsg = errMsg.trim().substring(0, 500);
+			} else {
+				this.errMsg = errMsg;
+			}
 		}
-		this.errMsg = errMsg;
 	}
 
 	public String getCronExpression() {
