@@ -13,7 +13,6 @@ import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.core.util.EnvUtil;
 import org.pentaho.di.job.JobMeta;
 import org.pentaho.di.repository.LongObjectId;
-import org.pentaho.di.repository.ObjectId;
 import org.pentaho.di.repository.RepositoryDirectoryInterface;
 import org.pentaho.di.repository.kdr.KettleDatabaseRepository;
 import org.pentaho.di.trans.TransMeta;
@@ -80,44 +79,6 @@ public class KettleDBRepositoryClient {
 	 * @return
 	 * @throws KettleException
 	 */
-	public TransMeta getTransMeta(String transName) throws KettleException {
-		if (!repository.isConnected()) {
-			connect();
-		}
-		ObjectId transformationID = repository.getTransformationID(transName, repositoryDirectory);
-		if (transformationID == null) {
-			return null;
-		}
-		TransMeta transMeta = repository.loadTransformation(transformationID, null);
-		return transMeta;
-	}
-
-	/**
-	 * 从资源库获取JobMeta
-	 *
-	 * @param jobName
-	 * @return
-	 * @throws KettleException
-	 */
-	public JobMeta getJobMeta(String jobName) throws KettleException {
-		if (!repository.isConnected()) {
-			connect();
-		}
-		ObjectId jobID = repository.getJobId(jobName, repositoryDirectory);
-		if (jobID == null) {
-			return null;
-		}
-		JobMeta jobMeta = repository.loadJob(jobID, null);
-		return jobMeta;
-	}
-
-	/**
-	 * 从资源库获取TransMeta
-	 *
-	 * @param name
-	 * @return
-	 * @throws KettleException
-	 */
 	public synchronized TransMeta getTransMeta(long transID) throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
@@ -175,7 +136,7 @@ public class KettleDBRepositoryClient {
 	 * @param transMeta
 	 * @throws KettleException
 	 */
-	public void deleteTransMeta(long transID) throws KettleException {
+	public synchronized void deleteTransMeta(long transID) throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}
@@ -188,7 +149,7 @@ public class KettleDBRepositoryClient {
 	 * @param jobID
 	 * @throws KettleException
 	 */
-	public void deleteJobMeta(long jobID) throws KettleException {
+	public synchronized void deleteJobMeta(long jobID) throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}
@@ -201,7 +162,7 @@ public class KettleDBRepositoryClient {
 	 * @param transMeta
 	 * @throws KettleException
 	 */
-	public void deleteTransMetaForce(long transID) throws KettleException {
+	public synchronized void deleteTransMetaForce(long transID) throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}
@@ -222,7 +183,7 @@ public class KettleDBRepositoryClient {
 	 * 
 	 * @throws KettleException
 	 */
-	public KettleJobRecord queryJobRecord(long jobID) throws KettleException {
+	public synchronized KettleJobRecord queryJobRecord(long jobID) throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}
@@ -239,7 +200,6 @@ public class KettleDBRepositoryClient {
 			job.setHostname(table.getString(KettleVariables.R_RECORD_HOSTNAME, null));
 			job.setErrMsg(table.getString(KettleVariables.R_RECORD_ERRORMSG, null));
 			job.setCronExpression(table.getString(KettleVariables.R_RECORD_CRON_EXPRESSION, null));
-			job.setKettleMeta(getJobMeta(jobID));
 			return job;
 		}
 	}
@@ -251,7 +211,7 @@ public class KettleDBRepositoryClient {
 	 * 
 	 * @throws KettleException
 	 */
-	public KettleTransRecord queryTransRecord(long transID) throws KettleException {
+	public synchronized KettleTransRecord queryTransRecord(long transID) throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}
@@ -268,7 +228,6 @@ public class KettleDBRepositoryClient {
 			trans.setHostname(table.getString(KettleVariables.R_RECORD_HOSTNAME, null));
 			trans.setErrMsg(table.getString(KettleVariables.R_RECORD_ERRORMSG, null));
 			trans.setCronExpression(table.getString(KettleVariables.R_RECORD_CRON_EXPRESSION, null));
-			trans.setKettleMeta(getTransMeta(transID));
 			return trans;
 		}
 	}
@@ -448,7 +407,7 @@ public class KettleDBRepositoryClient {
 	 * 
 	 * @throws KettleException
 	 */
-	public void deleteTransRecord(long transID) throws KettleException {
+	public synchronized void deleteTransRecord(long transID) throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}
@@ -464,7 +423,7 @@ public class KettleDBRepositoryClient {
 	 * @return
 	 * @throws KettleException
 	 */
-	public List<KettleTransRecord> allHandleTransRecord() throws KettleException {
+	public synchronized List<KettleTransRecord> allHandleTransRecord() throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}
@@ -505,7 +464,7 @@ public class KettleDBRepositoryClient {
 	 * @return
 	 * @throws KettleException
 	 */
-	public List<KettleJobRecord> allHandleJobRecord() throws KettleException {
+	public synchronized List<KettleJobRecord> allHandleJobRecord() throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}

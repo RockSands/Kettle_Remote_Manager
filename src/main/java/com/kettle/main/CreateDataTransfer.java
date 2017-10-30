@@ -25,8 +25,12 @@ public class CreateDataTransfer implements Runnable {
 			result = KettleMgrInstance.getInstance().createDataTransfer(source, target);
 			System.out.println("==>SendTransfer used: " + (System.currentTimeMillis() - now));
 		} catch (KettleException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
+
+	public KettleTransResult getResult() {
+		return result;
+	}
+	
 }

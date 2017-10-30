@@ -337,9 +337,7 @@ public class KettleMgrInstance {
 	 * @throws KettleException
 	 */
 	public KettleTransResult queryDataTransfer(long transID) throws KettleException {
-		dbRepositoryClient.connect();
 		KettleRecord bean = null;
-		repository.connect("admin", "admin");
 		bean = dbRepositoryClient.queryTransRecord(transID);
 		if (bean == null) {
 			return null;

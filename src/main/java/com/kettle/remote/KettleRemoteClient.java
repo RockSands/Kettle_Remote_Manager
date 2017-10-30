@@ -416,7 +416,7 @@ public class KettleRemoteClient {
 					if (KettleJobRecord.class.isInstance(roll)) {
 						KettleJobRecord job = (KettleJobRecord) roll;
 						try {
-							remoteRemoveJob(job.getKettleMeta().getName(), null);
+							remoteRemoveJob(job.getName(), null);
 						} catch (Exception e) {
 							logger.error("Kettle远端[" + getHostName() + "]清理Job[" + job.getId() + "]发生异常", e);
 						}
@@ -424,8 +424,8 @@ public class KettleRemoteClient {
 					if (KettleTransRecord.class.isInstance(roll)) {
 						KettleTransRecord trans = (KettleTransRecord) roll;
 						try {
-							remoteCleanTrans(trans.getKettleMeta().getName(), null);
-							remoteRemoveTrans(trans.getKettleMeta().getName(), null);
+							remoteCleanTrans(trans.getName(), null);
+							remoteRemoveTrans(trans.getName(), null);
 						} catch (Exception e) {
 							logger.error("Kettle远端[" + getHostName() + "]清理Trans[" + trans.getId() + "]发生异常\n", e);
 						}
@@ -486,9 +486,6 @@ public class KettleRemoteClient {
 				if (KettleJobRecord.class.isInstance(roll)) {
 					KettleJobRecord job = (KettleJobRecord) roll;
 					try {
-						if (job.getKettleMeta() == null) {
-							job.setKettleMeta(dbRepositoryClient.getJobMeta(job.getId()));
-						}
 						String runID = remoteSendJob(job.getKettleMeta());
 						roll.setRunID(runID);
 						roll.setHostname(getHostName());
