@@ -4,6 +4,10 @@ import org.pentaho.di.core.KettleEnvironment;
 import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.util.EnvUtil;
+import org.pentaho.di.job.JobMeta;
+import org.pentaho.di.job.entries.special.JobEntrySpecial;
+import org.pentaho.di.job.entries.trans.JobEntryTrans;
+import org.pentaho.di.job.entry.JobEntryCopy;
 import org.pentaho.di.repository.RepositoryMeta;
 import org.pentaho.di.repository.kdr.KettleDatabaseRepository;
 import org.pentaho.di.repository.kdr.KettleDatabaseRepositoryMeta;
@@ -120,6 +124,36 @@ public class KettleMgrInstance {
 		try {
 			TransMeta transMeta = SyncTablesDatas.create(source, target);
 			KettleRecord record = kettleRemotePool.applyScheduleTransMeta(transMeta, cron);
+			KettleResult result = new KettleResult();
+			result.setErrMsg(record.getErrMsg());
+			result.setStatus(record.getStatus());
+			result.setUuid(record.getUuid());
+			return result;
+		} catch (Exception e) {
+			logger.error("Kettle环境执行SyncTable发生异常!", e);
+			throw new KettleException("Kettle环境执行SyncTable发生异常!");
+		}
+	}
+
+	/**
+	 * @param source
+	 * @param target
+	 * @return
+	 * @throws KettleException
+	 */
+	public KettleResult tableDataMigration(KettleSelectMeta source, KettleSelectMeta target) throws KettleException {
+		try {
+			TransMeta transMeta = TableDataMigration.create(source, target);
+			JobMeta jobMeta = new JobMeta();
+			// 启动
+			JobEntryCopy start = new JobEntryCopy(new JobEntrySpecial("START", true, false));
+			start.setLocation(150, 100);
+			start.setDrawn(true);
+			start.setDescription("START");
+			// 主执行
+			JobEntryTrans jet = new JobEntryTrans();
+			jet.setWaitingToFinish(true);
+			KettleRecord record = kettleRemotePool.applyJobMeta(jobMeta);
 			KettleResult result = new KettleResult();
 			result.setErrMsg(record.getErrMsg());
 			result.setStatus(record.getStatus());
