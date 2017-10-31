@@ -18,9 +18,9 @@ import org.pentaho.di.repository.kdr.KettleDatabaseRepository;
 import org.pentaho.di.trans.TransMeta;
 
 import com.kettle.core.KettleVariables;
-import com.kettle.record.KettleJobRecord;
 import com.kettle.record.KettleRecord;
-import com.kettle.record.KettleTransRecord;
+import com.kettle.record.bean.KettleJobRecord;
+import com.kettle.record.bean.KettleTransRecord;
 
 /**
  * 数据库工具
@@ -500,9 +500,10 @@ public class KettleDBRepositoryClient {
 				+ KettleVariables.R_RECORD_UUID + "," + KettleVariables.R_RECORD_STATUS + ","
 				+ KettleVariables.R_RECORD_HOSTNAME + "," + KettleVariables.R_RECORD_CREATETIME + ","
 				+ KettleVariables.R_RECORD_UPDATETIME + "," + KettleVariables.R_RECORD_ERRORMSG + ","
-				+ KettleVariables.R_RECORD_CRON_EXPRESSION + " FROM " + KettleVariables.R_TRANS_RECORD + " WHERE "
-				+ KettleVariables.R_RECORD_STATUS + " in ('" + KettleVariables.RECORD_STATUS_RUNNING + "', '"
-				+ KettleVariables.RECORD_STATUS_APPLY + "')";
+				+ KettleVariables.R_RECORD_CRON_EXPRESSION + " FROM " + KettleVariables.R_TRANS_RECORD + " WHERE ("
+				+ KettleVariables.R_RECORD_CRON_EXPRESSION + " IS NOT NULL OR " + KettleVariables.R_RECORD_STATUS
+				+ " in ('" + KettleVariables.RECORD_STATUS_RUNNING + "', '" + KettleVariables.RECORD_STATUS_APPLY
+				+ "'))";
 		List<Object[]> result = repository.connectionDelegate.getRows(sql, -1);
 		List<KettleTransRecord> kettleTransBeans = new LinkedList<KettleTransRecord>();
 		if (result == null || result.isEmpty()) {
@@ -542,8 +543,9 @@ public class KettleDBRepositoryClient {
 				+ KettleVariables.R_RECORD_STATUS + "," + KettleVariables.R_RECORD_HOSTNAME + ","
 				+ KettleVariables.R_RECORD_CREATETIME + "," + KettleVariables.R_RECORD_UPDATETIME + ","
 				+ KettleVariables.R_RECORD_ERRORMSG + "," + KettleVariables.R_RECORD_CRON_EXPRESSION + " FROM "
-				+ KettleVariables.R_JOB_RECORD + " WHERE " + KettleVariables.R_RECORD_STATUS + " in ('"
-				+ KettleVariables.RECORD_STATUS_RUNNING + "', '" + KettleVariables.RECORD_STATUS_APPLY + "')";
+				+ KettleVariables.R_JOB_RECORD + " WHERE (" + KettleVariables.R_RECORD_CRON_EXPRESSION
+				+ " IS NOT NULL OR " + KettleVariables.R_RECORD_STATUS + " in ('"
+				+ KettleVariables.RECORD_STATUS_RUNNING + "', '" + KettleVariables.RECORD_STATUS_APPLY + "'))";
 		List<Object[]> result = repository.connectionDelegate.getRows(sql, -1);
 		List<KettleJobRecord> kettleJobBeans = new LinkedList<KettleJobRecord>();
 		if (result == null || result.isEmpty()) {

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.kettle.core.bean.KettleTransResult;
 import com.kettle.core.instance.KettleDBTranDescribe;
 import com.kettle.core.instance.KettleMgrInstance;
 
@@ -80,27 +81,22 @@ public class RemoteMain {
 		List<CreateSTDThread> createDataTransfers = new ArrayList<CreateSTDThread>(flags.size());
 		ExecutorService threadPool = Executors.newFixedThreadPool(flags.size());
 		for (int i = 0; i < flags.size(); i++) {
-			CreateSTDThread cdt = new CreateSTDThread(sources.get(i), targets.get(i), "0/5 * * * * ?");
+			CreateSTDThread cdt = new CreateSTDThread(sources.get(i), targets.get(i), "0 */1 * * * ?");
 			threadPool.execute(cdt);
 			createDataTransfers.add(cdt);
 		}
 		threadPool.shutdown();
-		Thread.sleep(60000);
-		for (CreateSTDThread createDataTransfer : createDataTransfers) {
-			createDataTransfer.modifyCron("0/10 * * * * ?");
-		}
-		// do {
-		// Thread.sleep(1000);
-		// System.out.println("------------------------------");
-		// for (CreateSTDThread createDataTransfer : createDataTransfers) {
-		// if (createDataTransfer.getResult() != null) {
-		// KettleTransResult result = KettleMgrInstance.getInstance()
-		// .queryDataTransfer(createDataTransfer.getResult().getTransID());
-		// System.out.println("=DataTransfer[" + result.getTransID() + "]=>" +
-		// result.getStatus());
-		// }
-		// }
-		// System.out.println("------------------------------");
-		// } while (true);
+		do {
+			Thread.sleep(10000);
+			System.out.println("------------------------------");
+			for (CreateSTDThread createDataTransfer : createDataTransfers) {
+				if (createDataTransfer.getResult() != null) {
+					KettleTransResult result = KettleMgrInstance.getInstance()
+							.queryDataTransfer(createDataTransfer.getResult().getTransID());
+					System.out.println("=DataTransfer[" + result.getTransID() + "]=>" + result.getStatus());
+				}
+			}
+			System.out.println("------------------------------");
+		} while (true);
 	}
 }

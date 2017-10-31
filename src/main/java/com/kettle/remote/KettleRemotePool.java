@@ -23,10 +23,10 @@ import com.kettle.core.KettleVariables;
 import com.kettle.core.bean.KettleJobResult;
 import com.kettle.core.bean.KettleTransResult;
 import com.kettle.core.repo.KettleDBRepositoryClient;
-import com.kettle.record.KettleJobRecord;
 import com.kettle.record.KettleRecord;
 import com.kettle.record.KettleRecordPool;
-import com.kettle.record.KettleTransRecord;
+import com.kettle.record.bean.KettleJobRecord;
+import com.kettle.record.bean.KettleTransRecord;
 
 /**
  * 保存远程运行池
@@ -89,10 +89,18 @@ public class KettleRemotePool {
 		List<KettleJobRecord> jobs = dbRepositoryClient.allHandleJobRecord();
 		List<KettleTransRecord> trans = dbRepositoryClient.allHandleTransRecord();
 		for (KettleJobRecord job : jobs) {
-			kettleRecordPool.addPrioritizeRecord(job);
+			if (job.getCronExpression() == null) {
+				kettleRecordPool.addPrioritizeRecord(job);
+			} else {
+				kettleRecordPool.addSchedulerRecord(job);
+			}
 		}
 		for (KettleTransRecord tran : trans) {
-			kettleRecordPool.addPrioritizeRecord(tran);
+			if (tran.getCronExpression() == null) {
+				kettleRecordPool.addPrioritizeRecord(tran);
+			} else {
+				kettleRecordPool.addSchedulerRecord(tran);
+			}
 		}
 	}
 
@@ -183,21 +191,6 @@ public class KettleRemotePool {
 	}
 
 	/**
-	 * 更新任务Cron
-	 * 
-	 * @throws Exception
-	 */
-	public void modifyRecordSchedule(String uuid, String newCron) throws Exception {
-		KettleRecord record = dbRepositoryClient.queryRecord(uuid);
-		if (record == null) {
-			throw new KettleException("Kettle不存在UUID为[" + uuid + "]的记录!");
-		}
-		kettleRecordPool.modifySchedulerRecord(uuid, newCron);
-		record.setCronExpression(newCron);
-
-	}
-
-	/**
 	 * 接受并执行作业
 	 * 
 	 * @param transMeta
@@ -274,6 +267,21 @@ public class KettleRemotePool {
 		result.setJobID(record.getId());
 		result.setUuid(record.getUuid());
 		return result;
+	}
+
+	/**
+	 * 更新任务Cron
+	 * 
+	 * @throws Exception
+	 */
+	public void modifyRecordSchedule(String uuid, String newCron) throws Exception {
+		KettleRecord record = dbRepositoryClient.queryRecord(uuid);
+		if (record == null) {
+			throw new KettleException("Kettle不存在UUID为[" + uuid + "]的记录!");
+		}
+		kettleRecordPool.modifySchedulerRecord(uuid, newCron);
+		record.setCronExpression(newCron);
+
 	}
 
 	/**

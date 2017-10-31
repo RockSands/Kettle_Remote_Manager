@@ -24,10 +24,10 @@ import org.slf4j.LoggerFactory;
 
 import com.kettle.core.KettleVariables;
 import com.kettle.core.repo.KettleDBRepositoryClient;
-import com.kettle.record.KettleJobRecord;
 import com.kettle.record.KettleRecord;
 import com.kettle.record.KettleRecordPool;
-import com.kettle.record.KettleTransRecord;
+import com.kettle.record.bean.KettleJobRecord;
+import com.kettle.record.bean.KettleTransRecord;
 
 public class KettleRemoteClient {
 
@@ -381,7 +381,7 @@ public class KettleRemoteClient {
 					 * 申请状态
 					 */
 					if (recordArr[i] != null) {
-						dealApplyRecord(recordArr[i]);
+						dealNotSendRecord(recordArr[i]);
 					}
 				}
 			} else {
@@ -478,12 +478,12 @@ public class KettleRemoteClient {
 		}
 
 		/**
-		 * 处理申请的任务
+		 * 处理未远程推送的任务
 		 * 
 		 * @param roll
 		 */
-		private void dealApplyRecord(KettleRecord roll) {
-			if (roll.isApply()) {
+		private void dealNotSendRecord(KettleRecord roll) {
+			if (roll.isApply() || roll.isRepeat()) {
 				if (KettleJobRecord.class.isInstance(roll)) {
 					KettleJobRecord job = (KettleJobRecord) roll;
 					try {

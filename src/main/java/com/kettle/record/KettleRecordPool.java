@@ -74,14 +74,6 @@ public class KettleRecordPool {
 	}
 
 	/**
-	 * @param record
-	 * @return
-	 */
-	public void removeRecordFlag(KettleRecord record) {
-		recordQueueSet.remove(record.getUuid());
-	}
-
-	/**
 	 * 添加的转换任务,该任务仅执行一次
 	 * 
 	 * @param record
@@ -91,6 +83,7 @@ public class KettleRecordPool {
 	public synchronized boolean addRecord(KettleRecord record) {
 		if (record != null) {
 			if (!isAcceptedRecord(record)) {
+				recordQueueSet.add(record.getUuid());
 				return recordQueue.offer(record);
 			}
 		}
@@ -107,6 +100,7 @@ public class KettleRecordPool {
 		if (record == null || record.getCronExpression() == null) {
 			throw new Exception("添加SchedulerRecord[" + record.getName() + "]失败,未找到CRON表达式!");
 		}
+		// 循环任务默认为完成,等待下次执行
 		Trigger trigger = TriggerBuilder.newTrigger().withIdentity(record.getUuid()).startNow()
 				.withSchedule(CronScheduleBuilder.cronSchedule(record.getCronExpression())).build();
 		JobDataMap newJobDataMap = new JobDataMap();
@@ -145,10 +139,15 @@ public class KettleRecordPool {
 	public synchronized boolean addPrioritizeRecord(KettleRecord record) {
 		if (record != null) {
 			if (!isAcceptedRecord(record)) {
+				recordQueueSet.add(record.getUuid());
 				return recordPrioritizeQueue.offer(record);
 			}
 		}
 		return false;
+	}
+
+	public synchronized void deleteRecord(String recordUUID) {
+		recordQueueSet.remove(recordUUID);
 	}
 
 	/**
@@ -165,7 +164,13 @@ public class KettleRecordPool {
 			record = recordQueue.poll();
 		}
 		if (record != null) {
-			removeRecordFlag(record);
+			// 如果Set存在,表示还在受理
+			if (recordQueueSet.contains(record.getUuid())) {
+				recordQueueSet.remove(record.getUuid());
+			} else {
+				// 如果Set不存在,则直接下一个,该Record已经删除
+				record = nextRecord();
+			}
 		}
 		return record;
 	}

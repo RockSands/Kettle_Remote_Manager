@@ -1,8 +1,9 @@
-package com.kettle.record;
+package com.kettle.record.bean;
 
 import org.pentaho.di.job.JobMeta;
 
 import com.kettle.core.KettleVariables;
+import com.kettle.record.KettleRecord;
 
 /**
  * 数据库实体对象

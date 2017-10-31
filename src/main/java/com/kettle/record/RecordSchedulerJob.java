@@ -6,6 +6,8 @@ import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.kettle.core.KettleVariables;
+
 /**
  * 任务
  * 
@@ -21,8 +23,13 @@ public class RecordSchedulerJob implements Job {
 	@Override
 	public void execute(JobExecutionContext context) throws JobExecutionException {
 		KettleRecord record = (KettleRecord) context.getJobDetail().getJobDataMap().get("RECORD");
-		KettleRecordPool pool = (KettleRecordPool) context.getJobDetail().getJobDataMap().get("RECORDPOOL");
-		pool.addPrioritizeRecord(record);
-		logger.debug("Kettle向任务队列添加定时任务[" + record.getName() + "]!");
+		if (record.isApply() || record.isFinished() || record.isError()) {
+			record.setStatus(KettleVariables.RECORD_STATUS_REPEAT);
+			KettleRecordPool pool = (KettleRecordPool) context.getJobDetail().getJobDataMap().get("RECORDPOOL");
+			pool.addPrioritizeRecord(record);
+			logger.debug("Kettle向任务队列添加定时任务[" + record.getName() + "],任务池任务个数:" + pool.size());
+		} else {
+			logger.debug("Kettle向任务队列添加定时任务[" + record.getName() + "]由于状态为:" + record.getStatus() + "而无法添加!");
+		}
 	}
 }

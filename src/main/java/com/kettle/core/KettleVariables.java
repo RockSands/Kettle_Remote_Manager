@@ -117,6 +117,11 @@ public class KettleVariables {
 	public static final String RECORD_STATUS_APPLY = "APPLY";
 
 	/**
+	 * 记录的运行状态:重复运行
+	 */
+	public static final String RECORD_STATUS_REPEAT = "REPEAT";
+
+	/**
 	 * 记录的运行状态:异常
 	 */
 	public static final String RECORD_STATUS_ERROR = "ERROR";

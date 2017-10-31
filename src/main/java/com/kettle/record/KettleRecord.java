@@ -192,4 +192,13 @@ public abstract class KettleRecord {
 	public boolean isFinished() {
 		return KettleVariables.RECORD_STATUS_FINISHED.equals(this.getStatus());
 	}
+
+	/**
+	 * 是否重新运行
+	 * 
+	 * @return
+	 */
+	public boolean isRepeat() {
+		return KettleVariables.RECORD_STATUS_REPEAT.equals(this.getStatus());
+	}
 }
