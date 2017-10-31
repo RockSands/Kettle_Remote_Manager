@@ -159,6 +159,7 @@ public class KettleRemoteClient {
 		transExecutionConfiguration.setPassingExport(false);
 		transExecutionConfiguration.setExecutingRemotely(true);
 		transExecutionConfiguration.setExecutingLocally(false);
+		transExecutionConfiguration.setRepository(kettleRemotePool.getDbRepository());
 		String runID = Trans.sendToSlaveServer(transMeta, transExecutionConfiguration,
 				kettleRemotePool.getDbRepository(), kettleRemotePool.getDbRepository().getMetaStore());
 		return runID;
@@ -178,6 +179,7 @@ public class KettleRemoteClient {
 		jobExecutionConfiguration.setPassingExport(false);
 		jobExecutionConfiguration.setExecutingRemotely(true);
 		jobExecutionConfiguration.setExecutingLocally(false);
+		jobExecutionConfiguration.setRepository(kettleRemotePool.getDbRepository());
 		String runid = Job.sendToSlaveServer(jobMeta, jobExecutionConfiguration, kettleRemotePool.getDbRepository(),
 				kettleRemotePool.getDbRepository().getMetaStore());
 		return runid;
@@ -457,7 +459,7 @@ public class KettleRemoteClient {
 				if (KettleJobRecord.class.isInstance(roll)) {
 					KettleJobRecord job = (KettleJobRecord) roll;
 					try {
-						status = remoteTransStatus(job.getKettleMeta().getName());
+						status = remoteJobStatus(job.getKettleMeta().getName());
 					} catch (Exception e) {
 						logger.error("Kettle远端[" + getHostName() + "]查询Job[" + job.getId() + "]发生异常\n", e);
 						status = KettleVariables.RECORD_STATUS_ERROR;
