@@ -9,7 +9,7 @@ import java.util.List;
  * @author Administrator
  *
  */
-public class KettleDBTranDescribe {
+public class KettleSelectMeta {
 	/**
 	 * 数据库类别
 	 */

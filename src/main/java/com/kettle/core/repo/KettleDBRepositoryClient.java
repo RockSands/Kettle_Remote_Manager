@@ -503,7 +503,7 @@ public class KettleDBRepositoryClient {
 				+ KettleVariables.R_RECORD_CRON_EXPRESSION + " FROM " + KettleVariables.R_TRANS_RECORD + " WHERE ("
 				+ KettleVariables.R_RECORD_CRON_EXPRESSION + " IS NOT NULL OR " + KettleVariables.R_RECORD_STATUS
 				+ " in ('" + KettleVariables.RECORD_STATUS_RUNNING + "', '" + KettleVariables.RECORD_STATUS_APPLY
-				+ "'))";
+				+ "','" + KettleVariables.RECORD_STATUS_REPEAT + "'))";
 		List<Object[]> result = repository.connectionDelegate.getRows(sql, -1);
 		List<KettleTransRecord> kettleTransBeans = new LinkedList<KettleTransRecord>();
 		if (result == null || result.isEmpty()) {
@@ -545,7 +545,8 @@ public class KettleDBRepositoryClient {
 				+ KettleVariables.R_RECORD_ERRORMSG + "," + KettleVariables.R_RECORD_CRON_EXPRESSION + " FROM "
 				+ KettleVariables.R_JOB_RECORD + " WHERE (" + KettleVariables.R_RECORD_CRON_EXPRESSION
 				+ " IS NOT NULL OR " + KettleVariables.R_RECORD_STATUS + " in ('"
-				+ KettleVariables.RECORD_STATUS_RUNNING + "', '" + KettleVariables.RECORD_STATUS_APPLY + "'))";
+				+ KettleVariables.RECORD_STATUS_RUNNING + "', '" + KettleVariables.RECORD_STATUS_APPLY + "','"
+				+ KettleVariables.RECORD_STATUS_REPEAT + "'))";
 		List<Object[]> result = repository.connectionDelegate.getRows(sql, -1);
 		List<KettleJobRecord> kettleJobBeans = new LinkedList<KettleJobRecord>();
 		if (result == null || result.isEmpty()) {

@@ -2,20 +2,20 @@ package com.kettle.main;
 
 import org.pentaho.di.core.exception.KettleException;
 
-import com.kettle.core.bean.KettleTransResult;
-import com.kettle.core.instance.KettleDBTranDescribe;
+import com.kettle.core.bean.KettleResult;
+import com.kettle.core.instance.KettleSelectMeta;
 import com.kettle.core.instance.KettleMgrInstance;
 
 public class CreateSTDThread implements Runnable {
-	KettleDBTranDescribe source = null;
+	KettleSelectMeta source = null;
 
-	KettleDBTranDescribe target = null;
+	KettleSelectMeta target = null;
 
 	String cron = null;
 
-	KettleTransResult result = null;
+	KettleResult result = null;
 
-	CreateSTDThread(KettleDBTranDescribe source, KettleDBTranDescribe target, String cron) {
+	CreateSTDThread(KettleSelectMeta source, KettleSelectMeta target, String cron) {
 		this.source = source;
 		this.target = target;
 		this.cron = cron;
@@ -40,7 +40,7 @@ public class CreateSTDThread implements Runnable {
 		KettleMgrInstance.getInstance().modifySchedule(result.getUuid(), newCron);
 	}
 
-	public KettleTransResult getResult() {
+	public KettleResult getResult() {
 		return result;
 	}
 

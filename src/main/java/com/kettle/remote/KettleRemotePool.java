@@ -20,8 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kettle.core.KettleVariables;
-import com.kettle.core.bean.KettleJobResult;
-import com.kettle.core.bean.KettleTransResult;
 import com.kettle.core.repo.KettleDBRepositoryClient;
 import com.kettle.record.KettleRecord;
 import com.kettle.record.KettleRecordPool;
@@ -86,20 +84,18 @@ public class KettleRemotePool {
 			i++;
 		}
 		logger.info("Kettle远程池已经加载Client" + remoteclients.keySet());
-		List<KettleJobRecord> jobs = dbRepositoryClient.allHandleJobRecord();
-		List<KettleTransRecord> trans = dbRepositoryClient.allHandleTransRecord();
-		for (KettleJobRecord job : jobs) {
-			if (job.getCronExpression() == null) {
-				kettleRecordPool.addPrioritizeRecord(job);
-			} else {
-				kettleRecordPool.addSchedulerRecord(job);
+		List<KettleRecord> records = new LinkedList<KettleRecord>();
+		records.addAll(dbRepositoryClient.allHandleJobRecord());
+		records.addAll(dbRepositoryClient.allHandleTransRecord());
+		for (KettleRecord record : records) {
+			if (record.isRunning()) {
+				kettleRecordPool.addPrioritizeRecord(record);
+				continue;
 			}
-		}
-		for (KettleTransRecord tran : trans) {
-			if (tran.getCronExpression() == null) {
-				kettleRecordPool.addPrioritizeRecord(tran);
+			if (record.getCronExpression() != null) {
+				kettleRecordPool.addRecord(record);
 			} else {
-				kettleRecordPool.addSchedulerRecord(tran);
+				kettleRecordPool.addSchedulerRecord(record);
 			}
 		}
 	}
@@ -133,7 +129,7 @@ public class KettleRemotePool {
 	 * @return
 	 * @throws KettleException
 	 */
-	public KettleTransResult applyTransMeta(TransMeta transMeta) throws KettleException {
+	public KettleTransRecord applyTransMeta(TransMeta transMeta) throws KettleException {
 		checkRemotePoolStatus();
 		KettleTransRecord record = null;
 		try {
@@ -145,11 +141,7 @@ public class KettleRemotePool {
 			record.setUuid(UUID.randomUUID().toString().replace("-", ""));
 			dbRepositoryClient.insertTransRecord(record);
 			kettleRecordPool.addRecord(record);
-			KettleTransResult result = new KettleTransResult();
-			result.setStatus(record.getStatus());
-			result.setTransID(record.getId());
-			result.setUuid(record.getUuid());
-			return result;
+			return record;
 		} catch (KettleException e) {
 			logger.error("Trans[" + transMeta.getName() + "]执行Apply发生异常!", e);
 			DeleteTransMetaForce(transMeta);
@@ -165,7 +157,7 @@ public class KettleRemotePool {
 	 * @throws KettleException
 	 * @throws ParseException
 	 */
-	public KettleTransResult applyScheduleTransMeta(TransMeta transMeta, String cronExpression) throws Exception {
+	public KettleTransRecord applyScheduleTransMeta(TransMeta transMeta, String cronExpression) throws Exception {
 		checkRemotePoolStatus();
 		KettleTransRecord record = null;
 		try {
@@ -178,11 +170,7 @@ public class KettleRemotePool {
 			record.setUuid(UUID.randomUUID().toString().replace("-", ""));
 			dbRepositoryClient.insertTransRecord(record);
 			kettleRecordPool.addSchedulerRecord(record);
-			KettleTransResult result = new KettleTransResult();
-			result.setStatus(record.getStatus());
-			result.setTransID(record.getId());
-			result.setUuid(record.getUuid());
-			return result;
+			return record;
 		} catch (Exception e) {
 			logger.error("Trans[" + transMeta.getName() + "]执行Apply操作发生异常!", e);
 			DeleteTransMetaForce(transMeta);
@@ -197,7 +185,7 @@ public class KettleRemotePool {
 	 * @return
 	 * @throws KettleException
 	 */
-	public KettleJobResult applyJobMeta(JobMeta jobMeta) throws KettleException {
+	public KettleJobRecord applyJobMeta(JobMeta jobMeta) throws KettleException {
 		checkRemotePoolStatus();
 		JobEntryCopy jec = jobMeta.getStart();
 		if (jec == null) {
@@ -222,11 +210,7 @@ public class KettleRemotePool {
 			DeleteJobMetaForce(jobMeta);
 			throw new KettleException("Job[" + jobMeta.getName() + "]执行Apply操作发生异常!");
 		}
-		KettleJobResult result = new KettleJobResult();
-		result.setStatus(record.getStatus());
-		result.setJobID(record.getId());
-		result.setUuid(record.getUuid());
-		return result;
+		return record;
 	}
 
 	/**
@@ -236,7 +220,7 @@ public class KettleRemotePool {
 	 * @return
 	 * @throws Exception
 	 */
-	public KettleJobResult applyScheduleJobMeta(JobMeta jobMeta, String cronExpression) throws KettleException {
+	public KettleJobRecord applyScheduleJobMeta(JobMeta jobMeta, String cronExpression) throws KettleException {
 		checkRemotePoolStatus();
 		JobEntryCopy jec = jobMeta.getStart();
 		if (jec == null) {
@@ -262,11 +246,7 @@ public class KettleRemotePool {
 			DeleteJobMetaForce(jobMeta);
 			throw new KettleException("Job[" + jobMeta.getName() + "]执行ApplySchedule操作发生异常!");
 		}
-		KettleJobResult result = new KettleJobResult();
-		result.setStatus(record.getStatus());
-		result.setJobID(record.getId());
-		result.setUuid(record.getUuid());
-		return result;
+		return record;
 	}
 
 	/**
@@ -321,7 +301,7 @@ public class KettleRemotePool {
 	 * @return
 	 * @throws KettleException
 	 */
-	public KettleTransResult excuteTransMeta(long transID) throws KettleException {
+	public KettleTransRecord excuteTransMeta(long transID) throws KettleException {
 		KettleTransRecord record = dbRepositoryClient.queryTransRecord(transID);
 		if (record == null || record.getKettleMeta() == null) {
 			throw new KettleException("Trans[" + transID + "]未为执行Apply操作!");
@@ -333,10 +313,7 @@ public class KettleRemotePool {
 		record.setErrMsg(null);
 		record.setRunID(null);
 		kettleRecordPool.addRecord(record);
-		KettleTransResult result = new KettleTransResult();
-		result.setStatus(record.getStatus());
-		result.setTransID(record.getId());
-		return result;
+		return record;
 	}
 
 	/**
@@ -346,7 +323,7 @@ public class KettleRemotePool {
 	 * @return
 	 * @throws KettleException
 	 */
-	public KettleJobResult excuteJobMeta(long jobID) throws KettleException {
+	public KettleJobRecord excuteJobMeta(long jobID) throws KettleException {
 		KettleJobRecord record = dbRepositoryClient.queryJobRecord(jobID);
 		if (record == null || record.getKettleMeta() == null) {
 			throw new KettleException("Job[" + jobID + "]未执行Apply操作!");
@@ -358,10 +335,7 @@ public class KettleRemotePool {
 		record.setErrMsg(null);
 		record.setRunID(null);
 		kettleRecordPool.addRecord(record);
-		KettleJobResult result = new KettleJobResult();
-		result.setStatus(record.getStatus());
-		result.setJobID(record.getId());
-		return result;
+		return record;
 	}
 
 	/**

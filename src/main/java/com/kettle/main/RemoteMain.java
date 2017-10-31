@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.kettle.core.bean.KettleTransResult;
-import com.kettle.core.instance.KettleDBTranDescribe;
+import com.kettle.core.bean.KettleResult;
+import com.kettle.core.instance.KettleSelectMeta;
 import com.kettle.core.instance.KettleMgrInstance;
 
 public class RemoteMain {
@@ -33,13 +33,13 @@ public class RemoteMain {
 		/*
 		 * Source的TableName无效
 		 */
-		List<KettleDBTranDescribe> sources = new ArrayList<KettleDBTranDescribe>(flags.size());
-		List<KettleDBTranDescribe> targets = new ArrayList<KettleDBTranDescribe>(flags.size());
-		KettleDBTranDescribe source = null;
-		KettleDBTranDescribe target = null;
+		List<KettleSelectMeta> sources = new ArrayList<KettleSelectMeta>(flags.size());
+		List<KettleSelectMeta> targets = new ArrayList<KettleSelectMeta>(flags.size());
+		KettleSelectMeta source = null;
+		KettleSelectMeta target = null;
 		for (String flag : flags) {
 			// 源配置
-			source = new KettleDBTranDescribe();
+			source = new KettleSelectMeta();
 			source.setType("MySQL");
 			source.setHost("192.168.80.138");
 			source.setPort("3306");
@@ -60,7 +60,7 @@ public class RemoteMain {
 			source.setPkcolumns(Arrays.asList("emp_no", "dept_no"));
 			sources.add(source);
 			// 目标配置
-			target = new KettleDBTranDescribe();
+			target = new KettleSelectMeta();
 			target.setType("MySQL");
 			target.setHost("192.168.80.138");
 			target.setPort("3306");
@@ -91,9 +91,9 @@ public class RemoteMain {
 			System.out.println("------------------------------");
 			for (CreateSTDThread createDataTransfer : createDataTransfers) {
 				if (createDataTransfer.getResult() != null) {
-					KettleTransResult result = KettleMgrInstance.getInstance()
-							.queryDataTransfer(createDataTransfer.getResult().getTransID());
-					System.out.println("=DataTransfer[" + result.getTransID() + "]=>" + result.getStatus());
+					KettleResult result = KettleMgrInstance.getInstance()
+							.queryResult(createDataTransfer.getResult().getUuid());
+					System.out.println("=DataTransfer[" + result.getUuid() + "]=>" + result.getStatus());
 				}
 			}
 			System.out.println("------------------------------");

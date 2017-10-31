@@ -11,7 +11,7 @@ import org.pentaho.di.trans.TransMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.kettle.core.bean.KettleTransResult;
+import com.kettle.core.bean.KettleResult;
 import com.kettle.core.repo.KettleDBRepositoryClient;
 import com.kettle.record.KettleRecord;
 import com.kettle.remote.KettleRemotePool;
@@ -94,11 +94,14 @@ public class KettleMgrInstance {
 	 * @return
 	 * @throws KettleException
 	 */
-	public KettleTransResult syncTablesDatas(KettleDBTranDescribe source, KettleDBTranDescribe target)
-			throws KettleException {
+	public KettleResult syncTablesDatas(KettleSelectMeta source, KettleSelectMeta target) throws KettleException {
 		try {
 			TransMeta transMeta = SyncTablesDatas.create(source, target);
-			KettleTransResult result = kettleRemotePool.applyTransMeta(transMeta);
+			KettleRecord record = kettleRemotePool.applyTransMeta(transMeta);
+			KettleResult result = new KettleResult();
+			result.setErrMsg(record.getErrMsg());
+			result.setStatus(record.getStatus());
+			result.setUuid(record.getUuid());
 			return result;
 		} catch (Exception e) {
 			logger.error("Kettle环境执行SyncTable发生异常!", e);
@@ -112,11 +115,15 @@ public class KettleMgrInstance {
 	 * @return
 	 * @throws KettleException
 	 */
-	public KettleTransResult syncTablesDataSchedule(KettleDBTranDescribe source, KettleDBTranDescribe target,
-			String cron) throws KettleException {
+	public KettleResult syncTablesDataSchedule(KettleSelectMeta source, KettleSelectMeta target, String cron)
+			throws KettleException {
 		try {
 			TransMeta transMeta = SyncTablesDatas.create(source, target);
-			KettleTransResult result = kettleRemotePool.applyScheduleTransMeta(transMeta, cron);
+			KettleRecord record = kettleRemotePool.applyScheduleTransMeta(transMeta, cron);
+			KettleResult result = new KettleResult();
+			result.setErrMsg(record.getErrMsg());
+			result.setStatus(record.getStatus());
+			result.setUuid(record.getUuid());
 			return result;
 		} catch (Exception e) {
 			logger.error("Kettle环境执行SyncTable发生异常!", e);
@@ -146,27 +153,15 @@ public class KettleMgrInstance {
 	 * @return
 	 * @throws KettleException
 	 */
-	public KettleTransResult queryDataTransfer(long transID) throws KettleException {
-		KettleRecord bean = null;
-		bean = dbRepositoryClient.queryTransRecord(transID);
+	public KettleResult queryResult(String uuid) throws KettleException {
+		KettleRecord bean = dbRepositoryClient.queryRecord(uuid);
 		if (bean == null) {
 			return null;
 		}
-		KettleTransResult result = new KettleTransResult();
-		result.setTransID(transID);
+		KettleResult result = new KettleResult();
+		result.setUuid(bean.getUuid());
 		result.setStatus(bean.getStatus());
+		result.setErrMsg(bean.getErrMsg());
 		return result;
-	}
-
-	/**
-	 * 删除数据迁移
-	 * 
-	 * @param transID
-	 * @return
-	 * @throws KettleException
-	 */
-	public void deleteDataTransfer(long transID) throws KettleException {
-		repository.connect("admin", "admin");
-		dbRepositoryClient.deleteTransRecord(transID);
 	}
 }

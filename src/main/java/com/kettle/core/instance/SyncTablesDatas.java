@@ -23,18 +23,19 @@ import org.pentaho.di.trans.steps.tableoutput.TableOutputMeta;
 import org.pentaho.di.trans.steps.update.UpdateMeta;
 
 public class SyncTablesDatas {
-	public static TransMeta create(KettleDBTranDescribe source, KettleDBTranDescribe target) throws KettleException {
+
+	public static TransMeta create(KettleSelectMeta source, KettleSelectMeta target) throws KettleException {
 		String uuid = UUID.randomUUID().toString().replace("-", "");
 		TransMeta transMeta = null;
 		transMeta = new TransMeta();
 		transMeta.setName("SYNCT-" + uuid);
-		DatabaseMeta sourceDataBase = new DatabaseMeta(source.getHost() + "_" + source.getDatabase(), source.getType(),
-				"Native", source.getHost(), source.getDatabase(), source.getPort(), source.getUser(),
-				source.getPasswd());
+		DatabaseMeta sourceDataBase = new DatabaseMeta(
+				source.getHost() + "_" + source.getDatabase() + "_" + source.getUser(), source.getType(), "Native",
+				source.getHost(), source.getDatabase(), source.getPort(), source.getUser(), source.getPasswd());
 		transMeta.addDatabase(sourceDataBase);
-		DatabaseMeta targetDatabase = new DatabaseMeta(target.getHost() + "_" + target.getDatabase(), target.getType(),
-				"Native", target.getHost(), target.getDatabase(), target.getPort(), target.getUser(),
-				target.getPasswd());
+		DatabaseMeta targetDatabase = new DatabaseMeta(
+				target.getHost() + "_" + target.getDatabase() + "_" + target.getUser(), target.getType(), "Native",
+				target.getHost(), target.getDatabase(), target.getPort(), target.getUser(), target.getPasswd());
 		transMeta.addDatabase(targetDatabase);
 		/*
 		 * 获取非PK列
