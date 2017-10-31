@@ -7,8 +7,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.kettle.core.bean.KettleResult;
-import com.kettle.core.instance.KettleSelectMeta;
 import com.kettle.core.instance.KettleMgrInstance;
+import com.kettle.core.instance.metas.KettleSelectMeta;
 
 public class RemoteMain {
 	/**
@@ -26,10 +26,10 @@ public class RemoteMain {
 	public static void main(String[] args) throws Exception {
 		System.out.println("------------------------------");
 		KettleMgrInstance.getInstance();
-		// List<String> flags = Arrays.asList("A", "B", "C", "D", "E", "F", "G",
-		// "H", "I", "J", "K", "L", "M", "N", "O",
-		// "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
-		List<String> flags = Arrays.asList("A", "B", "C", "D", "E", "F", "G");
+		List<String> flags = Arrays.asList("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
+				"P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
+		// List<String> flags = Arrays.asList("A", "B", "C", "D", "E", "F",
+		// "G");
 		/*
 		 * Source的TableName无效
 		 */
@@ -62,7 +62,7 @@ public class RemoteMain {
 			// 目标配置
 			target = new KettleSelectMeta();
 			target.setType("MySQL");
-			target.setHost("192.168.80.138");
+			target.setHost("192.168.80.139");
 			target.setPort("3306");
 			target.setDatabase("person");
 			target.setUser("root");
@@ -81,8 +81,13 @@ public class RemoteMain {
 		List<CreateSTDThread> createDataTransfers = new ArrayList<CreateSTDThread>(flags.size());
 		ExecutorService threadPool = Executors.newFixedThreadPool(flags.size());
 		for (int i = 0; i < flags.size(); i++) {
-			CreateSTDThread cdt = new CreateSTDThread(sources.get(i), targets.get(i), "0 */1 * * * ?");
+			// CreateSTDThread cdt = new CreateSTDThread(sources.get(i),
+			// targets.get(i), "0 */1 * * * ?");
+			CreateSTDThread cdt = new CreateSTDThread(sources.get(i), targets.get(i), null);
 			threadPool.execute(cdt);
+			// if (i % 10 == 0) {
+			// Thread.sleep(20000);
+			// }
 			createDataTransfers.add(cdt);
 		}
 		threadPool.shutdown();

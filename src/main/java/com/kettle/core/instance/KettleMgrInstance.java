@@ -1,9 +1,12 @@
 package com.kettle.core.instance;
 
+import java.util.UUID;
+
 import org.pentaho.di.core.KettleEnvironment;
 import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.util.EnvUtil;
+import org.pentaho.di.job.JobHopMeta;
 import org.pentaho.di.job.JobMeta;
 import org.pentaho.di.job.entries.special.JobEntrySpecial;
 import org.pentaho.di.job.entries.trans.JobEntryTrans;
@@ -16,6 +19,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kettle.core.bean.KettleResult;
+import com.kettle.core.instance.metas.KettleSelectMeta;
+import com.kettle.core.instance.metas.SyncTablesDatas;
+import com.kettle.core.instance.metas.TableDataMigration;
 import com.kettle.core.repo.KettleDBRepositoryClient;
 import com.kettle.record.KettleRecord;
 import com.kettle.remote.KettleRemotePool;
@@ -101,7 +107,29 @@ public class KettleMgrInstance {
 	public KettleResult syncTablesDatas(KettleSelectMeta source, KettleSelectMeta target) throws KettleException {
 		try {
 			TransMeta transMeta = SyncTablesDatas.create(source, target);
-			KettleRecord record = kettleRemotePool.applyTransMeta(transMeta);
+			kettleRemotePool.getDbRepositoryClient().saveTransMeta(transMeta);
+			JobMeta jobMeta = new JobMeta();
+			jobMeta.setName(UUID.randomUUID().toString().replace("-", ""));
+			// 启动
+			JobEntryCopy start = new JobEntryCopy(new JobEntrySpecial("START", true, false));
+			start.setLocation(150, 100);
+			start.setDrawn(true);
+			start.setDescription("START");
+			jobMeta.addJobEntry(start);
+			// 主执行
+			JobEntryTrans trans = new JobEntryTrans(transMeta.getName());
+			trans.setTransObjectId(transMeta.getObjectId());
+			trans.setDirectory("${Internal.Entry.Current.Directory}");
+			JobEntryCopy excuter = new JobEntryCopy(trans);
+			excuter.setLocation(300, 100);
+			excuter.setDrawn(true);
+			excuter.setDescription("START");
+			jobMeta.addJobEntry(excuter);
+			// 连接
+			JobHopMeta hop = new JobHopMeta(start, excuter);
+			jobMeta.addJobHop(hop);
+
+			KettleRecord record = kettleRemotePool.applyJobMeta(jobMeta);
 			KettleResult result = new KettleResult();
 			result.setErrMsg(record.getErrMsg());
 			result.setStatus(record.getStatus());

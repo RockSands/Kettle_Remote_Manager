@@ -711,8 +711,8 @@ CREATE TABLE `R_SLAVE` (
 -- ----------------------------
 -- Records of R_SLAVE
 -- ----------------------------
-INSERT INTO `R_SLAVE` VALUES ('1', 'master1', '10.23.13.183', '8080', null, 'cluster', 'Encrypted 2be98afc86aa7f2e4cb1aa265cd86aac8', null, null, null, '1');
-INSERT INTO `R_SLAVE` VALUES ('2', 'master2', '10.23.13.184', '8080', null, 'cluster', 'Encrypted 2be98afc86aa7f2e4cb1aa265cd86aac8', null, null, null, '1');
+INSERT INTO `R_SLAVE` VALUES ('1', 'master1', '192.168.80.131', '8080', null, 'cluster', 'Encrypted 2be98afc86aa7f2e4cb1aa265cd86aac8', null, null, null, '1');
+INSERT INTO `R_SLAVE` VALUES ('2', 'master2', '192.168.80.132', '8080', null, 'cluster', 'Encrypted 2be98afc86aa7f2e4cb1aa265cd86aac8', null, null, null, '1');
 
 -- ----------------------------
 -- Table structure for R_STEP
@@ -1247,7 +1247,7 @@ CREATE TABLE `R_RECORD_HISTORY` (
 `STATUS`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' ,
 `HOSTNAME`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' ,
 `ERROR_MSG`  varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' ,
-`CREATE_TIME`  timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE CURRENT_TIMESTAMP 
+`CREATE_TIME`  timestamp NOT NULL DEFAULT current_timestamp() 
 )
 ENGINE=InnoDB
 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_general_ci
@@ -1267,7 +1267,7 @@ CREATE TABLE `R_RECORD_JOB` (
 `CRON_EXPRESSION`  varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' ,
 `ERROR_MSG`  varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' ,
 `CREATE_TIME`  timestamp NOT NULL DEFAULT current_timestamp() ,
-`UPDATE_TIME`  timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE CURRENT_TIMESTAMP ,
+`UPDATE_TIME`  timestamp NULL ,
 PRIMARY KEY (`ID_JOB`)
 )
 ENGINE=InnoDB
@@ -1288,7 +1288,7 @@ CREATE TABLE `R_RECORD_TRANS` (
 `CRON_EXPRESSION`  varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' ,
 `ERROR_MSG`  varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' ,
 `CREATE_TIME`  timestamp NOT NULL DEFAULT current_timestamp() ,
-`UPDATE_TIME`  timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE CURRENT_TIMESTAMP ,
+`UPDATE_TIME`  timestamp NULL ,
 PRIMARY KEY (`ID_TRANSFORMATION`)
 )
 ENGINE=InnoDB

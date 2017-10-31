@@ -1,4 +1,4 @@
-package com.kettle.core.instance;
+package com.kettle.core.instance.metas;
 
 import java.util.List;
 

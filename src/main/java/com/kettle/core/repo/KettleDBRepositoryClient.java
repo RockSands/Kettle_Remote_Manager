@@ -308,6 +308,8 @@ public class KettleDBRepositoryClient {
 				record.getErrMsg());
 		table.addValue(new ValueMeta(KettleVariables.R_RECORD_CRON_EXPRESSION, ValueMetaInterface.TYPE_STRING),
 				record.getCronExpression());
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_UPDATETIME, ValueMetaInterface.TYPE_STRING),
+				new Timestamp(System.currentTimeMillis()));
 		repository.connectionDelegate.insertTableRow(KettleVariables.R_TRANS_RECORD, table);
 		repository.commit();
 	}
@@ -338,6 +340,8 @@ public class KettleDBRepositoryClient {
 				record.getErrMsg());
 		table.addValue(new ValueMeta(KettleVariables.R_RECORD_CRON_EXPRESSION, ValueMetaInterface.TYPE_STRING),
 				record.getCronExpression());
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_UPDATETIME, ValueMetaInterface.TYPE_STRING),
+				new Timestamp(System.currentTimeMillis()));
 		repository.connectionDelegate.insertTableRow(KettleVariables.R_JOB_RECORD, table);
 		repository.commit();
 	}
@@ -390,7 +394,8 @@ public class KettleDBRepositoryClient {
 				record.getHostname());
 		table.addValue(new ValueMeta(KettleVariables.R_RECORD_ERRORMSG, ValueMetaInterface.TYPE_STRING),
 				record.getErrMsg());
-		table.addValue(new ValueMeta(KettleVariables.R_RECORD_UPDATETIME, ValueMetaInterface.TYPE_TIMESTAMP), null);
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_UPDATETIME, ValueMetaInterface.TYPE_TIMESTAMP),
+				new Timestamp(System.currentTimeMillis()));
 		repository.connectionDelegate.updateTableRow(KettleVariables.R_JOB_RECORD, KettleVariables.R_JOB_RECORD_ID_JOB,
 				table, new LongObjectId(record.getId()));
 		insertHistory(record);
@@ -415,7 +420,8 @@ public class KettleDBRepositoryClient {
 				record.getHostname());
 		table.addValue(new ValueMeta(KettleVariables.R_RECORD_ERRORMSG, ValueMetaInterface.TYPE_STRING),
 				record.getErrMsg());
-		table.addValue(new ValueMeta(KettleVariables.R_RECORD_UPDATETIME, ValueMetaInterface.TYPE_TIMESTAMP), null);
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_UPDATETIME, ValueMetaInterface.TYPE_TIMESTAMP),
+				new Timestamp(System.currentTimeMillis()));
 		if (KettleTransRecord.class.isInstance(record)) {
 			repository.connectionDelegate.updateTableRow(KettleVariables.R_TRANS_RECORD,
 					KettleVariables.R_TRANS_RECORD_ID_TRANS, table, new LongObjectId(record.getId()));
@@ -462,9 +468,14 @@ public class KettleDBRepositoryClient {
 					record.getHostname());
 			table.addValue(new ValueMeta(KettleVariables.R_RECORD_ERRORMSG, ValueMetaInterface.TYPE_STRING),
 					record.getErrMsg());
-			table.addValue(new ValueMeta(KettleVariables.R_RECORD_UPDATETIME, ValueMetaInterface.TYPE_TIMESTAMP), null);
-			repository.connectionDelegate.updateTableRow(KettleVariables.R_TRANS_RECORD,
-					KettleVariables.R_TRANS_RECORD_ID_TRANS, table, new LongObjectId(record.getId()));
+			table.addValue(new ValueMeta(KettleVariables.R_RECORD_UPDATETIME, ValueMetaInterface.TYPE_TIMESTAMP),
+					new Timestamp(System.currentTimeMillis()));
+			repository.connectionDelegate.updateTableRow(
+					KettleTransRecord.class.isInstance(record) ? KettleVariables.R_TRANS_RECORD
+							: KettleVariables.R_JOB_RECORD,
+					KettleTransRecord.class.isInstance(record) ? KettleVariables.R_TRANS_RECORD_ID_TRANS
+							: KettleVariables.R_JOB_RECORD_ID_JOB,
+					table, new LongObjectId(record.getId()));
 			insertHistory(record);
 		}
 		repository.commit();

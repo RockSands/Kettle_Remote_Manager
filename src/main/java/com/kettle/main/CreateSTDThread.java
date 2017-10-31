@@ -3,8 +3,8 @@ package com.kettle.main;
 import org.pentaho.di.core.exception.KettleException;
 
 import com.kettle.core.bean.KettleResult;
-import com.kettle.core.instance.KettleSelectMeta;
 import com.kettle.core.instance.KettleMgrInstance;
+import com.kettle.core.instance.metas.KettleSelectMeta;
 
 public class CreateSTDThread implements Runnable {
 	KettleSelectMeta source = null;

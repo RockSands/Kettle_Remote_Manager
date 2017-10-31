@@ -1,0 +1,2 @@
+1. 远程节点在/root/.kettle中放入repositories.xml.   JOB中指定Trans需要预定义的资源库支持
+2. 在数据库中创建的Kettle资源库,需要修改repositories.xml中的connect即可,不要更改名称
