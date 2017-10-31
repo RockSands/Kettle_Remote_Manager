@@ -6,25 +6,28 @@ import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.quartz.CronScheduleBuilder;
-import org.quartz.Job;
 import org.quartz.JobBuilder;
 import org.quartz.JobDataMap;
 import org.quartz.JobDetail;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
+import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.SchedulerFactory;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.TriggerKey;
 import org.quartz.impl.StdSchedulerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class KettleRecordPool {
-
+	/**
+	 * 日志
+	 */
+	Logger logger = LoggerFactory.getLogger(KettleRecordPool.class);
 	/**
 	 * 任务调度工厂
 	 */
-	SchedulerFactory schedulerFactory = new StdSchedulerFactory();
+	Scheduler scheduler = null;
 	/**
 	 * Record队列的标识集合
 	 */
@@ -44,7 +47,9 @@ public class KettleRecordPool {
 	 * @throws Exception
 	 */
 	public KettleRecordPool() throws Exception {
-		schedulerFactory.getScheduler().start();
+		SchedulerFactory schedulerfactory = new StdSchedulerFactory();
+		scheduler = schedulerfactory.getScheduler();
+		scheduler.start();
 	}
 
 	/**
@@ -106,9 +111,10 @@ public class KettleRecordPool {
 				.withSchedule(CronScheduleBuilder.cronSchedule(record.getCronExpression())).build();
 		JobDataMap newJobDataMap = new JobDataMap();
 		newJobDataMap.put("RECORD", record);
+		newJobDataMap.put("RECORDPOOL", this);
 		JobDetail jobDetail = JobBuilder.newJob(RecordSchedulerJob.class).withIdentity(record.getUuid())
 				.setJobData(newJobDataMap).build();
-		schedulerFactory.getScheduler().scheduleJob(jobDetail, trigger);
+		scheduler.scheduleJob(jobDetail, trigger);
 	}
 
 	/**
@@ -125,8 +131,8 @@ public class KettleRecordPool {
 		Trigger newTrigger = TriggerBuilder.newTrigger().withIdentity(uuid).startNow()
 				.withSchedule(CronScheduleBuilder.cronSchedule(newCron)).build();
 		TriggerKey triggerKey = new TriggerKey(uuid);
-		if (schedulerFactory.getScheduler().checkExists(triggerKey)) {
-			schedulerFactory.getScheduler().rescheduleJob(triggerKey, newTrigger);
+		if (scheduler.checkExists(triggerKey)) {
+			scheduler.rescheduleJob(triggerKey, newTrigger);
 		}
 	}
 
@@ -162,18 +168,5 @@ public class KettleRecordPool {
 			removeRecordFlag(record);
 		}
 		return record;
-	}
-
-	/**
-	 * 定时调度,将record放入优先队列
-	 * 
-	 * @author Administrator
-	 */
-	public class RecordSchedulerJob implements Job {
-		@Override
-		public void execute(JobExecutionContext arg0) throws JobExecutionException {
-			KettleRecord record = (KettleRecord) arg0.getJobDetail().getJobDataMap().get("RECORD");
-			addPrioritizeRecord(record);
-		}
 	}
 }

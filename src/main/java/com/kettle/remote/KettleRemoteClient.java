@@ -77,7 +77,7 @@ public class KettleRemoteClient {
 		this.remoteServer = remoteServer;
 		this.dbRepositoryClient = kettleRemotePool.getDbRepositoryClient();
 		this.kettleRecordPool = kettleRemotePool.getKettleRecordPool();
-		int maxRecord = 6;
+		int maxRecord = 2;
 		threadPool = Executors.newSingleThreadScheduledExecutor();
 		recordArr = new KettleRecord[maxRecord];
 		threadPool.execute(new Runnable() {

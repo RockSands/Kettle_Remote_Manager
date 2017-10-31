@@ -34,7 +34,7 @@ public class KettleVariables {
 	/**
 	 * 记录的UUID
 	 */
-	public static final String R_RECORD_UUID = "RECORD_UUID";
+	public static final String R_RECORD_UUID = "UUID";
 
 	/**
 	 * 记录的CRON表达式

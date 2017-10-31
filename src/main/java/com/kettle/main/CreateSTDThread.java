@@ -11,22 +11,33 @@ public class CreateSTDThread implements Runnable {
 
 	KettleDBTranDescribe target = null;
 
+	String cron = null;
+
 	KettleTransResult result = null;
 
-	CreateSTDThread(KettleDBTranDescribe source, KettleDBTranDescribe target) {
+	CreateSTDThread(KettleDBTranDescribe source, KettleDBTranDescribe target, String cron) {
 		this.source = source;
 		this.target = target;
+		this.cron = cron;
 	}
 
 	@Override
 	public void run() {
 		try {
 			long now = System.currentTimeMillis();
-			result = KettleMgrInstance.getInstance().syncTablesDatas(source, target);
+			if (cron != null) {
+				result = KettleMgrInstance.getInstance().syncTablesDataSchedule(source, target, cron);
+			} else {
+				result = KettleMgrInstance.getInstance().syncTablesDatas(source, target);
+			}
 			System.out.println("==>SendTransfer used: " + (System.currentTimeMillis() - now));
 		} catch (KettleException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public void modifyCron(String newCron) throws KettleException {
+		KettleMgrInstance.getInstance().modifySchedule(result.getUuid(), newCron);
 	}
 
 	public KettleTransResult getResult() {

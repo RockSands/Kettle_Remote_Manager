@@ -140,6 +140,7 @@ public class KettleRemotePool {
 			KettleTransResult result = new KettleTransResult();
 			result.setStatus(record.getStatus());
 			result.setTransID(record.getId());
+			result.setUuid(record.getUuid());
 			return result;
 		} catch (KettleException e) {
 			logger.error("Trans[" + transMeta.getName() + "]执行Apply发生异常!", e);
@@ -172,6 +173,7 @@ public class KettleRemotePool {
 			KettleTransResult result = new KettleTransResult();
 			result.setStatus(record.getStatus());
 			result.setTransID(record.getId());
+			result.setUuid(record.getUuid());
 			return result;
 		} catch (Exception e) {
 			logger.error("Trans[" + transMeta.getName() + "]执行Apply操作发生异常!", e);
@@ -230,6 +232,7 @@ public class KettleRemotePool {
 		KettleJobResult result = new KettleJobResult();
 		result.setStatus(record.getStatus());
 		result.setJobID(record.getId());
+		result.setUuid(record.getUuid());
 		return result;
 	}
 
@@ -269,6 +272,7 @@ public class KettleRemotePool {
 		KettleJobResult result = new KettleJobResult();
 		result.setStatus(record.getStatus());
 		result.setJobID(record.getId());
+		result.setUuid(record.getUuid());
 		return result;
 	}
 
