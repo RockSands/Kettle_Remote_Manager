@@ -16,7 +16,7 @@ import org.pentaho.di.trans.steps.tableinput.TableInputMeta;
 import org.pentaho.di.trans.steps.tableoutput.TableOutputMeta;
 
 public class TableDataMigration {
-	public static TransMeta createTableDataMigration(KettleSelectMeta source, KettleSelectMeta target) throws KettleException {
+	public static TransMeta createTableDataMigration(KettleTableMeta source, KettleTableMeta target) throws KettleException {
 		final String uuid = UUID.randomUUID().toString().replace("-", "");
 		TransMeta transMeta = null;
 		transMeta = new TransMeta();

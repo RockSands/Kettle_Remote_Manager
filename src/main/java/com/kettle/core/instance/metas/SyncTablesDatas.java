@@ -24,7 +24,7 @@ import org.pentaho.di.trans.steps.update.UpdateMeta;
 
 public class SyncTablesDatas {
 
-	public static TransMeta create(KettleSelectMeta source, KettleSelectMeta target) throws KettleException {
+	public static TransMeta create(KettleTableMeta source, KettleTableMeta target) throws KettleException {
 		String uuid = UUID.randomUUID().toString().replace("-", "");
 		TransMeta transMeta = null;
 		transMeta = new TransMeta();

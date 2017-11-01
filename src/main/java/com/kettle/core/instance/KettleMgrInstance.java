@@ -21,8 +21,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kettle.core.bean.KettleResult;
+import com.kettle.core.instance.metas.CompareTablesDatas;
 import com.kettle.core.instance.metas.KettleSQLSMeta;
-import com.kettle.core.instance.metas.KettleSelectMeta;
+import com.kettle.core.instance.metas.KettleTableMeta;
 import com.kettle.core.instance.metas.SyncTablesDatas;
 import com.kettle.core.instance.metas.TableDataMigration;
 import com.kettle.core.repo.KettleDBRepositoryClient;
@@ -107,8 +108,7 @@ public class KettleMgrInstance {
 	 * @return
 	 * @throws KettleException
 	 */
-	public KettleResult registeSyncTablesDatas(KettleSelectMeta source, KettleSelectMeta target)
-			throws KettleException {
+	public KettleResult registeSyncTablesDatas(KettleTableMeta source, KettleTableMeta target) throws KettleException {
 		try {
 			TransMeta transMeta = SyncTablesDatas.create(source, target);
 			kettleRemotePool.getDbRepositoryClient().saveTransMeta(transMeta);
@@ -151,7 +151,51 @@ public class KettleMgrInstance {
 	 * @return
 	 * @throws KettleException
 	 */
-	public KettleResult scheduleSyncTablesData(KettleSelectMeta source, KettleSelectMeta target, String cron)
+	public KettleResult registeCompareTablesDatas(KettleTableMeta source, KettleTableMeta target,
+			KettleTableMeta newOption) throws KettleException {
+		try {
+			TransMeta transMeta = CompareTablesDatas.create(source, target, newOption);
+			kettleRemotePool.getDbRepositoryClient().saveTransMeta(transMeta);
+			JobMeta mainJob = new JobMeta();
+			mainJob.setName(UUID.randomUUID().toString().replace("-", ""));
+			// 启动
+			JobEntryCopy start = new JobEntryCopy(new JobEntrySpecial("START", true, false));
+			start.setLocation(150, 100);
+			start.setDrawn(true);
+			start.setDescription("START");
+			mainJob.addJobEntry(start);
+			// 主执行
+			JobEntryTrans trans = new JobEntryTrans(transMeta.getName());
+			trans.setTransObjectId(transMeta.getObjectId());
+			trans.setDirectory("${Internal.Entry.Current.Directory}");
+			JobEntryCopy excuter = new JobEntryCopy(trans);
+			excuter.setLocation(300, 100);
+			excuter.setDrawn(true);
+			excuter.setDescription("START");
+			mainJob.addJobEntry(excuter);
+			// 连接
+			JobHopMeta hop = new JobHopMeta(start, excuter);
+			mainJob.addJobHop(hop);
+
+			KettleRecord record = kettleRemotePool.registeJobMeta(Arrays.asList(transMeta), null, mainJob);
+			KettleResult result = new KettleResult();
+			result.setErrMsg(record.getErrMsg());
+			result.setStatus(record.getStatus());
+			result.setId(record.getId());
+			return result;
+		} catch (Exception e) {
+			logger.error("Kettle环境注册CompareTablesDatas发生异常!", e);
+			throw new KettleException("Kettle环境注册CompareTablesDatas发生异常!");
+		}
+	}
+
+	/**
+	 * @param source
+	 * @param target
+	 * @return
+	 * @throws KettleException
+	 */
+	public KettleResult scheduleSyncTablesData(KettleTableMeta source, KettleTableMeta target, String cron)
 			throws KettleException {
 		try {
 			TransMeta transMeta = SyncTablesDatas.create(source, target);
@@ -195,7 +239,7 @@ public class KettleMgrInstance {
 	 * @return
 	 * @throws KettleException
 	 */
-	public KettleResult tableDataMigration(KettleSelectMeta source, KettleSelectMeta target, KettleSQLSMeta success,
+	public KettleResult tableDataMigration(KettleTableMeta source, KettleTableMeta target, KettleSQLSMeta success,
 			KettleSQLSMeta error) throws KettleException {
 		try {
 			TransMeta transMeta = TableDataMigration.createTableDataMigration(source, target);

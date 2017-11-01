@@ -8,7 +8,7 @@ import java.util.concurrent.Executors;
 
 import com.kettle.core.bean.KettleResult;
 import com.kettle.core.instance.KettleMgrInstance;
-import com.kettle.core.instance.metas.KettleSelectMeta;
+import com.kettle.core.instance.metas.KettleTableMeta;
 
 public class RemoteMain {
 	/**
@@ -33,13 +33,13 @@ public class RemoteMain {
 		/*
 		 * Source的TableName无效
 		 */
-		List<KettleSelectMeta> sources = new ArrayList<KettleSelectMeta>(flags.size());
-		List<KettleSelectMeta> targets = new ArrayList<KettleSelectMeta>(flags.size());
-		KettleSelectMeta source = null;
-		KettleSelectMeta target = null;
+		List<KettleTableMeta> sources = new ArrayList<KettleTableMeta>(flags.size());
+		List<KettleTableMeta> targets = new ArrayList<KettleTableMeta>(flags.size());
+		KettleTableMeta source = null;
+		KettleTableMeta target = null;
 		for (String flag : flags) {
 			// 源配置
-			source = new KettleSelectMeta();
+			source = new KettleTableMeta();
 			source.setType("MySQL");
 			source.setHost("192.168.80.138");
 			source.setPort("3306");
@@ -60,7 +60,7 @@ public class RemoteMain {
 			source.setPkcolumns(Arrays.asList("emp_no", "dept_no"));
 			sources.add(source);
 			// 目标配置
-			target = new KettleSelectMeta();
+			target = new KettleTableMeta();
 			target.setType("MySQL");
 			target.setHost("192.168.80.138");
 			target.setPort("3306");

@@ -5,12 +5,12 @@ import org.pentaho.di.core.exception.KettleException;
 import com.kettle.core.bean.KettleResult;
 import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.core.instance.metas.KettleSQLSMeta;
-import com.kettle.core.instance.metas.KettleSelectMeta;
+import com.kettle.core.instance.metas.KettleTableMeta;
 
 public class CreateTDMThread implements Runnable {
-	KettleSelectMeta source = null;
+	KettleTableMeta source = null;
 
-	KettleSelectMeta target = null;
+	KettleTableMeta target = null;
 
 	KettleSQLSMeta success = null;
 
@@ -18,7 +18,7 @@ public class CreateTDMThread implements Runnable {
 
 	KettleResult result = null;
 
-	public CreateTDMThread(KettleSelectMeta source, KettleSelectMeta target, KettleSQLSMeta success,
+	public CreateTDMThread(KettleTableMeta source, KettleTableMeta target, KettleSQLSMeta success,
 			KettleSQLSMeta error) {
 		super();
 		this.source = source;
