@@ -1,4 +1,4 @@
-package com.kettle.main;
+package com.kettle.main.sync.tables;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,8 +26,8 @@ public class RemoteMain {
 	public static void main(String[] args) throws Exception {
 		System.out.println("------------------------------");
 		KettleMgrInstance.getInstance();
-		List<String> flags = Arrays.asList("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
-				"P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
+		List<String> flags = Arrays.asList("", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
+				"O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
 		// List<String> flags = Arrays.asList("A", "B", "C", "D", "E", "F",
 		// "G");
 		/*
@@ -62,7 +62,7 @@ public class RemoteMain {
 			// 目标配置
 			target = new KettleSelectMeta();
 			target.setType("MySQL");
-			target.setHost("192.168.80.139");
+			target.setHost("192.168.80.138");
 			target.setPort("3306");
 			target.setDatabase("person");
 			target.setUser("root");
@@ -97,8 +97,8 @@ public class RemoteMain {
 			for (CreateSTDThread createDataTransfer : createDataTransfers) {
 				if (createDataTransfer.getResult() != null) {
 					KettleResult result = KettleMgrInstance.getInstance()
-							.queryResult(createDataTransfer.getResult().getUuid());
-					System.out.println("=DataTransfer[" + result.getUuid() + "]=>" + result.getStatus());
+							.queryResult(createDataTransfer.getResult().getId());
+					System.out.println("=DataTransfer[" + result.getId() + "]=>" + result.getStatus());
 				}
 			}
 			System.out.println("------------------------------");

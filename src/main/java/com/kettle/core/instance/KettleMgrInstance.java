@@ -1,5 +1,6 @@
 package com.kettle.core.instance;
 
+import java.util.Arrays;
 import java.util.UUID;
 
 import org.pentaho.di.core.KettleEnvironment;
@@ -9,6 +10,7 @@ import org.pentaho.di.core.util.EnvUtil;
 import org.pentaho.di.job.JobHopMeta;
 import org.pentaho.di.job.JobMeta;
 import org.pentaho.di.job.entries.special.JobEntrySpecial;
+import org.pentaho.di.job.entries.sql.JobEntrySQL;
 import org.pentaho.di.job.entries.trans.JobEntryTrans;
 import org.pentaho.di.job.entry.JobEntryCopy;
 import org.pentaho.di.repository.RepositoryMeta;
@@ -19,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kettle.core.bean.KettleResult;
+import com.kettle.core.instance.metas.KettleSQLSMeta;
 import com.kettle.core.instance.metas.KettleSelectMeta;
 import com.kettle.core.instance.metas.SyncTablesDatas;
 import com.kettle.core.instance.metas.TableDataMigration;
@@ -104,18 +107,19 @@ public class KettleMgrInstance {
 	 * @return
 	 * @throws KettleException
 	 */
-	public KettleResult syncTablesDatas(KettleSelectMeta source, KettleSelectMeta target) throws KettleException {
+	public KettleResult registeSyncTablesDatas(KettleSelectMeta source, KettleSelectMeta target)
+			throws KettleException {
 		try {
 			TransMeta transMeta = SyncTablesDatas.create(source, target);
 			kettleRemotePool.getDbRepositoryClient().saveTransMeta(transMeta);
-			JobMeta jobMeta = new JobMeta();
-			jobMeta.setName(UUID.randomUUID().toString().replace("-", ""));
+			JobMeta mainJob = new JobMeta();
+			mainJob.setName(UUID.randomUUID().toString().replace("-", ""));
 			// 启动
 			JobEntryCopy start = new JobEntryCopy(new JobEntrySpecial("START", true, false));
 			start.setLocation(150, 100);
 			start.setDrawn(true);
 			start.setDescription("START");
-			jobMeta.addJobEntry(start);
+			mainJob.addJobEntry(start);
 			// 主执行
 			JobEntryTrans trans = new JobEntryTrans(transMeta.getName());
 			trans.setTransObjectId(transMeta.getObjectId());
@@ -124,20 +128,20 @@ public class KettleMgrInstance {
 			excuter.setLocation(300, 100);
 			excuter.setDrawn(true);
 			excuter.setDescription("START");
-			jobMeta.addJobEntry(excuter);
+			mainJob.addJobEntry(excuter);
 			// 连接
 			JobHopMeta hop = new JobHopMeta(start, excuter);
-			jobMeta.addJobHop(hop);
+			mainJob.addJobHop(hop);
 
-			KettleRecord record = kettleRemotePool.applyJobMeta(jobMeta);
+			KettleRecord record = kettleRemotePool.registeJobMeta(Arrays.asList(transMeta), null, mainJob);
 			KettleResult result = new KettleResult();
 			result.setErrMsg(record.getErrMsg());
 			result.setStatus(record.getStatus());
-			result.setUuid(record.getUuid());
+			result.setId(record.getId());
 			return result;
 		} catch (Exception e) {
-			logger.error("Kettle环境执行SyncTable发生异常!", e);
-			throw new KettleException("Kettle环境执行SyncTable发生异常!");
+			logger.error("Kettle环境注册SyncTablesDatas发生异常!", e);
+			throw new KettleException("Kettle环境注册SyncTablesDatas发生异常!");
 		}
 	}
 
@@ -147,49 +151,41 @@ public class KettleMgrInstance {
 	 * @return
 	 * @throws KettleException
 	 */
-	public KettleResult syncTablesDataSchedule(KettleSelectMeta source, KettleSelectMeta target, String cron)
+	public KettleResult scheduleSyncTablesData(KettleSelectMeta source, KettleSelectMeta target, String cron)
 			throws KettleException {
 		try {
 			TransMeta transMeta = SyncTablesDatas.create(source, target);
-			KettleRecord record = kettleRemotePool.applyScheduleTransMeta(transMeta, cron);
-			KettleResult result = new KettleResult();
-			result.setErrMsg(record.getErrMsg());
-			result.setStatus(record.getStatus());
-			result.setUuid(record.getUuid());
-			return result;
-		} catch (Exception e) {
-			logger.error("Kettle环境执行SyncTable发生异常!", e);
-			throw new KettleException("Kettle环境执行SyncTable发生异常!");
-		}
-	}
-
-	/**
-	 * @param source
-	 * @param target
-	 * @return
-	 * @throws KettleException
-	 */
-	public KettleResult tableDataMigration(KettleSelectMeta source, KettleSelectMeta target) throws KettleException {
-		try {
-			TransMeta transMeta = TableDataMigration.create(source, target);
-			JobMeta jobMeta = new JobMeta();
+			kettleRemotePool.getDbRepositoryClient().saveTransMeta(transMeta);
+			JobMeta mainJob = new JobMeta();
+			mainJob.setName(UUID.randomUUID().toString().replace("-", ""));
 			// 启动
 			JobEntryCopy start = new JobEntryCopy(new JobEntrySpecial("START", true, false));
 			start.setLocation(150, 100);
 			start.setDrawn(true);
 			start.setDescription("START");
+			mainJob.addJobEntry(start);
 			// 主执行
-			JobEntryTrans jet = new JobEntryTrans();
-			jet.setWaitingToFinish(true);
-			KettleRecord record = kettleRemotePool.applyJobMeta(jobMeta);
+			JobEntryTrans trans = new JobEntryTrans(transMeta.getName());
+			trans.setTransObjectId(transMeta.getObjectId());
+			trans.setDirectory("${Internal.Entry.Current.Directory}");
+			JobEntryCopy excuter = new JobEntryCopy(trans);
+			excuter.setLocation(300, 100);
+			excuter.setDrawn(true);
+			excuter.setDescription("START");
+			mainJob.addJobEntry(excuter);
+			// 连接
+			JobHopMeta hop = new JobHopMeta(start, excuter);
+			mainJob.addJobHop(hop);
+
+			KettleRecord record = kettleRemotePool.applyScheduleJobMeta(Arrays.asList(transMeta), null, mainJob, cron);
 			KettleResult result = new KettleResult();
 			result.setErrMsg(record.getErrMsg());
 			result.setStatus(record.getStatus());
-			result.setUuid(record.getUuid());
+			result.setId(record.getId());
 			return result;
 		} catch (Exception e) {
-			logger.error("Kettle环境执行SyncTable发生异常!", e);
-			throw new KettleException("Kettle环境执行SyncTable发生异常!");
+			logger.error("Kettle环境执行scheduleSyncTablesData发生异常!", e);
+			throw new KettleException("Kettle环境执行scheduleSyncTablesData发生异常!");
 		}
 	}
 
@@ -199,12 +195,107 @@ public class KettleMgrInstance {
 	 * @return
 	 * @throws KettleException
 	 */
-	public void modifySchedule(String uuid, String newCron) throws KettleException {
+	public KettleResult tableDataMigration(KettleSelectMeta source, KettleSelectMeta target, KettleSQLSMeta success,
+			KettleSQLSMeta error) throws KettleException {
 		try {
-			kettleRemotePool.modifyRecordSchedule(uuid, newCron);
+			TransMeta transMeta = TableDataMigration.createTableDataMigration(source, target);
+			kettleRemotePool.getDbRepositoryClient().saveTransMeta(transMeta);
+			JobMeta mainJob = new JobMeta();
+			mainJob.setName(UUID.randomUUID().toString().replace("-", ""));
+			// 启动
+			JobEntryCopy start = new JobEntryCopy(new JobEntrySpecial("START", true, false));
+			start.setLocation(150, 100);
+			start.setDrawn(true);
+			start.setDescription("START");
+			mainJob.addJobEntry(start);
+			// 主执行
+			JobEntryTrans trans = new JobEntryTrans(transMeta.getName());
+			trans.setTransObjectId(transMeta.getObjectId());
+			trans.setWaitingToFinish(true);
+			trans.setDirectory("${Internal.Entry.Current.Directory}");
+			JobEntryCopy excuter = new JobEntryCopy(trans);
+			excuter.setLocation(300, 100);
+			excuter.setDrawn(true);
+			excuter.setDescription("START");
+			mainJob.addJobEntry(excuter);
+			// 连接
+			JobHopMeta hop = new JobHopMeta(start, excuter);
+			mainJob.addJobHop(hop);
+			// 设置异常处理
+			if (error != null && error.getSqls() != null && !error.getSqls().isEmpty()) {
+				DatabaseMeta errDataBase = new DatabaseMeta(
+						error.getHost() + "_" + error.getDatabase() + "_" + error.getUser(), error.getType(), "Native",
+						error.getHost(), error.getDatabase(), error.getPort(), error.getUser(), error.getPasswd());
+				mainJob.addDatabase(errDataBase);
+				StringBuffer sqlStr = new StringBuffer();
+				for (String sql : error.getSqls()) {
+					sqlStr.append(sql).append(";");
+				}
+				JobEntrySQL errSQL = new JobEntrySQL();
+				errSQL.setDatabase(errDataBase);
+				errSQL.setSQL(sqlStr.toString());
+				errSQL.setSendOneStatement(false);
+				JobEntryCopy errJEC = new JobEntryCopy(errSQL);
+				errJEC.setName("error");
+				errJEC.setLocation(200, 200);
+				errJEC.setDrawn(true);
+				errJEC.setDescription("errdeal");
+				mainJob.addJobEntry(errJEC);
+				JobHopMeta errhop = new JobHopMeta(excuter, errJEC);
+				errhop.setUnconditional(false);
+				errhop.setEvaluation(false);
+				mainJob.addJobHop(errhop);
+			}
+			// SUCCESS处理
+			if (success != null && success.getSqls() != null && !success.getSqls().isEmpty()) {
+				DatabaseMeta successDataBase = new DatabaseMeta(
+						success.getHost() + "_" + success.getDatabase() + "_" + success.getUser(), success.getType(),
+						"Native", success.getHost(), success.getDatabase(), success.getPort(), success.getUser(),
+						success.getPasswd());
+				mainJob.addDatabase(successDataBase);
+				StringBuffer sqlStr = new StringBuffer();
+				for (String sql : success.getSqls()) {
+					sqlStr.append(sql).append(";");
+				}
+				JobEntrySQL successSQL = new JobEntrySQL();
+				successSQL.setDatabase(successDataBase);
+				successSQL.setSQL(sqlStr.toString());
+				successSQL.setSendOneStatement(false);
+				JobEntryCopy successJEC = new JobEntryCopy(successSQL);
+				successJEC.setName("SUCCESS");
+				successJEC.setLocation(400, 200);
+				successJEC.setDrawn(true);
+				successJEC.setDescription("errdeal");
+				mainJob.addJobEntry(successJEC);
+				JobHopMeta successHop = new JobHopMeta(excuter, successJEC);
+				successHop.setUnconditional(false);
+				successHop.setEvaluation(true);
+				mainJob.addJobHop(successHop);
+			}
+			KettleRecord record = kettleRemotePool.registeJobMeta(Arrays.asList(transMeta), null, mainJob);
+			KettleResult result = new KettleResult();
+			result.setErrMsg(record.getErrMsg());
+			result.setStatus(record.getStatus());
+			result.setId(record.getId());
+			return result;
 		} catch (Exception e) {
-			logger.error("Kettle环境更新定时任务[" + uuid + "]失败!", e);
-			throw new KettleException("Kettle环境更新定时任务[" + uuid + "]失败!");
+			logger.error("Kettle环境注册tableDataMigration发生异常!", e);
+			throw new KettleException("Kettle环境注册tableDataMigration发生异常!");
+		}
+	}
+
+	/**
+	 * @param source
+	 * @param target
+	 * @return
+	 * @throws KettleException
+	 */
+	public void modifySchedule(long id, String newCron) throws KettleException {
+		try {
+			kettleRemotePool.modifyRecordSchedule(id, newCron);
+		} catch (Exception e) {
+			logger.error("Kettle环境更新定时任务[" + id + "]失败!", e);
+			throw new KettleException("Kettle环境更新定时任务[" + id + "]失败!");
 		}
 	}
 
@@ -215,13 +306,29 @@ public class KettleMgrInstance {
 	 * @return
 	 * @throws KettleException
 	 */
-	public KettleResult queryResult(String uuid) throws KettleException {
-		KettleRecord bean = dbRepositoryClient.queryRecord(uuid);
+	public KettleResult excuteJob(long id) throws KettleException {
+		KettleRecord bean = kettleRemotePool.exuteJobMeta(id);
+		KettleResult result = new KettleResult();
+		result.setId(bean.getId());
+		result.setStatus(bean.getStatus());
+		result.setErrMsg(bean.getErrMsg());
+		return result;
+	}
+
+	/**
+	 * 查询数据迁移
+	 * 
+	 * @param transID
+	 * @return
+	 * @throws KettleException
+	 */
+	public KettleResult queryResult(long id) throws KettleException {
+		KettleRecord bean = dbRepositoryClient.queryRecord(id);
 		if (bean == null) {
 			return null;
 		}
 		KettleResult result = new KettleResult();
-		result.setUuid(bean.getUuid());
+		result.setId(bean.getId());
 		result.setStatus(bean.getStatus());
 		result.setErrMsg(bean.getErrMsg());
 		return result;

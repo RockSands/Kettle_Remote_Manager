@@ -2,21 +2,16 @@ package com.kettle.record;
 
 import java.sql.Timestamp;
 
-import org.pentaho.di.repository.RepositoryElementInterface;
+import org.pentaho.di.job.JobMeta;
 
 import com.kettle.core.KettleVariables;
 
-public abstract class KettleRecord {
+public class KettleRecord {
 
 	/**
 	 * ID
 	 */
 	private long id;
-
-	/**
-	 * UUID
-	 */
-	private String uuid;
 
 	/**
 	 * 名称
@@ -58,25 +53,19 @@ public abstract class KettleRecord {
 	private String errMsg;
 
 	/**
-	 * 获取类型
-	 * 
-	 * @return
+	 * Job元数据
 	 */
-	public abstract RepositoryElementInterface getKettleMeta();
+	private JobMeta KettleMeta;
 
-	/**
-	 * 获取类型
-	 * 
-	 * @return
-	 */
-	public abstract String getRecordType();
-
-	public String getUuid() {
-		return uuid;
+	public KettleRecord() {
 	}
 
-	public void setUuid(String uuid) {
-		this.uuid = uuid;
+	public JobMeta getKettleMeta() {
+		return KettleMeta;
+	}
+
+	public void setKettleMeta(JobMeta kettleMeta) {
+		KettleMeta = kettleMeta;
 	}
 
 	public long getId() {
@@ -201,4 +190,6 @@ public abstract class KettleRecord {
 	public boolean isRepeat() {
 		return KettleVariables.RECORD_STATUS_REPEAT.equals(this.getStatus());
 	}
+	
+	
 }

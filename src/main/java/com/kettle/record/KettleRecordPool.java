@@ -19,6 +19,8 @@ import org.quartz.impl.StdSchedulerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.kettle.core.KettleVariables;
+
 public class KettleRecordPool {
 	/**
 	 * 日志
@@ -31,7 +33,7 @@ public class KettleRecordPool {
 	/**
 	 * Record队列的标识集合
 	 */
-	private Set<String> recordQueueSet = new HashSet<String>();
+	private Set<Long> recordQueueSet = new HashSet<Long>();
 	/**
 	 * Tran/Job 保存记录名称,队列
 	 */
@@ -70,7 +72,7 @@ public class KettleRecordPool {
 		if (record == null) {
 			return true;
 		}
-		return recordQueueSet.contains(record.getUuid());
+		return recordQueueSet.contains(record.getId());
 	}
 
 	/**
@@ -83,7 +85,8 @@ public class KettleRecordPool {
 	public synchronized boolean addRecord(KettleRecord record) {
 		if (record != null) {
 			if (!isAcceptedRecord(record)) {
-				recordQueueSet.add(record.getUuid());
+				record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
+				recordQueueSet.add(record.getId());
 				return recordQueue.offer(record);
 			}
 		}
@@ -101,12 +104,12 @@ public class KettleRecordPool {
 			throw new Exception("添加SchedulerRecord[" + record.getName() + "]失败,未找到CRON表达式!");
 		}
 		// 循环任务默认为完成,等待下次执行
-		Trigger trigger = TriggerBuilder.newTrigger().withIdentity(record.getUuid()).startNow()
+		Trigger trigger = TriggerBuilder.newTrigger().withIdentity(String.valueOf(record.getId())).startNow()
 				.withSchedule(CronScheduleBuilder.cronSchedule(record.getCronExpression())).build();
 		JobDataMap newJobDataMap = new JobDataMap();
 		newJobDataMap.put("RECORD", record);
 		newJobDataMap.put("RECORDPOOL", this);
-		JobDetail jobDetail = JobBuilder.newJob(RecordSchedulerJob.class).withIdentity(record.getUuid())
+		JobDetail jobDetail = JobBuilder.newJob(RecordSchedulerJob.class).withIdentity(String.valueOf(record.getId()))
 				.setJobData(newJobDataMap).build();
 		scheduler.scheduleJob(jobDetail, trigger);
 	}
@@ -114,20 +117,21 @@ public class KettleRecordPool {
 	/**
 	 * 更新
 	 * 
-	 * @param uuid
+	 * @param jobID
 	 * @param newCron
 	 * @throws Exception
 	 */
-	public void modifySchedulerRecord(String uuid, String newCron) throws Exception {
-		if (uuid == null || newCron == null || "".equals(newCron.trim())) {
-			throw new Exception("修改SchedulerRecord[" + uuid + "]未找到或CRON表达式为空!");
+	public void modifySchedulerRecord(long jobID, String newCron) throws Exception {
+		if (newCron == null || "".equals(newCron.trim())) {
+			throw new Exception("修改SchedulerRecord[" + jobID + "]是CRON表达式不能为空!");
 		}
-		Trigger newTrigger = TriggerBuilder.newTrigger().withIdentity(uuid).startNow()
+		TriggerKey triggerKey = new TriggerKey(String.valueOf(jobID));
+		if (!scheduler.checkExists(triggerKey)) {
+			throw new Exception("修改SchedulerRecord[" + jobID + "]失败,记录未找到!");
+		}
+		Trigger newTrigger = TriggerBuilder.newTrigger().withIdentity(String.valueOf(jobID)).startNow()
 				.withSchedule(CronScheduleBuilder.cronSchedule(newCron)).build();
-		TriggerKey triggerKey = new TriggerKey(uuid);
-		if (scheduler.checkExists(triggerKey)) {
-			scheduler.rescheduleJob(triggerKey, newTrigger);
-		}
+		scheduler.rescheduleJob(triggerKey, newTrigger);
 	}
 
 	/**
@@ -139,15 +143,15 @@ public class KettleRecordPool {
 	public synchronized boolean addPrioritizeRecord(KettleRecord record) {
 		if (record != null) {
 			if (!isAcceptedRecord(record)) {
-				recordQueueSet.add(record.getUuid());
+				recordQueueSet.add(record.getId());
 				return recordPrioritizeQueue.offer(record);
 			}
 		}
 		return false;
 	}
 
-	public synchronized void deleteRecord(String recordUUID) {
-		recordQueueSet.remove(recordUUID);
+	public synchronized void deleteRecord(long jobID) {
+		recordQueueSet.remove(jobID);
 	}
 
 	/**
@@ -165,8 +169,8 @@ public class KettleRecordPool {
 		}
 		if (record != null) {
 			// 如果Set存在,表示还在受理
-			if (recordQueueSet.contains(record.getUuid())) {
-				recordQueueSet.remove(record.getUuid());
+			if (recordQueueSet.contains(record.getId())) {
+				recordQueueSet.remove(record.getId());
 			} else {
 				// 如果Set不存在,则直接下一个,该Record已经删除
 				record = nextRecord();

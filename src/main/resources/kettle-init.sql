@@ -1241,12 +1241,10 @@ DROP TABLE IF EXISTS `R_RECORD_HISTORY`;
 CREATE TABLE `R_RECORD_HISTORY` (
 `ID`  bigint(20) NOT NULL ,
 `NAME`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
-`UUID`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
-`RECORD_TYPE`  varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
-`ID_RUN`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' ,
+`ID_RUN`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL ,
 `STATUS`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' ,
-`HOSTNAME`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' ,
-`ERROR_MSG`  varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' ,
+`HOSTNAME`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL ,
+`ERROR_MSG`  varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL ,
 `CREATE_TIME`  timestamp NOT NULL DEFAULT current_timestamp() 
 )
 ENGINE=InnoDB
@@ -1260,12 +1258,11 @@ DROP TABLE IF EXISTS `R_RECORD_JOB`;
 CREATE TABLE `R_RECORD_JOB` (
 `ID_JOB`  bigint(20) NOT NULL ,
 `NAME_JOB`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
-`UUID`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
-`ID_RUN`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' ,
-`STATUS`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' ,
-`HOSTNAME`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' ,
-`CRON_EXPRESSION`  varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' ,
-`ERROR_MSG`  varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' ,
+`ID_RUN`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL ,
+`STATUS`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
+`HOSTNAME`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL ,
+`CRON_EXPRESSION`  varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci NULL  ,
+`ERROR_MSG`  varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL ,
 `CREATE_TIME`  timestamp NOT NULL DEFAULT current_timestamp() ,
 `UPDATE_TIME`  timestamp NULL ,
 PRIMARY KEY (`ID_JOB`)
@@ -1275,21 +1272,14 @@ DEFAULT CHARACTER SET=utf8 COLLATE=utf8_general_ci
 ROW_FORMAT=DYNAMIC;
 
 -- ----------------------------
--- Table structure for R_RECORD_TRANS
+-- Table structure for R_RECORD_HISTORY
 -- ----------------------------
-DROP TABLE IF EXISTS `R_RECORD_TRANS`;
-CREATE TABLE `R_RECORD_TRANS` (
-`ID_TRANSFORMATION`  bigint(20) NOT NULL ,
-`NAME_TRANSFORMATION`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
-`UUID`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
-`ID_RUN`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' ,
-`STATUS`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' ,
-`HOSTNAME`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' ,
-`CRON_EXPRESSION`  varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' ,
-`ERROR_MSG`  varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '' ,
-`CREATE_TIME`  timestamp NOT NULL DEFAULT current_timestamp() ,
-`UPDATE_TIME`  timestamp NULL ,
-PRIMARY KEY (`ID_TRANSFORMATION`)
+DROP TABLE IF EXISTS `R_RECORD_DEPENDENT`;
+CREATE TABLE `R_RECORD_DEPENDENT` (
+`MASTER_ID`  bigint(20) NOT NULL ,
+`META_ID`  bigint(20) NOT NULL ,
+`META_TYPE`  varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
+`CREATE_TIME`  timestamp NOT NULL DEFAULT current_timestamp() 
 )
 ENGINE=InnoDB
 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_general_ci

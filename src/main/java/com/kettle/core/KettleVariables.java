@@ -1,10 +1,6 @@
 package com.kettle.core;
 
 public class KettleVariables {
-	/**
-	 * 转换记录的表名
-	 */
-	public static final String R_TRANS_RECORD = "R_RECORD_TRANS";
 
 	/**
 	 * 工作记录的表名
@@ -15,6 +11,26 @@ public class KettleVariables {
 	 * 历史记录的表名
 	 */
 	public static final String R_HISTORY_RECORD = "R_RECORD_HISTORY";
+
+	/**
+	 * 关系表的表名
+	 */
+	public static final String R_RECORD_DEPENDENT = "R_RECORD_DEPENDENT";
+
+	/**
+	 * 关系表的主ID
+	 */
+	public static final String R_RECORD_DEPENDENT_MASTER_ID = "MASTER_ID";
+
+	/**
+	 * 关系表的关联ID
+	 */
+	public static final String R_RECORD_DEPENDENT_META_ID = "META_ID";
+
+	/**
+	 * 关系表的关联类型
+	 */
+	public static final String R_RECORD_DEPENDENT_META_TYPE = "META_TYPE";
 
 	/**
 	 * 历史记录的ID
@@ -32,29 +48,9 @@ public class KettleVariables {
 	public static final String R_RECORD_RECORD_TYPE = "RECORD_TYPE";
 
 	/**
-	 * 记录的UUID
-	 */
-	public static final String R_RECORD_UUID = "UUID";
-
-	/**
 	 * 记录的CRON表达式
 	 */
 	public static final String R_RECORD_CRON_EXPRESSION = "CRON_EXPRESSION";
-
-	/**
-	 * 历史记录的TYPE:TRANS
-	 */
-	public static final String R_HISTORY_RECORD_TYPE_TRANS = "TRANS";
-
-	/**
-	 * 历史记录的TYPE:JOB
-	 */
-	public static final String R_HISTORY_RECORD_TYPE_JOB = "JOB";
-
-	/**
-	 * 转换记录的元数据ID:唯一
-	 */
-	public static final String R_TRANS_RECORD_ID_TRANS = "ID_TRANSFORMATION";
 
 	/**
 	 * 工作记录的元数据ID:唯一
@@ -112,6 +108,16 @@ public class KettleVariables {
 	public static final String RECORD_STATUS_RUNNING = "RUNNING";
 
 	/**
+	 * 记录的运行状态:注册
+	 */
+	public static final String RECORD_STATUS_REGISTE = "REGISTE";
+	
+	/**
+	 * 记录的运行状态:受理
+	 */
+	public static final String RECORD_STATUS_READY = "READY";
+
+	/**
 	 * 记录的运行状态:受理
 	 */
 	public static final String RECORD_STATUS_APPLY = "APPLY";
@@ -140,4 +146,14 @@ public class KettleVariables {
 	 * 远端的运行状态:正常
 	 */
 	public static final String REMOTE_STATUS_RUNNING = "Online";
+
+	/**
+	 * 历史记录的TYPE:JOB
+	 */
+	public static final String RECORD_TYPE_JOB = "JOB";
+
+	/**
+	 * 转换记录的元数据ID:唯一
+	 */
+	public static final String RECORD_TYPE_TRANS = "TRANS";
 }

@@ -2,9 +2,9 @@ package com.kettle.core.bean;
 
 public class KettleResult {
 	/**
-	 * uuid
+	 * id
 	 */
-	private String uuid;
+	private long id;
 	/**
 	 * 状态
 	 */
@@ -15,12 +15,12 @@ public class KettleResult {
 	 */
 	private String errMsg;
 
-	public String getUuid() {
-		return uuid;
+	public long getId() {
+		return id;
 	}
 
-	public void setUuid(String uuid) {
-		this.uuid = uuid;
+	public void setId(long id) {
+		this.id = id;
 	}
 
 	public String getStatus() {
