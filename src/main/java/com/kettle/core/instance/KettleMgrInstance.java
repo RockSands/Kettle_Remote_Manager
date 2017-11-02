@@ -381,4 +381,15 @@ public class KettleMgrInstance {
 		result.setErrMsg(bean.getErrMsg());
 		return result;
 	}
+
+	/**
+	 * 查询数据迁移
+	 * 
+	 * @param transID
+	 * @return
+	 * @throws KettleException
+	 */
+	public void deleteJob(long id) throws Exception {
+		kettleRemotePool.deleteJob(id);
+	}
 }

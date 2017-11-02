@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.kettle.core.KettleVariables;
 import com.kettle.core.bean.KettleResult;
 import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.core.instance.metas.KettleTableMeta;
@@ -26,7 +27,7 @@ public class RemoteMain {
 	public static void main(String[] args) throws Exception {
 		System.out.println("------------------------------");
 		KettleMgrInstance.getInstance();
-		List<String> flags = Arrays.asList("A", "B", "C");
+		List<String> flags = Arrays.asList("D", "E", "C");
 		/*
 		 * Source的TableName无效
 		 */
@@ -74,8 +75,8 @@ public class RemoteMain {
 			newOption.setUser("root");
 			newOption.setPasswd("123456");
 			newOption.setColumns(Arrays.asList("firstName", "lastName", "empID", "deptID"));
-			newOption.setSql("UPDATE target_employees_" + flag
-					+ " SET firstName=?,lastName=? WHERE empID = ? AND deptID = ?");
+			newOption.setSql(
+					"UPDATE target_employees_" + flag + " SET firstName=?,lastName=? WHERE empID = ? AND deptID = ?");
 			newOptions.add(newOption);
 		}
 		List<CreateCTDThread> createDataTransfers = new ArrayList<CreateCTDThread>(flags.size());
@@ -93,6 +94,10 @@ public class RemoteMain {
 				if (roll.getResult() != null) {
 					KettleResult result = KettleMgrInstance.getInstance().queryResult(roll.getResult().getId());
 					System.out.println("=DataTransfer[" + result.getId() + "]=>" + result.getStatus());
+					if (KettleVariables.RECORD_STATUS_FINISHED.equals(result.getStatus())) {
+						KettleMgrInstance.getInstance().deleteJob(result.getId());
+						break;
+					}
 				}
 			}
 			System.out.println("------------------------------");

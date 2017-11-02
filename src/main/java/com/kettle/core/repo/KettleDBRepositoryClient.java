@@ -345,6 +345,19 @@ public class KettleDBRepositoryClient {
 	}
 
 	/**
+	 * 删除JOB
+	 * 
+	 * @param jobID
+	 * @throws KettleException
+	 */
+	public synchronized void deleteRecord(long jobID) throws KettleException {
+		deleteJobAndDependents(jobID);
+		String sql = "DELETE FROM " + KettleVariables.R_JOB_RECORD + " WHERE " + KettleVariables.R_JOB_RECORD_ID_JOB
+				+ " = ? ";
+		repository.connectionDelegate.performDelete(sql, new LongObjectId(jobID));
+	}
+
+	/**
 	 * 获取所有需处理Job任务
 	 * 
 	 * @param hostname

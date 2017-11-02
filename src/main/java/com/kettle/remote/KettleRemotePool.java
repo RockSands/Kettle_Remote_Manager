@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.apache.commons.beanutils.BeanUtils;
 import org.pentaho.di.cluster.SlaveServer;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.logging.LogLevel;
@@ -235,6 +234,7 @@ public class KettleRemotePool {
 			throw new KettleException("Job[" + jobID + "]未找到,请先注册!");
 		}
 		kettleRecordPool.deleteRecord(jobID);
+		dbRepositoryClient.deleteRecord(jobID);
 		return record;
 	}
 
