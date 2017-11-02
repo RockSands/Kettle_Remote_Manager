@@ -35,11 +35,11 @@ public class KettleDBRepositoryClient {
 	/**
 	 * 资源路径
 	 */
-	private RepositoryDirectoryInterface repositoryDirectory = null;
+	private RepositoryDirectoryInterface baseDirectory = null;
 
 	public KettleDBRepositoryClient(KettleDatabaseRepository repository) throws KettleException {
 		this.repository = repository;
-		repositoryDirectory = repository.findDirectory("");
+		baseDirectory = repository.findDirectory("/");
 	}
 
 	public void connect() {
@@ -100,18 +100,20 @@ public class KettleDBRepositoryClient {
 	 * 向资源库保存TransMeta
 	 *
 	 * @param transMeta
+	 * @param repositoryDirectory
 	 * @throws KettleException
 	 */
 	public synchronized void saveTransMeta(TransMeta transMeta) throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}
-		transMeta.setRepositoryDirectory(repositoryDirectory);
 		repository.save(transMeta, "1", Calendar.getInstance(), null, true);
 	}
 
 	/**
 	 * 向资源库保存TransMeta
+	 * 
+	 * @param repositoryDirectory
 	 *
 	 * @param transMeta
 	 * @throws KettleException
@@ -121,13 +123,14 @@ public class KettleDBRepositoryClient {
 			connect();
 		}
 		for (TransMeta meta : transMetas) {
-			meta.setRepositoryDirectory(repositoryDirectory);
 			repository.save(meta, "1", Calendar.getInstance(), null, true);
 		}
 	}
 
 	/**
 	 * 向资源库保存TransMeta
+	 * 
+	 * @param repositoryDirectory
 	 *
 	 * @param transMeta
 	 * @throws KettleException
@@ -136,12 +139,13 @@ public class KettleDBRepositoryClient {
 		if (!repository.isConnected()) {
 			connect();
 		}
-		jobMeta.setRepositoryDirectory(repositoryDirectory);
 		repository.save(jobMeta, "1", Calendar.getInstance(), null, true);
 	}
 
 	/**
 	 * 向资源库保存TransMeta
+	 * 
+	 * @param repositoryDirectory
 	 *
 	 * @param transMeta
 	 * @throws KettleException
@@ -151,7 +155,6 @@ public class KettleDBRepositoryClient {
 			connect();
 		}
 		for (JobMeta meta : jobMetas) {
-			meta.setRepositoryDirectory(repositoryDirectory);
 			repository.save(meta, "1", Calendar.getInstance(), null, true);
 		}
 	}
@@ -478,4 +481,26 @@ public class KettleDBRepositoryClient {
 		repository.commit();
 	}
 
+	/**
+	 * 获取基础路径
+	 * 
+	 * @return
+	 */
+	public RepositoryDirectoryInterface getBaseDirectory() {
+		return baseDirectory;
+	}
+
+	/**
+	 * 获取基础路径
+	 * 
+	 * @return
+	 * @throws KettleException
+	 */
+	public synchronized RepositoryDirectoryInterface createDirectory(String patch) throws KettleException {
+		RepositoryDirectoryInterface rei = repository.findDirectory("/" + patch);
+		if (rei == null) {
+			rei = repository.createRepositoryDirectory(this.baseDirectory, patch);
+		}
+		return rei;
+	}
 }

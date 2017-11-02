@@ -26,7 +26,7 @@ public class RemoteMain {
 	public static void main(String[] args) throws Exception {
 		System.out.println("------------------------------");
 		KettleMgrInstance.getInstance();
-		List<String> flags = Arrays.asList("", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
+		List<String> flags = Arrays.asList("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
 				"O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
 		// List<String> flags = Arrays.asList("A", "B", "C", "D", "E", "F",
 		// "G");

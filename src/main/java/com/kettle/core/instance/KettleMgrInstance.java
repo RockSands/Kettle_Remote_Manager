@@ -13,6 +13,7 @@ import org.pentaho.di.job.entries.special.JobEntrySpecial;
 import org.pentaho.di.job.entries.sql.JobEntrySQL;
 import org.pentaho.di.job.entries.trans.JobEntryTrans;
 import org.pentaho.di.job.entry.JobEntryCopy;
+import org.pentaho.di.repository.RepositoryDirectoryInterface;
 import org.pentaho.di.repository.RepositoryMeta;
 import org.pentaho.di.repository.kdr.KettleDatabaseRepository;
 import org.pentaho.di.repository.kdr.KettleDatabaseRepositoryMeta;
@@ -111,9 +112,14 @@ public class KettleMgrInstance {
 	 */
 	public KettleResult registeSyncTablesDatas(KettleTableMeta source, KettleTableMeta target) throws KettleException {
 		try {
+			// 路径
+			RepositoryDirectoryInterface directory = kettleRemotePool.getRepositoryDirectory();
+			// TransMeta
 			TransMeta transMeta = SyncTablesDatas.create(source, target);
-			kettleRemotePool.getDbRepositoryClient().saveTransMeta(transMeta);
+			transMeta.setRepositoryDirectory(directory);
+			// MainJob
 			JobMeta mainJob = new JobMeta();
+			mainJob.setRepositoryDirectory(directory);
 			mainJob.setName(UUID.randomUUID().toString().replace("-", ""));
 			// 启动
 			JobEntryCopy start = new JobEntryCopy(new JobEntrySpecial("START", true, false));
@@ -124,16 +130,16 @@ public class KettleMgrInstance {
 			// 主执行
 			JobEntryTrans trans = new JobEntryTrans(transMeta.getName());
 			trans.setTransObjectId(transMeta.getObjectId());
-			trans.setDirectory("${Internal.Entry.Current.Directory}");
+			trans.setTransname(transMeta.getName());
+			trans.setDirectory(directory.getPath());
 			JobEntryCopy excuter = new JobEntryCopy(trans);
 			excuter.setLocation(300, 100);
 			excuter.setDrawn(true);
-			excuter.setDescription("START");
+			excuter.setDescription("MAINJOB");
 			mainJob.addJobEntry(excuter);
 			// 连接
 			JobHopMeta hop = new JobHopMeta(start, excuter);
 			mainJob.addJobHop(hop);
-
 			KettleRecord record = kettleRemotePool.registeJobMeta(Arrays.asList(transMeta), null, mainJob);
 			KettleResult result = new KettleResult();
 			result.setErrMsg(record.getErrMsg());
@@ -155,9 +161,12 @@ public class KettleMgrInstance {
 	public KettleResult registeCompareTablesDatas(KettleTableMeta base, KettleTableMeta compare,
 			KettleTableMeta newOption) throws KettleException {
 		try {
+			// 路径
+			RepositoryDirectoryInterface directory = kettleRemotePool.getRepositoryDirectory();
 			TransMeta transMeta = CompareTablesDatas.create(base, compare, newOption);
-			kettleRemotePool.getDbRepositoryClient().saveTransMeta(transMeta);
+			transMeta.setRepositoryDirectory(directory);
 			JobMeta mainJob = new JobMeta();
+			mainJob.setRepositoryDirectory(directory);
 			mainJob.setName(UUID.randomUUID().toString().replace("-", ""));
 			// 启动
 			JobEntryCopy start = new JobEntryCopy(new JobEntrySpecial("START", true, false));
@@ -168,11 +177,12 @@ public class KettleMgrInstance {
 			// 主执行
 			JobEntryTrans trans = new JobEntryTrans(transMeta.getName());
 			trans.setTransObjectId(transMeta.getObjectId());
-			trans.setDirectory("${Internal.Entry.Current.Directory}");
+			trans.setTransname(transMeta.getName());
+			trans.setDirectory(directory.getPath());
 			JobEntryCopy excuter = new JobEntryCopy(trans);
 			excuter.setLocation(300, 100);
 			excuter.setDrawn(true);
-			excuter.setDescription("START");
+			excuter.setDescription("MAINJOB");
 			mainJob.addJobEntry(excuter);
 			// 连接
 			JobHopMeta hop = new JobHopMeta(start, excuter);
@@ -199,9 +209,12 @@ public class KettleMgrInstance {
 	public KettleResult scheduleSyncTablesData(KettleTableMeta source, KettleTableMeta target, String cron)
 			throws KettleException {
 		try {
+			// 路径
+			RepositoryDirectoryInterface directory = kettleRemotePool.getRepositoryDirectory();
 			TransMeta transMeta = SyncTablesDatas.create(source, target);
-			kettleRemotePool.getDbRepositoryClient().saveTransMeta(transMeta);
+			transMeta.setRepositoryDirectory(directory);
 			JobMeta mainJob = new JobMeta();
+			mainJob.setRepositoryDirectory(directory);
 			mainJob.setName(UUID.randomUUID().toString().replace("-", ""));
 			// 启动
 			JobEntryCopy start = new JobEntryCopy(new JobEntrySpecial("START", true, false));
@@ -212,11 +225,12 @@ public class KettleMgrInstance {
 			// 主执行
 			JobEntryTrans trans = new JobEntryTrans(transMeta.getName());
 			trans.setTransObjectId(transMeta.getObjectId());
-			trans.setDirectory("${Internal.Entry.Current.Directory}");
+			trans.setTransname(transMeta.getName());
+			trans.setDirectory(directory.getPath());
 			JobEntryCopy excuter = new JobEntryCopy(trans);
 			excuter.setLocation(300, 100);
 			excuter.setDrawn(true);
-			excuter.setDescription("START");
+			excuter.setDescription("MAINJOB");
 			mainJob.addJobEntry(excuter);
 			// 连接
 			JobHopMeta hop = new JobHopMeta(start, excuter);
@@ -243,9 +257,11 @@ public class KettleMgrInstance {
 	public KettleResult tableDataMigration(KettleTableMeta source, KettleTableMeta target, KettleSQLSMeta success,
 			KettleSQLSMeta error) throws KettleException {
 		try {
+			RepositoryDirectoryInterface directory = kettleRemotePool.getRepositoryDirectory();
 			TransMeta transMeta = TableDataMigration.createTableDataMigration(source, target);
-			kettleRemotePool.getDbRepositoryClient().saveTransMeta(transMeta);
+			transMeta.setRepositoryDirectory(directory);
 			JobMeta mainJob = new JobMeta();
+			mainJob.setRepositoryDirectory(directory);
 			mainJob.setName(UUID.randomUUID().toString().replace("-", ""));
 			// 启动
 			JobEntryCopy start = new JobEntryCopy(new JobEntrySpecial("START", true, false));
@@ -257,11 +273,11 @@ public class KettleMgrInstance {
 			JobEntryTrans trans = new JobEntryTrans(transMeta.getName());
 			trans.setTransObjectId(transMeta.getObjectId());
 			trans.setWaitingToFinish(true);
-			trans.setDirectory("${Internal.Entry.Current.Directory}");
+			trans.setDirectory(directory.getPath());
 			JobEntryCopy excuter = new JobEntryCopy(trans);
 			excuter.setLocation(300, 100);
 			excuter.setDrawn(true);
-			excuter.setDescription("START");
+			excuter.setDescription("MAINJOB");
 			mainJob.addJobEntry(excuter);
 			// 连接
 			JobHopMeta hop = new JobHopMeta(start, excuter);

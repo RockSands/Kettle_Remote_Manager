@@ -1,7 +1,9 @@
 package com.kettle.remote;
 
 import java.lang.reflect.InvocationTargetException;
+import java.text.SimpleDateFormat;
 import java.util.Collection;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,6 +15,7 @@ import org.pentaho.di.core.logging.LogLevel;
 import org.pentaho.di.job.JobMeta;
 import org.pentaho.di.job.entries.special.JobEntrySpecial;
 import org.pentaho.di.job.entry.JobEntryCopy;
+import org.pentaho.di.repository.RepositoryDirectoryInterface;
 import org.pentaho.di.repository.kdr.KettleDatabaseRepository;
 import org.pentaho.di.trans.TransMeta;
 import org.slf4j.Logger;
@@ -55,6 +58,11 @@ public class KettleRemotePool {
 	 * 设备名称
 	 */
 	private final List<String> hostNames = new LinkedList<String>();
+
+	/**
+	 * 资源路径
+	 */
+	private RepositoryDirectoryInterface repositoryDirectory;
 
 	/**
 	 * @param dbRepositoryClient
@@ -228,14 +236,9 @@ public class KettleRemotePool {
 	 * @return
 	 * @throws KettleException
 	 */
-	public KettleRecord deleteJob(long jobID) throws KettleException {
-		KettleRecord record = dbRepositoryClient.queryRecord(jobID);
-		if (record == null) {
-			throw new KettleException("Job[" + jobID + "]未找到,请先注册!");
-		}
+	public void deleteJob(long jobID) throws KettleException {
 		kettleRecordPool.deleteRecord(jobID);
 		dbRepositoryClient.deleteRecord(jobID);
-		return record;
 	}
 
 	/**
@@ -354,5 +357,20 @@ public class KettleRemotePool {
 		r_record.setStatus(record.getStatus());
 		r_record.setUpdateTime(record.getUpdateTime());
 		return r_record;
+	}
+
+	/**
+	 * 同步当前路径
+	 * 
+	 * @return
+	 * @throws KettleException
+	 */
+	public RepositoryDirectoryInterface getRepositoryDirectory() throws KettleException {
+		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");// 设置日期格式
+		String current = df.format(new Date());
+		if (repositoryDirectory == null || !repositoryDirectory.getPath().contains(current)) {
+			repositoryDirectory = dbRepositoryClient.createDirectory(current);
+		}
+		return repositoryDirectory;
 	}
 }
