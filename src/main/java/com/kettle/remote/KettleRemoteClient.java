@@ -317,6 +317,9 @@ public class KettleRemoteClient {
 		 */
 		private void cleanRecords() {
 			for (KettleRecord roll : updateRecords) {
+				if (roll.isError() || roll.isFinished()) {
+					kettleRecordPool.deleteRecord(roll.getId());
+				}
 				// 完成的进行清理
 				if (roll.isFinished()) {
 					if (KettleRecord.class.isInstance(roll)) {

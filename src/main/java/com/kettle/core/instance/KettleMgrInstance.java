@@ -20,6 +20,7 @@ import org.pentaho.di.trans.TransMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.kettle.core.KettleVariables;
 import com.kettle.core.bean.KettleResult;
 import com.kettle.core.instance.metas.CompareTablesDatas;
 import com.kettle.core.instance.metas.KettleSQLSMeta;
@@ -151,10 +152,10 @@ public class KettleMgrInstance {
 	 * @return
 	 * @throws KettleException
 	 */
-	public KettleResult registeCompareTablesDatas(KettleTableMeta source, KettleTableMeta target,
+	public KettleResult registeCompareTablesDatas(KettleTableMeta base, KettleTableMeta compare,
 			KettleTableMeta newOption) throws KettleException {
 		try {
-			TransMeta transMeta = CompareTablesDatas.create(source, target, newOption);
+			TransMeta transMeta = CompareTablesDatas.create(base, compare, newOption);
 			kettleRemotePool.getDbRepositoryClient().saveTransMeta(transMeta);
 			JobMeta mainJob = new JobMeta();
 			mainJob.setName(UUID.randomUUID().toString().replace("-", ""));
@@ -366,13 +367,16 @@ public class KettleMgrInstance {
 	 * @return
 	 * @throws KettleException
 	 */
-	public KettleResult queryResult(long id) throws KettleException {
-		KettleRecord bean = dbRepositoryClient.queryRecord(id);
+	public KettleResult queryResult(long id) throws Exception {
+		KettleRecord bean = kettleRemotePool.getRecord(id);
 		if (bean == null) {
 			return null;
 		}
 		KettleResult result = new KettleResult();
 		result.setId(bean.getId());
+		if (bean.isApply() || bean.isRepeat()) {
+			result.setStatus(KettleVariables.RECORD_STATUS_RUNNING);
+		}
 		result.setStatus(bean.getStatus());
 		result.setErrMsg(bean.getErrMsg());
 		return result;

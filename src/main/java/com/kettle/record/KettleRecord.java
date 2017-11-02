@@ -190,6 +190,13 @@ public class KettleRecord {
 	public boolean isRepeat() {
 		return KettleVariables.RECORD_STATUS_REPEAT.equals(this.getStatus());
 	}
-	
-	
+
+	/**
+	 * 是否注册
+	 * 
+	 * @return
+	 */
+	public boolean isRegiste() {
+		return KettleVariables.RECORD_STATUS_REGISTE.equals(this.getStatus());
+	}
 }

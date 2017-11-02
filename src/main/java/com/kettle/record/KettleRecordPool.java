@@ -1,8 +1,8 @@
 package com.kettle.record;
 
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.quartz.CronScheduleBuilder;
@@ -31,9 +31,9 @@ public class KettleRecordPool {
 	 */
 	Scheduler scheduler = null;
 	/**
-	 * Record队列的标识集合
+	 * 存储Record的Map
 	 */
-	private Set<Long> recordQueueSet = new HashSet<Long>();
+	private Map<Long, KettleRecord> recordCache = new HashMap<Long, KettleRecord>();
 	/**
 	 * Tran/Job 保存记录名称,队列
 	 */
@@ -72,7 +72,7 @@ public class KettleRecordPool {
 		if (record == null) {
 			return true;
 		}
-		return recordQueueSet.contains(record.getId());
+		return recordCache.containsKey(record.getId());
 	}
 
 	/**
@@ -86,7 +86,7 @@ public class KettleRecordPool {
 		if (record != null) {
 			if (!isAcceptedRecord(record)) {
 				record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
-				recordQueueSet.add(record.getId());
+				recordCache.put(record.getId(), record);
 				return recordQueue.offer(record);
 			}
 		}
@@ -143,15 +143,11 @@ public class KettleRecordPool {
 	public synchronized boolean addPrioritizeRecord(KettleRecord record) {
 		if (record != null) {
 			if (!isAcceptedRecord(record)) {
-				recordQueueSet.add(record.getId());
+				recordCache.put(record.getId(), record);
 				return recordPrioritizeQueue.offer(record);
 			}
 		}
 		return false;
-	}
-
-	public synchronized void deleteRecord(long jobID) {
-		recordQueueSet.remove(jobID);
 	}
 
 	/**
@@ -168,14 +164,30 @@ public class KettleRecordPool {
 			record = recordQueue.poll();
 		}
 		if (record != null) {
-			// 如果Set存在,表示还在受理
-			if (recordQueueSet.contains(record.getId())) {
-				recordQueueSet.remove(record.getId());
-			} else {
-				// 如果Set不存在,则直接下一个,该Record已经删除
+			// 如果Cache不存在,则直接下一个,该Record已经删除或处理完成
+			if (!recordCache.containsKey(record.getId())) {
 				record = nextRecord();
 			}
 		}
 		return record;
+	}
+
+	/**
+	 * 删除
+	 * 
+	 * @param jobID
+	 */
+	public void deleteRecord(long jobID) {
+		recordCache.remove(jobID);
+	}
+
+	/**
+	 * 获取Record
+	 * 
+	 * @param id
+	 * @return
+	 */
+	public KettleRecord getRecord(long id) {
+		return recordCache.get(id);
 	}
 }

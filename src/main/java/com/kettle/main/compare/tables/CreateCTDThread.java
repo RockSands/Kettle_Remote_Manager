@@ -7,9 +7,9 @@ import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.core.instance.metas.KettleTableMeta;
 
 public class CreateCTDThread implements Runnable {
-	KettleTableMeta source = null;
+	KettleTableMeta base = null;
 
-	KettleTableMeta target = null;
+	KettleTableMeta compare = null;
 
 	KettleTableMeta newOption = null;
 
@@ -17,9 +17,9 @@ public class CreateCTDThread implements Runnable {
 
 	KettleResult result = null;
 
-	CreateCTDThread(KettleTableMeta source, KettleTableMeta target, KettleTableMeta newOption) {
-		this.source = source;
-		this.target = target;
+	CreateCTDThread(KettleTableMeta base, KettleTableMeta compare, KettleTableMeta newOption) {
+		this.base = base;
+		this.compare = compare;
 		this.newOption = newOption;
 	}
 
@@ -27,7 +27,7 @@ public class CreateCTDThread implements Runnable {
 	public void run() {
 		try {
 			long now = System.currentTimeMillis();
-			result = KettleMgrInstance.getInstance().registeCompareTablesDatas(source, target, newOption);
+			result = KettleMgrInstance.getInstance().registeCompareTablesDatas(base, compare, newOption);
 			System.out.println("==>registe used: " + (System.currentTimeMillis() - now));
 			KettleMgrInstance.getInstance().excuteJob(result.getId());
 			System.out.println("==>apply used: " + (System.currentTimeMillis() - now));

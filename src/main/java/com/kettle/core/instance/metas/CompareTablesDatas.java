@@ -26,22 +26,22 @@ import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 
 public class CompareTablesDatas {
-	public static TransMeta create(KettleTableMeta source, KettleTableMeta target, KettleTableMeta newOption)
+	public static TransMeta create(KettleTableMeta base, KettleTableMeta compare, KettleTableMeta newOption)
 			throws Exception {
 		String uuid = UUID.randomUUID().toString().replace("-", "");
-		Select sourceSelect = (Select) CCJSqlParserUtil.parse(source.getSql());
-		Select targetSelect = (Select) CCJSqlParserUtil.parse(target.getSql());
+		Select baseSelect = (Select) CCJSqlParserUtil.parse(base.getSql());
+		Select compareSelect = (Select) CCJSqlParserUtil.parse(compare.getSql());
 		TransMeta transMeta = null;
 		transMeta = new TransMeta();
 		transMeta.setName("CTD-" + uuid);
-		DatabaseMeta sourceDataBase = new DatabaseMeta(
-				source.getHost() + "_" + source.getDatabase() + "_" + source.getUser(), source.getType(), "Native",
-				source.getHost(), source.getDatabase(), source.getPort(), source.getUser(), source.getPasswd());
-		transMeta.addDatabase(sourceDataBase);
-		DatabaseMeta targetDatabase = new DatabaseMeta(
-				target.getHost() + "_" + target.getDatabase() + "_" + target.getUser(), target.getType(), "Native",
-				target.getHost(), target.getDatabase(), target.getPort(), target.getUser(), target.getPasswd());
-		transMeta.addDatabase(targetDatabase);
+		DatabaseMeta baseDataBase = new DatabaseMeta(
+				base.getHost() + "_" + base.getDatabase() + "_" + base.getUser(), base.getType(), "Native",
+				base.getHost(), base.getDatabase(), base.getPort(), base.getUser(), base.getPasswd());
+		transMeta.addDatabase(baseDataBase);
+		DatabaseMeta compareDatabase = new DatabaseMeta(
+				compare.getHost() + "_" + compare.getDatabase() + "_" + compare.getUser(), compare.getType(), "Native",
+				compare.getHost(), compare.getDatabase(), compare.getPort(), compare.getUser(), compare.getPasswd());
+		transMeta.addDatabase(compareDatabase);
 		DatabaseMeta newDatabase = new DatabaseMeta(
 				newOption.getHost() + "_" + newOption.getDatabase() + "_" + newOption.getUser(), newOption.getType(),
 				"Native", newOption.getHost(), newOption.getDatabase(), newOption.getPort(), newOption.getUser(),
@@ -51,17 +51,17 @@ public class CompareTablesDatas {
 		 * 获取非PK列
 		 */
 		// List<String> valueFields = new ArrayList<String>();
-		// valueFields.addAll(target.getColumns());
-		// valueFields.removeAll(target.getPkcolumns());
+		// valueFields.addAll(compare.getColumns());
+		// valueFields.removeAll(compare.getPkcolumns());
 		// String[] valueColumns = valueFields.toArray(new String[0]);
 		/*
 		 * 获取PK列
 		 */
-		// String[] pkColumns = target.getPkcolumns().toArray(new String[0]);
+		// String[] pkColumns = compare.getPkcolumns().toArray(new String[0]);
 		/*
 		 * 条件
 		 */
-		String[] conditions = new String[target.getPkcolumns().size()];
+		String[] conditions = new String[compare.getPkcolumns().size()];
 		for (int i = 0; i < conditions.length; i++) {
 			conditions[i] = "=";
 		}
@@ -72,41 +72,41 @@ public class CompareTablesDatas {
 		NotePadMeta ni = new NotePadMeta(startNote, 150, 10, -1, -1);
 		transMeta.addNote(ni);
 		/*
-		 * source
+		 * base
 		 */
 		TableInputMeta tii = new TableInputMeta();
-		tii.setDatabaseMeta(sourceDataBase);
-		List<OrderByElement> selectOrderBy = ((PlainSelect) sourceSelect.getSelectBody()).getOrderByElements();
+		tii.setDatabaseMeta(baseDataBase);
+		List<OrderByElement> selectOrderBy = ((PlainSelect) baseSelect.getSelectBody()).getOrderByElements();
 		if (selectOrderBy == null) {
 			selectOrderBy = new LinkedList<OrderByElement>();
-			((PlainSelect) sourceSelect.getSelectBody()).setOrderByElements(selectOrderBy);
+			((PlainSelect) baseSelect.getSelectBody()).setOrderByElements(selectOrderBy);
 		}
 		selectOrderBy.clear();
 		OrderByElement orderByElement = null;
-		for (String pk : source.getPkcolumns()) {
+		for (String pk : base.getPkcolumns()) {
 			orderByElement = new OrderByElement();
 			orderByElement.setExpression(new Column(pk));
 			selectOrderBy.add(orderByElement);
 		}
-		tii.setSQL(sourceSelect.getSelectBody().toString());
-		StepMeta query = new StepMeta("source", tii);
+		tii.setSQL(baseSelect.getSelectBody().toString());
+		StepMeta query = new StepMeta("base", tii);
 		query.setLocation(150, 100);
 		query.setDraw(true);
-		query.setDescription("STEP-SOURCE");
+		query.setDescription("STEP-BASE");
 		transMeta.addStep(query);
 
 		/*
 		 * 转换名称
 		 */
-		String[] sourceFields = source.getColumns().toArray(new String[0]);
-		String[] targetFields = target.getColumns() == null ? sourceFields : target.getColumns().toArray(new String[0]);
-		int[] targetPrecisions = new int[sourceFields.length];
-		int[] targetLengths = new int[targetFields.length];
+		String[] baseFields = base.getColumns().toArray(new String[0]);
+		String[] compareFields = compare.getColumns() == null ? baseFields : compare.getColumns().toArray(new String[0]);
+		int[] comparePrecisions = new int[baseFields.length];
+		int[] compareLengths = new int[compareFields.length];
 		SelectValuesMeta svi = new SelectValuesMeta();
-		svi.setSelectLength(targetLengths);
-		svi.setSelectPrecision(targetPrecisions);
-		svi.setSelectName(sourceFields);
-		svi.setSelectRename(targetFields);
+		svi.setSelectLength(compareLengths);
+		svi.setSelectPrecision(comparePrecisions);
+		svi.setSelectName(baseFields);
+		svi.setSelectRename(compareFields);
 		svi.setDeleteName(new String[0]);
 		svi.setMeta(new SelectMetadataChange[0]);
 		StepMeta chose = new StepMeta("chose", svi);
@@ -117,27 +117,27 @@ public class CompareTablesDatas {
 		transMeta.addTransHop(new TransHopMeta(query, chose));
 
 		/*
-		 * target
+		 * compare
 		 */
-		TableInputMeta targettii = new TableInputMeta();
-		targettii.setDatabaseMeta(targetDatabase);
-		selectOrderBy = ((PlainSelect) targetSelect.getSelectBody()).getOrderByElements();
+		TableInputMeta comparetii = new TableInputMeta();
+		comparetii.setDatabaseMeta(compareDatabase);
+		selectOrderBy = ((PlainSelect) compareSelect.getSelectBody()).getOrderByElements();
 		if (selectOrderBy == null) {
 			selectOrderBy = new LinkedList<OrderByElement>();
-			((PlainSelect) targetSelect.getSelectBody()).setOrderByElements(selectOrderBy);
+			((PlainSelect) compareSelect.getSelectBody()).setOrderByElements(selectOrderBy);
 		}
 		selectOrderBy.clear();
-		for (String pk : target.getPkcolumns()) {
+		for (String pk : compare.getPkcolumns()) {
 			orderByElement = new OrderByElement();
 			orderByElement.setExpression(new Column(pk));
 			selectOrderBy.add(orderByElement);
 		}
-		targettii.setSQL(targetSelect.getSelectBody().toString());
-		StepMeta targetQuery = new StepMeta("target", targettii);
-		transMeta.addStep(targetQuery);
-		targetQuery.setLocation(350, 300);
-		targetQuery.setDraw(true);
-		targetQuery.setDescription("STEP-TARGET");
+		comparetii.setSQL(compareSelect.getSelectBody().toString());
+		StepMeta compareQuery = new StepMeta("compare", comparetii);
+		transMeta.addStep(compareQuery);
+		compareQuery.setLocation(350, 300);
+		compareQuery.setDraw(true);
+		compareQuery.setDescription("STEP-COMPARE");
 
 		/*
 		 * merage
@@ -145,15 +145,15 @@ public class CompareTablesDatas {
 		MergeRowsMeta mrm = new MergeRowsMeta();
 		mrm.setFlagField("flagfield");
 		mrm.setValueFields(new String[0]);
-		mrm.setKeyFields(target.getPkcolumns().toArray(new String[0]));
-		mrm.getStepIOMeta().setInfoSteps(new StepMeta[] { targetQuery, chose });
+		mrm.setKeyFields(compare.getPkcolumns().toArray(new String[0]));
+		mrm.getStepIOMeta().setInfoSteps(new StepMeta[] { compareQuery, chose });
 		StepMeta merage = new StepMeta("merage", mrm);
 		transMeta.addStep(merage);
 		merage.setLocation(650, 100);
 		merage.setDraw(true);
 		merage.setDescription("STEP-MERAGE");
 		transMeta.addTransHop(new TransHopMeta(chose, merage));
-		transMeta.addTransHop(new TransHopMeta(targetQuery, merage));
+		transMeta.addTransHop(new TransHopMeta(compareQuery, merage));
 		/*
 		 * isNew
 		 */

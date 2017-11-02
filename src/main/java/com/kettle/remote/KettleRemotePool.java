@@ -1,11 +1,13 @@
 package com.kettle.remote;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.apache.commons.beanutils.BeanUtils;
 import org.pentaho.di.cluster.SlaveServer;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.logging.LogLevel;
@@ -322,5 +324,35 @@ public class KettleRemotePool {
 	 */
 	public Collection<KettleRemoteClient> getAllRemoteclients() {
 		return remoteclients.values();
+	}
+
+	/**
+	 * 获取Record
+	 * 
+	 * @param id
+	 * @return
+	 * @throws KettleException
+	 * @throws InvocationTargetException
+	 * @throws IllegalAccessException
+	 */
+	public KettleRecord getRecord(long id) throws Exception {
+		KettleRecord record = kettleRecordPool.getRecord(id);
+		if (record == null) {
+			record = dbRepositoryClient.queryRecord(id);
+		}
+		if (record == null) {
+			return null;
+		}
+		KettleRecord r_record = new KettleRecord();
+		r_record.setCreateTime(record.getCreateTime());
+		r_record.setCronExpression(record.getCronExpression());
+		r_record.setErrMsg(record.getErrMsg());
+		r_record.setHostname(record.getHostname());
+		r_record.setId(record.getId());
+		r_record.setName(record.getName());
+		r_record.setRunID(record.getRunID());
+		r_record.setStatus(record.getStatus());
+		r_record.setUpdateTime(record.getUpdateTime());
+		return r_record;
 	}
 }
