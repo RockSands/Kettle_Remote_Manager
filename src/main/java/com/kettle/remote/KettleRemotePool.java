@@ -121,7 +121,7 @@ public class KettleRemotePool {
 		if (!remoteClientsStatus) {
 			throw new KettleException("没有可用的远程Client,无法接受任务!");
 		}
-		if (kettleRecordPool.size() > 50) {
+		if (kettleRecordPool.size() > 100) {
 			throw new KettleException("Kettle的等待任务数量已满,无法接受任务!");
 		}
 	}

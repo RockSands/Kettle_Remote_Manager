@@ -16,20 +16,14 @@ import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.TriggerKey;
 import org.quartz.impl.StdSchedulerFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.kettle.core.KettleVariables;
 
 public class KettleRecordPool {
 	/**
-	 * 日志
-	 */
-	Logger logger = LoggerFactory.getLogger(KettleRecordPool.class);
-	/**
 	 * 任务调度工厂
 	 */
-	Scheduler scheduler = null;
+	private static Scheduler scheduler = null;
 	/**
 	 * 存储Record的Map
 	 */
@@ -68,7 +62,7 @@ public class KettleRecordPool {
 	 * @param record
 	 * @return
 	 */
-	public boolean isAcceptedRecord(KettleRecord record) {
+	private boolean isAcceptedRecord(KettleRecord record) {
 		if (record == null) {
 			return true;
 		}

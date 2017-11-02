@@ -28,7 +28,12 @@ public class KettleRemoteClient {
 	/**
 	 * 日志
 	 */
-	Logger logger = LoggerFactory.getLogger(KettleRemoteClient.class);
+	private static Logger logger = LoggerFactory.getLogger(KettleRemoteClient.class);
+
+	/**
+	 * 远程执行锁
+	 */
+	private static Object remoteLock = new Object();
 
 	/**
 	 * 远程池
@@ -64,8 +69,6 @@ public class KettleRemoteClient {
 	 * 任务池
 	 */
 	private final KettleRecordPool kettleRecordPool;
-
-	private static Object remoteLock = new Object();
 
 	public KettleRemoteClient(KettleRemotePool kettleRemotePool, final SlaveServer remoteServer, int initialDelay)
 			throws KettleException {
