@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.pentaho.di.core.exception.KettleException;
+import org.pentaho.di.core.util.EnvUtil;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.JobBuilder;
 import org.quartz.JobDataMap;
@@ -24,10 +26,17 @@ public class KettleRecordPool {
 	 * 任务调度工厂
 	 */
 	private static Scheduler scheduler = null;
+
+	/**
+	 * 最大任务数
+	 */
+	private int recordMax = 1000;
+
 	/**
 	 * 存储Record的Map
 	 */
 	private Map<Long, KettleRecord> recordCache = new HashMap<Long, KettleRecord>();
+
 	/**
 	 * Tran/Job 保存记录名称,队列
 	 */
@@ -43,19 +52,24 @@ public class KettleRecordPool {
 	 * @throws Exception
 	 */
 	public KettleRecordPool() throws Exception {
+		if (EnvUtil.getSystemProperty("KETTLE_RECORD_POOL_MAX") != null) {
+			recordMax = Integer.valueOf(EnvUtil.getSystemProperty("KETTLE_RECORD_POOL_MAX"));
+		}
 		SchedulerFactory schedulerfactory = new StdSchedulerFactory();
 		scheduler = schedulerfactory.getScheduler();
 		scheduler.start();
 	}
 
 	/**
-	 * 任务数量
+	 * 任务数量验证
 	 * 
 	 * @return
+	 * @throws KettleException
 	 */
-	public int size() {
-		return recordQueue.size() + recordPrioritizeQueue.size();
-
+	private void check() throws KettleException {
+		if (size() > recordMax) {
+			throw new KettleException("KettleRecordPool的任务数量已满,无法接受任务!");
+		}
 	}
 
 	/**
@@ -74,11 +88,12 @@ public class KettleRecordPool {
 	 * 
 	 * @param record
 	 * @return 是否添加成功
-	 * @throws Exception
+	 * @throws KettleException
 	 */
-	public synchronized boolean addRecord(KettleRecord record) {
+	public synchronized boolean addRecord(KettleRecord record) throws KettleException {
 		if (record != null) {
 			if (!isAcceptedRecord(record)) {
+				check();
 				record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
 				recordCache.put(record.getId(), record);
 				return recordQueue.offer(record);
@@ -183,5 +198,14 @@ public class KettleRecordPool {
 	 */
 	public KettleRecord getRecord(long id) {
 		return recordCache.get(id);
+	}
+
+	/**
+	 * 任务数量
+	 * 
+	 * @return
+	 */
+	public int size() {
+		return recordQueue.size() + recordPrioritizeQueue.size();
 	}
 }

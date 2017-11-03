@@ -1,12 +1,13 @@
 
 package com.kettle.core.repo;
 
-import java.sql.Timestamp;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.pentaho.di.core.RowMetaAndData;
+import org.pentaho.di.core.exception.KettleDatabaseException;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.ValueMeta;
 import org.pentaho.di.core.row.ValueMetaInterface;
@@ -231,6 +232,8 @@ public class KettleDBRepositoryClient {
 			job.setHostname(table.getString(KettleVariables.R_RECORD_HOSTNAME, null));
 			job.setErrMsg(table.getString(KettleVariables.R_RECORD_ERRORMSG, null));
 			job.setCronExpression(table.getString(KettleVariables.R_RECORD_CRON_EXPRESSION, null));
+			job.setCreateTime(table.getDate(KettleVariables.R_RECORD_CREATETIME, null));
+			job.setUpdateTime(table.getDate(KettleVariables.R_RECORD_UPDATETIME, null));
 			return job;
 		}
 	}
@@ -245,6 +248,9 @@ public class KettleDBRepositoryClient {
 		if (!repository.isConnected()) {
 			connect();
 		}
+		Date now = new Date();
+		record.setCreateTime(now);
+		record.setUpdateTime(now);
 		RowMetaAndData table = new RowMetaAndData();
 		table.addValue(new ValueMeta(KettleVariables.R_JOB_RECORD_ID_JOB, ValueMetaInterface.TYPE_INTEGER),
 				record.getId());
@@ -260,8 +266,10 @@ public class KettleDBRepositoryClient {
 				record.getErrMsg());
 		table.addValue(new ValueMeta(KettleVariables.R_RECORD_CRON_EXPRESSION, ValueMetaInterface.TYPE_STRING),
 				record.getCronExpression());
-		table.addValue(new ValueMeta(KettleVariables.R_RECORD_UPDATETIME, ValueMetaInterface.TYPE_STRING),
-				new Timestamp(System.currentTimeMillis()));
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_CREATETIME, ValueMetaInterface.TYPE_DATE),
+				record.getCreateTime());
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_UPDATETIME, ValueMetaInterface.TYPE_DATE),
+				record.getUpdateTime());
 		repository.connectionDelegate.insertTableRow(KettleVariables.R_JOB_RECORD, table);
 		repository.commit();
 	}
@@ -287,6 +295,8 @@ public class KettleDBRepositoryClient {
 					record.getHostname());
 			table.addValue(new ValueMeta(KettleVariables.R_RECORD_ERRORMSG, ValueMetaInterface.TYPE_STRING),
 					record.getErrMsg());
+			table.addValue(new ValueMeta(KettleVariables.R_RECORD_CREATETIME, ValueMetaInterface.TYPE_DATE),
+					new Date());
 			repository.connectionDelegate.insertTableRow(KettleVariables.R_HISTORY_RECORD, table);
 		}
 	}
@@ -302,6 +312,7 @@ public class KettleDBRepositoryClient {
 			connect();
 		}
 		RowMetaAndData table = new RowMetaAndData();
+		record.setUpdateTime(new Date());
 		table.addValue(new ValueMeta(KettleVariables.R_RECORD_STATUS, ValueMetaInterface.TYPE_STRING),
 				record.getStatus());
 		table.addValue(new ValueMeta(KettleVariables.R_RECORD_ID_RUN, ValueMetaInterface.TYPE_STRING),
@@ -310,8 +321,8 @@ public class KettleDBRepositoryClient {
 				record.getHostname());
 		table.addValue(new ValueMeta(KettleVariables.R_RECORD_ERRORMSG, ValueMetaInterface.TYPE_STRING),
 				record.getErrMsg());
-		table.addValue(new ValueMeta(KettleVariables.R_RECORD_UPDATETIME, ValueMetaInterface.TYPE_TIMESTAMP),
-				new Timestamp(System.currentTimeMillis()));
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_UPDATETIME, ValueMetaInterface.TYPE_DATE),
+				record.getUpdateTime());
 		repository.connectionDelegate.updateTableRow(KettleVariables.R_JOB_RECORD, KettleVariables.R_JOB_RECORD_ID_JOB,
 				table, new LongObjectId(record.getId()));
 		insertHistory(record);
@@ -329,6 +340,7 @@ public class KettleDBRepositoryClient {
 		}
 		RowMetaAndData table;
 		for (KettleRecord record : kettleRecords) {
+			record.setUpdateTime(new Date());
 			table = new RowMetaAndData();
 			table.addValue(new ValueMeta(KettleVariables.R_RECORD_STATUS, ValueMetaInterface.TYPE_STRING),
 					record.getStatus());
@@ -338,8 +350,8 @@ public class KettleDBRepositoryClient {
 					record.getHostname());
 			table.addValue(new ValueMeta(KettleVariables.R_RECORD_ERRORMSG, ValueMetaInterface.TYPE_STRING),
 					record.getErrMsg());
-			table.addValue(new ValueMeta(KettleVariables.R_RECORD_UPDATETIME, ValueMetaInterface.TYPE_TIMESTAMP),
-					new Timestamp(System.currentTimeMillis()));
+			table.addValue(new ValueMeta(KettleVariables.R_RECORD_UPDATETIME, ValueMetaInterface.TYPE_DATE),
+					record.getUpdateTime());
 			repository.connectionDelegate.updateTableRow(KettleVariables.R_JOB_RECORD,
 					KettleVariables.R_JOB_RECORD_ID_JOB, table, new LongObjectId(record.getId()));
 			insertHistory(record);
@@ -392,8 +404,8 @@ public class KettleDBRepositoryClient {
 			bean.setRunID((String) record[2]);
 			bean.setStatus((String) record[3]);
 			bean.setHostname(record[4] == null ? null : (String) record[4]);
-			bean.setCreateTime((Timestamp) record[5]);
-			bean.setUpdateTime((Timestamp) record[6]);
+			bean.setCreateTime((Date) record[5]);
+			bean.setUpdateTime((Date) record[6]);
 			bean.setErrMsg(record[7] == null ? null : (String) record[7]);
 			bean.setCronExpression(record[8] == null ? null : (String) record[8]);
 			kettleJobBeans.add(bean);
@@ -418,6 +430,7 @@ public class KettleDBRepositoryClient {
 		if (!repository.isConnected()) {
 			connect();
 		}
+		Date now = new Date();
 		RowMetaAndData data = null;
 		if (dependentTrans != null && !dependentTrans.isEmpty()) {
 			for (TransMeta meta : dependentTrans) {
@@ -431,6 +444,7 @@ public class KettleDBRepositoryClient {
 				data.addValue(
 						new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_META_TYPE, ValueMetaInterface.TYPE_STRING),
 						KettleVariables.RECORD_TYPE_TRANS);
+				data.addValue(new ValueMeta(KettleVariables.R_RECORD_CREATETIME, ValueMetaInterface.TYPE_DATE), now);
 				repository.connectionDelegate.insertTableRow(KettleVariables.R_RECORD_DEPENDENT, data);
 			}
 		}
@@ -446,6 +460,7 @@ public class KettleDBRepositoryClient {
 				data.addValue(
 						new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_META_TYPE, ValueMetaInterface.TYPE_STRING),
 						KettleVariables.RECORD_TYPE_JOB);
+				data.addValue(new ValueMeta(KettleVariables.R_RECORD_CREATETIME, ValueMetaInterface.TYPE_DATE), now);
 				repository.connectionDelegate.insertTableRow(KettleVariables.R_RECORD_DEPENDENT, data);
 			}
 		}
@@ -502,5 +517,45 @@ public class KettleDBRepositoryClient {
 			rei = repository.createRepositoryDirectory(this.baseDirectory, patch);
 		}
 		return rei;
+	}
+
+	/**
+	 * 获取所有停止了的Record
+	 * 
+	 * @return
+	 * @throws KettleDatabaseException
+	 */
+	public synchronized List<KettleRecord> allStopRecord() throws KettleDatabaseException {
+		if (!repository.isConnected()) {
+			connect();
+		}
+		String sql = "SELECT " + KettleVariables.R_JOB_RECORD_ID_JOB + "," + KettleVariables.R_JOB_RECORD_NAME_JOB + ","
+				+ KettleVariables.R_RECORD_ID_RUN + "," + KettleVariables.R_RECORD_STATUS + ","
+				+ KettleVariables.R_RECORD_HOSTNAME + "," + KettleVariables.R_RECORD_CREATETIME + ","
+				+ KettleVariables.R_RECORD_UPDATETIME + "," + KettleVariables.R_RECORD_ERRORMSG + ","
+				+ KettleVariables.R_RECORD_CRON_EXPRESSION + " FROM " + KettleVariables.R_JOB_RECORD + " WHERE "
+				+ KettleVariables.R_RECORD_CRON_EXPRESSION + " IS NULL AND " + KettleVariables.R_RECORD_STATUS
+				+ " in ('" + KettleVariables.RECORD_STATUS_FINISHED + "', '" + KettleVariables.RECORD_STATUS_ERROR
+				+ "','" + KettleVariables.RECORD_STATUS_REGISTE + "');";
+		List<Object[]> result = repository.connectionDelegate.getRows(sql, -1);
+		List<KettleRecord> kettleJobBeans = new LinkedList<KettleRecord>();
+		if (result == null || result.isEmpty()) {
+			return null;
+		}
+		KettleRecord bean = null;
+		for (Object[] record : result) {
+			bean = new KettleRecord();
+			bean.setId((Long) record[0]);
+			bean.setName((String) record[1]);
+			bean.setRunID((String) record[2]);
+			bean.setStatus((String) record[3]);
+			bean.setHostname(record[4] == null ? null : (String) record[4]);
+			bean.setCreateTime((Date) record[5]);
+			bean.setUpdateTime((Date) record[6]);
+			bean.setErrMsg(record[7] == null ? null : (String) record[7]);
+			bean.setCronExpression(record[8] == null ? null : (String) record[8]);
+			kettleJobBeans.add(bean);
+		}
+		return kettleJobBeans;
 	}
 }

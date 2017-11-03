@@ -1245,7 +1245,7 @@ CREATE TABLE `R_RECORD_HISTORY` (
 `STATUS`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' ,
 `HOSTNAME`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL ,
 `ERROR_MSG`  varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL ,
-`CREATE_TIME`  timestamp NOT NULL DEFAULT current_timestamp() 
+`CREATE_TIME`  datetime NOT NULL
 )
 ENGINE=InnoDB
 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_general_ci
@@ -1263,8 +1263,8 @@ CREATE TABLE `R_RECORD_JOB` (
 `HOSTNAME`  varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL ,
 `CRON_EXPRESSION`  varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci NULL  ,
 `ERROR_MSG`  varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL ,
-`CREATE_TIME`  timestamp NOT NULL DEFAULT current_timestamp() ,
-`UPDATE_TIME`  timestamp NULL ,
+`CREATE_TIME`  datetime NOT NULL,
+`UPDATE_TIME`  datetime NOT NULL,
 PRIMARY KEY (`ID_JOB`)
 )
 ENGINE=InnoDB
@@ -1279,7 +1279,7 @@ CREATE TABLE `R_RECORD_DEPENDENT` (
 `MASTER_ID`  bigint(20) NOT NULL ,
 `META_ID`  bigint(20) NOT NULL ,
 `META_TYPE`  varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
-`CREATE_TIME`  timestamp NOT NULL DEFAULT current_timestamp() 
+`CREATE_TIME`  datetime NOT NULL
 )
 ENGINE=InnoDB
 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_general_ci

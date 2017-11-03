@@ -1,7 +1,13 @@
 package com.kettle.core.instance;
 
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.pentaho.di.core.KettleEnvironment;
 import org.pentaho.di.core.database.DatabaseMeta;
@@ -63,6 +69,16 @@ public class KettleMgrInstance {
 	 */
 	private KettleDBRepositoryClient dbRepositoryClient;
 
+	/**
+	 * 定时任务
+	 */
+	private ScheduledExecutorService threadPool = Executors.newSingleThreadScheduledExecutor();
+
+	/**
+	 * Record保留最长时间
+	 */
+	private Integer recordPersistMax;
+
 	static {
 		getInstance();
 	}
@@ -76,6 +92,15 @@ public class KettleMgrInstance {
 
 	private KettleMgrInstance() {
 		init();
+		if (EnvUtil.getSystemProperty("KETTLE_RECORD_PERSIST_MAX_HOUR") != null) {
+			recordPersistMax = Integer.valueOf(EnvUtil.getSystemProperty("KETTLE_RECORD_PERSIST_MAX_HOUR"));
+		}
+		if (recordPersistMax != null && recordPersistMax > 0) {
+			Calendar now = Calendar.getInstance();
+			now.setTime(new Date());
+			int initialDelay = 24 - now.get(Calendar.HOUR_OF_DAY) + 1;
+			threadPool.scheduleAtFixedRate(new DelAbandonedRecord(), initialDelay, 24, TimeUnit.HOURS);
+		}
 	}
 
 	private void init() {
@@ -407,5 +432,22 @@ public class KettleMgrInstance {
 	 */
 	public void deleteJob(long id) throws Exception {
 		kettleRemotePool.deleteJob(id);
+	}
+
+	private class DelAbandonedRecord implements Runnable {
+		@Override
+		public void run() {
+			try {
+				List<KettleRecord> records = dbRepositoryClient.allStopRecord();
+				Long current = System.currentTimeMillis();
+				for (KettleRecord record : records) {
+					if ((current - record.getUpdateTime().getTime()) / 1000 / 60 / 60 > recordPersistMax) {
+						deleteJob(record.getId());
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 	}
 }

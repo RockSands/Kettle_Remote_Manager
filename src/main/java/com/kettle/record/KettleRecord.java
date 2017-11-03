@@ -1,6 +1,6 @@
 package com.kettle.record;
 
-import java.sql.Timestamp;
+import java.util.Date;
 
 import org.pentaho.di.job.JobMeta;
 
@@ -40,12 +40,12 @@ public class KettleRecord {
 	/**
 	 * 创建时间
 	 */
-	private Timestamp createTime;
+	private Date createTime;
 
 	/**
 	 * 更新时间
 	 */
-	private Timestamp updateTime;
+	private Date updateTime;
 
 	/**
 	 * 异常信息
@@ -108,14 +108,6 @@ public class KettleRecord {
 		this.hostname = hostname;
 	}
 
-	public Timestamp getCreateTime() {
-		return createTime;
-	}
-
-	public void setCreateTime(Timestamp createTime) {
-		this.createTime = createTime;
-	}
-
 	public String getErrMsg() {
 		return errMsg;
 	}
@@ -138,11 +130,19 @@ public class KettleRecord {
 		this.cronExpression = cronExpression;
 	}
 
-	public Timestamp getUpdateTime() {
+	public Date getCreateTime() {
+		return createTime;
+	}
+
+	public void setCreateTime(Date createTime) {
+		this.createTime = createTime;
+	}
+
+	public Date getUpdateTime() {
 		return updateTime;
 	}
 
-	public void setUpdateTime(Timestamp updateTime) {
+	public void setUpdateTime(Date updateTime) {
 		this.updateTime = updateTime;
 	}
 
