@@ -134,13 +134,6 @@ public class KettleRemotePool {
 	private void saveMetas(List<TransMeta> dependentTrans, List<JobMeta> dependentJobs, JobMeta mainJob)
 			throws KettleException {
 		try {
-			if (dependentTrans != null && !dependentTrans.isEmpty()) {
-				dbRepositoryClient.saveTransMetas(dependentTrans);
-			}
-			if (dependentJobs != null && !dependentJobs.isEmpty()) {
-				dbRepositoryClient.saveJobMetas(dependentJobs);
-			}
-			dbRepositoryClient.saveJobMeta(mainJob);
 			dbRepositoryClient.saveDependentsRelation(dependentTrans, dependentJobs, mainJob);
 		} catch (Exception ex) {
 			logger.error("Job[" + mainJob.getName() + "]执行保存元数据时发生异常!", ex);

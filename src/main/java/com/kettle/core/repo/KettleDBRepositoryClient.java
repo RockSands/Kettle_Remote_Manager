@@ -119,10 +119,7 @@ public class KettleDBRepositoryClient {
 	 * @param transMeta
 	 * @throws KettleException
 	 */
-	public synchronized void saveTransMetas(List<TransMeta> transMetas) throws KettleException {
-		if (!repository.isConnected()) {
-			connect();
-		}
+	private void saveTransMetas(List<TransMeta> transMetas) throws KettleException {
 		for (TransMeta meta : transMetas) {
 			repository.save(meta, "1", Calendar.getInstance(), null, true);
 		}
@@ -151,10 +148,7 @@ public class KettleDBRepositoryClient {
 	 * @param transMeta
 	 * @throws KettleException
 	 */
-	public synchronized void saveJobMetas(List<JobMeta> jobMetas) throws KettleException {
-		if (!repository.isConnected()) {
-			connect();
-		}
+	private void saveJobMetas(List<JobMeta> jobMetas) throws KettleException {
 		for (JobMeta meta : jobMetas) {
 			repository.save(meta, "1", Calendar.getInstance(), null, true);
 		}
@@ -370,6 +364,7 @@ public class KettleDBRepositoryClient {
 		String sql = "DELETE FROM " + KettleVariables.R_JOB_RECORD + " WHERE " + KettleVariables.R_JOB_RECORD_ID_JOB
 				+ " = ? ";
 		repository.connectionDelegate.performDelete(sql, new LongObjectId(jobID));
+		repository.commit();
 	}
 
 	/**
@@ -379,7 +374,7 @@ public class KettleDBRepositoryClient {
 	 * @return
 	 * @throws KettleException
 	 */
-	public synchronized List<KettleRecord> allHandleRecord() throws KettleException {
+	public List<KettleRecord> allHandleRecord() throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}
@@ -391,7 +386,10 @@ public class KettleDBRepositoryClient {
 				+ KettleVariables.R_RECORD_CRON_EXPRESSION + " IS NOT NULL OR " + KettleVariables.R_RECORD_STATUS
 				+ " in ('" + KettleVariables.RECORD_STATUS_RUNNING + "', '" + KettleVariables.RECORD_STATUS_APPLY
 				+ "'))";
-		List<Object[]> result = repository.connectionDelegate.getRows(sql, -1);
+		List<Object[]> result = null;
+		synchronized (this) {
+			result = repository.connectionDelegate.getRows(sql, -1);
+		}
 		List<KettleRecord> kettleJobBeans = new LinkedList<KettleRecord>();
 		if (result == null || result.isEmpty()) {
 			return kettleJobBeans;
@@ -430,6 +428,13 @@ public class KettleDBRepositoryClient {
 		if (!repository.isConnected()) {
 			connect();
 		}
+		if (dependentTrans != null && !dependentTrans.isEmpty()) {
+			saveTransMetas(dependentTrans);
+		}
+		if (dependentJobs != null && !dependentJobs.isEmpty()) {
+			saveJobMetas(dependentJobs);
+		}
+		repository.save(mainJob, "1", Calendar.getInstance(), null, true);
 		Date now = new Date();
 		RowMetaAndData data = null;
 		if (dependentTrans != null && !dependentTrans.isEmpty()) {
@@ -472,7 +477,7 @@ public class KettleDBRepositoryClient {
 	 * @param record
 	 * @throws KettleException
 	 */
-	public synchronized void deleteJobAndDependents(long mainJobID) throws KettleException {
+	public void deleteJobAndDependents(long mainJobID) throws KettleException {
 		if (!repository.isConnected()) {
 			connect();
 		}
@@ -480,7 +485,10 @@ public class KettleDBRepositoryClient {
 				+ KettleVariables.R_RECORD_DEPENDENT_META_ID + "," + KettleVariables.R_RECORD_DEPENDENT_META_TYPE
 				+ " FROM " + KettleVariables.R_RECORD_DEPENDENT + " WHERE "
 				+ KettleVariables.R_RECORD_DEPENDENT_MASTER_ID + " = " + mainJobID;
-		List<Object[]> result = repository.connectionDelegate.getRows(sql, -1);
+		List<Object[]> result = null;
+		synchronized (this) {
+			result = repository.connectionDelegate.getRows(sql, -1);
+		}
 		String type = null;
 		long id = 0;
 		for (Object[] dependent : result) {
@@ -525,7 +533,7 @@ public class KettleDBRepositoryClient {
 	 * @return
 	 * @throws KettleDatabaseException
 	 */
-	public synchronized List<KettleRecord> allStopRecord() throws KettleDatabaseException {
+	public List<KettleRecord> allStopRecord() throws KettleDatabaseException {
 		if (!repository.isConnected()) {
 			connect();
 		}
@@ -535,12 +543,14 @@ public class KettleDBRepositoryClient {
 				+ KettleVariables.R_RECORD_UPDATETIME + "," + KettleVariables.R_RECORD_ERRORMSG + ","
 				+ KettleVariables.R_RECORD_CRON_EXPRESSION + " FROM " + KettleVariables.R_JOB_RECORD + " WHERE "
 				+ KettleVariables.R_RECORD_CRON_EXPRESSION + " IS NULL AND " + KettleVariables.R_RECORD_STATUS
-				+ " in ('" + KettleVariables.RECORD_STATUS_FINISHED + "', '" + KettleVariables.RECORD_STATUS_ERROR
-				+ "','" + KettleVariables.RECORD_STATUS_REGISTE + "');";
-		List<Object[]> result = repository.connectionDelegate.getRows(sql, -1);
+				+ " in ('" + KettleVariables.RECORD_STATUS_FINISHED + "', '" + KettleVariables.RECORD_STATUS_ERROR + "');";
+		List<Object[]> result = null;
+		synchronized (this) {
+			result = repository.connectionDelegate.getRows(sql, -1);
+		}
 		List<KettleRecord> kettleJobBeans = new LinkedList<KettleRecord>();
 		if (result == null || result.isEmpty()) {
-			return null;
+			return kettleJobBeans;
 		}
 		KettleRecord bean = null;
 		for (Object[] record : result) {

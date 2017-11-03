@@ -104,7 +104,7 @@ public class KettleRemoteClient {
 				logger.debug("Kettle远端[" + getHostName() + "]初始化检测状态:" + remoteStatus);
 			}
 		});
-		threadPool.scheduleAtFixedRate(new RemoteRecordDaemon(), initialDelay, 20, TimeUnit.SECONDS);
+		threadPool.scheduleAtFixedRate(new RemoteRecordDaemon(), initialDelay, 30, TimeUnit.SECONDS);
 	}
 
 	/**
