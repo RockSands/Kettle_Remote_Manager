@@ -32,16 +32,10 @@ public class SyncTablesDatas {
 		DatabaseMeta sourceDataBase = new DatabaseMeta(
 				source.getHost() + "_" + source.getDatabase() + "_" + source.getUser(), source.getType(), "Native",
 				source.getHost(), source.getDatabase(), source.getPort(), source.getUser(), source.getPasswd());
-		sourceDataBase.setUsingConnectionPool(true);
-		sourceDataBase.setInitialPoolSize(5);
-		sourceDataBase.setMaximumPoolSize(10);
 		transMeta.addDatabase(sourceDataBase);
 		DatabaseMeta targetDatabase = new DatabaseMeta(
 				target.getHost() + "_" + target.getDatabase() + "_" + target.getUser(), target.getType(), "Native",
 				target.getHost(), target.getDatabase(), target.getPort(), target.getUser(), target.getPasswd());
-		targetDatabase.setUsingConnectionPool(true);
-		targetDatabase.setInitialPoolSize(5);
-		targetDatabase.setMaximumPoolSize(10);
 		transMeta.addDatabase(targetDatabase);
 		/*
 		 * 获取非PK列

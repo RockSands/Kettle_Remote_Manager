@@ -37,9 +37,6 @@ public class CompareTablesDatas {
 		DatabaseMeta baseDataBase = new DatabaseMeta(base.getHost() + "_" + base.getDatabase() + "_" + base.getUser(),
 				base.getType(), "Native", base.getHost(), base.getDatabase(), base.getPort(), base.getUser(),
 				base.getPasswd());
-		baseDataBase.setInitialPoolSize(5);
-		baseDataBase.setMaximumPoolSize(10);
-		baseDataBase.setUsingConnectionPool(true);
 		transMeta.addDatabase(baseDataBase);
 		DatabaseMeta compareDatabase = new DatabaseMeta(
 				compare.getHost() + "_" + compare.getDatabase() + "_" + compare.getUser(), compare.getType(), "Native",
@@ -49,9 +46,6 @@ public class CompareTablesDatas {
 				newOption.getHost() + "_" + newOption.getDatabase() + "_" + newOption.getUser(), newOption.getType(),
 				"Native", newOption.getHost(), newOption.getDatabase(), newOption.getPort(), newOption.getUser(),
 				newOption.getPasswd());
-		newDatabase.setInitialPoolSize(5);
-		newDatabase.setMaximumPoolSize(10);
-		newDatabase.setUsingConnectionPool(true);
 		transMeta.addDatabase(newDatabase);
 		/*
 		 * 获取非PK列
