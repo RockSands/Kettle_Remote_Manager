@@ -34,9 +34,12 @@ public class CompareTablesDatas {
 		TransMeta transMeta = null;
 		transMeta = new TransMeta();
 		transMeta.setName("CTD-" + uuid);
-		DatabaseMeta baseDataBase = new DatabaseMeta(
-				base.getHost() + "_" + base.getDatabase() + "_" + base.getUser(), base.getType(), "Native",
-				base.getHost(), base.getDatabase(), base.getPort(), base.getUser(), base.getPasswd());
+		DatabaseMeta baseDataBase = new DatabaseMeta(base.getHost() + "_" + base.getDatabase() + "_" + base.getUser(),
+				base.getType(), "Native", base.getHost(), base.getDatabase(), base.getPort(), base.getUser(),
+				base.getPasswd());
+		baseDataBase.setInitialPoolSize(5);
+		baseDataBase.setMaximumPoolSize(10);
+		baseDataBase.setUsingConnectionPool(true);
 		transMeta.addDatabase(baseDataBase);
 		DatabaseMeta compareDatabase = new DatabaseMeta(
 				compare.getHost() + "_" + compare.getDatabase() + "_" + compare.getUser(), compare.getType(), "Native",
@@ -46,6 +49,9 @@ public class CompareTablesDatas {
 				newOption.getHost() + "_" + newOption.getDatabase() + "_" + newOption.getUser(), newOption.getType(),
 				"Native", newOption.getHost(), newOption.getDatabase(), newOption.getPort(), newOption.getUser(),
 				newOption.getPasswd());
+		newDatabase.setInitialPoolSize(5);
+		newDatabase.setMaximumPoolSize(10);
+		newDatabase.setUsingConnectionPool(true);
 		transMeta.addDatabase(newDatabase);
 		/*
 		 * 获取非PK列
@@ -99,7 +105,8 @@ public class CompareTablesDatas {
 		 * 转换名称
 		 */
 		String[] baseFields = base.getColumns().toArray(new String[0]);
-		String[] compareFields = compare.getColumns() == null ? baseFields : compare.getColumns().toArray(new String[0]);
+		String[] compareFields = compare.getColumns() == null ? baseFields
+				: compare.getColumns().toArray(new String[0]);
 		int[] comparePrecisions = new int[baseFields.length];
 		int[] compareLengths = new int[compareFields.length];
 		SelectValuesMeta svi = new SelectValuesMeta();

@@ -24,15 +24,15 @@ public class TableDataMigration {
 		final DatabaseMeta sourceDataBase = new DatabaseMeta(
 				source.getHost() + "_" + source.getDatabase() + "_" + source.getUser(), source.getType(), "Native",
 				source.getHost(), source.getDatabase(), source.getPort(), source.getUser(), source.getPasswd());
-		sourceDataBase.setInitialPoolSize(10);
-		sourceDataBase.setMaximumPoolSize(20);
+		sourceDataBase.setInitialPoolSize(5);
+		sourceDataBase.setMaximumPoolSize(10);
 		sourceDataBase.setUsingConnectionPool(true);
 		transMeta.addDatabase(sourceDataBase);
 		final DatabaseMeta targetDatabase = new DatabaseMeta(
 				target.getHost() + "_" + target.getDatabase() + "_" + target.getUser(), target.getType(), "Native",
 				target.getHost(), target.getDatabase(), target.getPort(), target.getUser(), target.getPasswd());
-		targetDatabase.setInitialPoolSize(10);
-		targetDatabase.setMaximumPoolSize(20);
+		targetDatabase.setInitialPoolSize(5);
+		targetDatabase.setMaximumPoolSize(10);
 		targetDatabase.setUsingConnectionPool(true);
 		transMeta.addDatabase(targetDatabase);
 		/*
