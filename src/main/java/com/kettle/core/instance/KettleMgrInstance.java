@@ -1,9 +1,11 @@
 package com.kettle.core.instance;
 
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -106,6 +108,11 @@ public class KettleMgrInstance {
 	private void init() {
 		try {
 			KettleEnvironment.init();
+			// 加载本地资源文件
+			InputStream is = getClass().getClassLoader().getResourceAsStream("kettl_env.properties");
+			Properties properties = new Properties();
+			properties.load(is);
+			EnvUtil.applyKettleProperties(properties, true);
 			repository = new KettleDatabaseRepository();
 			RepositoryMeta dbrepositoryMeta = new KettleDatabaseRepositoryMeta(
 					EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_META_ID"),
