@@ -2,6 +2,7 @@ package com.kettle.main.sync.tables;
 
 import org.pentaho.di.core.exception.KettleException;
 
+import com.kettle.core.KettleVariables;
 import com.kettle.core.bean.KettleResult;
 import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.core.instance.metas.KettleTableMeta;
@@ -24,16 +25,28 @@ public class CreateSTDThread implements Runnable {
 	@Override
 	public void run() {
 		try {
-			long now = System.currentTimeMillis();
-			if (cron != null) {
-				result = KettleMgrInstance.getInstance().scheduleSyncTablesData(source, target, cron);
-			} else {
-				result = KettleMgrInstance.getInstance().registeSyncTablesDatas(source, target);
-				System.out.println("==>registe used: " + (System.currentTimeMillis() - now));
-				KettleMgrInstance.getInstance().excuteJob(result.getId());
+			if (result != null) {
+				result = KettleMgrInstance.getInstance().queryResult(result.getId());
+				// System.out.println("==>[" + result.getId() + "]状态: " +
+				// result.getStatus());
 			}
-			System.out.println("==>apply used: " + (System.currentTimeMillis() - now));
+			if (result == null) {
+				// long now = System.currentTimeMillis();
+				result = KettleMgrInstance.getInstance().registeSyncTablesDatas(source, target);
+				// System.out.println("==>registe used: " +
+				// (System.currentTimeMillis() - now));
+				KettleMgrInstance.getInstance().excuteJob(result.getId());
+				// System.out.println("==>apply used: " +
+				// (System.currentTimeMillis() - now));
+			}
+			if (KettleVariables.RECORD_STATUS_ERROR.equals(result.getStatus())
+					|| KettleVariables.RECORD_STATUS_FINISHED.equals(result.getStatus())) {
+				KettleMgrInstance.getInstance().deleteJob(result.getId());
+				result = null;
+			}
 		} catch (KettleException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}

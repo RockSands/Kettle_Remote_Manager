@@ -3,10 +3,11 @@ package com.kettle.main.sync.tables;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
+import java.util.Random;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-import com.kettle.core.bean.KettleResult;
 import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.core.instance.metas.KettleTableMeta;
 
@@ -26,8 +27,8 @@ public class RemoteMain {
 	public static void main(String[] args) throws Exception {
 		System.out.println("------------------------------");
 		KettleMgrInstance.getInstance();
-		List<String> flags = Arrays.asList("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
-				"O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
+		List<String> flags = Arrays.asList("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
+				"P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
 		// List<String> flags = Arrays.asList("A", "B", "C", "D", "E", "F",
 		// "G");
 		/*
@@ -79,29 +80,31 @@ public class RemoteMain {
 			targets.add(target);
 		}
 		List<CreateSTDThread> createDataTransfers = new ArrayList<CreateSTDThread>(flags.size());
-		ExecutorService threadPool = Executors.newFixedThreadPool(flags.size());
+		ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(flags.size());
+		Random random = new Random();
 		for (int i = 0; i < flags.size(); i++) {
 			// CreateSTDThread cdt = new CreateSTDThread(sources.get(i),
 			// targets.get(i), "0 */1 * * * ?");
+			System.out.println("===>" + random.nextInt(10));
 			CreateSTDThread cdt = new CreateSTDThread(sources.get(i), targets.get(i), null);
-			threadPool.execute(cdt);
+			threadPool.scheduleWithFixedDelay(cdt, 2, random.nextInt(9) + 1, TimeUnit.SECONDS);
 			// if (i % 10 == 0) {
 			// Thread.sleep(20000);
 			// }
 			createDataTransfers.add(cdt);
 		}
-		threadPool.shutdown();
-		do {
-			Thread.sleep(10000);
-			System.out.println("------------------------------");
-			for (CreateSTDThread createDataTransfer : createDataTransfers) {
-				if (createDataTransfer.getResult() != null) {
-					KettleResult result = KettleMgrInstance.getInstance()
-							.queryResult(createDataTransfer.getResult().getId());
-					System.out.println("=DataTransfer[" + result.getId() + "]=>" + result.getStatus());
-				}
-			}
-			System.out.println("------------------------------");
-		} while (true);
+		// do {
+		// Thread.sleep(10000);
+		// System.out.println("------------------------------");
+		// for (CreateSTDThread createDataTransfer : createDataTransfers) {
+		// if (createDataTransfer.getResult() != null) {
+		// KettleResult result = KettleMgrInstance.getInstance()
+		// .queryResult(createDataTransfer.getResult().getId());
+		// System.out.println("=DataTransfer[" + result.getId() + "]=>" +
+		// result.getStatus());
+		// }
+		// }
+		// System.out.println("------------------------------");
+		// } while (true);
 	}
 }

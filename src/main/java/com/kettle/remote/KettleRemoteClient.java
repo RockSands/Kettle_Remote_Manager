@@ -104,7 +104,7 @@ public class KettleRemoteClient {
 				logger.debug("Kettle远端[" + getHostName() + "]初始化检测状态:" + remoteStatus);
 			}
 		});
-		threadPool.scheduleAtFixedRate(new RemoteRecordDaemon(), initialDelay, 30, TimeUnit.SECONDS);
+		threadPool.scheduleAtFixedRate(new RemoteRecordDaemon(), initialDelay, 10, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -181,6 +181,11 @@ public class KettleRemoteClient {
 		synchronized (remoteLock) {
 			runID = Job.sendToSlaveServer(jobMeta, jobExecutionConfiguration, kettleRemotePool.getDbRepository(),
 					kettleRemotePool.getDbRepository().getMetaStore());
+			try {
+				Thread.sleep(5000);
+			} catch (InterruptedException e) {
+				// 等待Remote远端初始化Job
+			}
 		}
 		return runID;
 	}
@@ -195,10 +200,10 @@ public class KettleRemoteClient {
 	 * @throws KettleException
 	 * @throws Exception
 	 */
-	public void remoteStartJob(String jobName, String runid) throws KettleException, Exception {
-		WebResult result = remoteServer.startJob(jobName, runid);
+	public void remoteStartJob(KettleRecord job) throws KettleException, Exception {
+		WebResult result = remoteServer.startJob(job.getName(), job.getRunID());
 		if (!"OK".equals(result.getResult())) {
-			throw new KettleException("Kettle远端[" + this.getHostName() + "]启动Job[" + jobName + "]失败!");
+			throw new KettleException("Kettle远端[" + this.getHostName() + "]启动Job[" + job.getId() + "]失败!");
 		}
 	}
 
@@ -210,27 +215,27 @@ public class KettleRemoteClient {
 	 * @throws KettleException
 	 * @throws Exception
 	 */
-	public void remoteStopJobNE(String jobName, String runid) {
+	public void remoteStopJobNE(KettleRecord job) {
 		try {
-			WebResult result = remoteServer.stopJob(jobName, runid);
+			WebResult result = remoteServer.stopJob(job.getName(), job.getRunID());
 			if (!"OK".equals(result.getResult())) {
-				logger.debug("Kettle远端[" + this.getHostName() + "]停止Job[" + jobName + "]失败!");
+				logger.debug("Kettle远端[" + this.getHostName() + "]停止Job[" + job.getId() + "]失败!");
 			}
 		} catch (Exception ex) {
-			logger.debug("Kettle远端[" + this.getHostName() + "]停止Job[" + jobName + "]失败!");
+			logger.debug("Kettle远端[" + this.getHostName() + "]停止Job[" + job.getId() + "]失败!");
 		}
 	}
 
 	/**
 	 * 获取远端的状态
 	 * 
-	 * @param jobname
+	 * @param job
 	 * @return
 	 * @throws Exception
 	 */
-	public String remoteJobStatus(String jobname) throws Exception {
-		SlaveServerJobStatus jobStatus = remoteServer.getJobStatus(jobname, "", 0);
-		logger.debug("Kettle Remote[" + remoteServer.getHostname() + "]转换[" + jobname + "]状态为:"
+	public String remoteJobStatus(KettleRecord job) throws Exception {
+		SlaveServerJobStatus jobStatus = remoteServer.getJobStatus(job.getName(), job.getRunID(), 0);
+		logger.debug("Kettle Remote[" + remoteServer.getHostname() + "]转换[" + job.getId() + "]状态为:"
 				+ jobStatus.getStatusDescription());
 		if (jobStatus == null || jobStatus.getStatusDescription() == null) {
 			return KettleVariables.RECORD_STATUS_ERROR;
@@ -345,12 +350,7 @@ public class KettleRemoteClient {
 				recoveryStatus();
 			}
 			if (!updateRecords.isEmpty()) {
-				try {
-					dbRepositoryClient.updateRecords(updateRecords);
-					cleanRecords();
-				} catch (KettleException e) {
-					logger.error("Record" + updateRecords + "更新记录发生异常", e);
-				}
+				cleanRecords();
 			}
 			logger.debug("Kettle远端[" + getHostName() + "]定时任务轮询完成!");
 		}
@@ -394,13 +394,20 @@ public class KettleRemoteClient {
 				String status = null;
 				KettleRecord job = (KettleRecord) roll;
 				try {
-					status = remoteJobStatus(job.getName());
+					status = remoteJobStatus(job);
 				} catch (Exception e) {
 					logger.error("Kettle远端[" + getHostName() + "]查询Job[" + job.getId() + "]发生异常\n", e);
 					status = KettleVariables.RECORD_STATUS_ERROR;
 				}
 				job.setStatus(status);
 				checkJobRunOvertime(job);
+				if (roll.isError() || roll.isFinished()) {
+					try {
+						dbRepositoryClient.updateRecord(roll);
+					} catch (KettleException e) {
+						logger.error("Kettle更新Job[" + job.getId() + "]状态[" + roll.getStatus() + "]发生异常\n", e);
+					}
+				}
 			}
 		}
 
@@ -412,7 +419,7 @@ public class KettleRemoteClient {
 		private void checkJobRunOvertime(KettleRecord job) {
 			if (job.isRunning() && recordRunningMax != null && recordRunningMax > 0) {
 				if ((System.currentTimeMillis() - job.getUpdateTime().getTime()) / 1000 / 60 > recordRunningMax) {
-					remoteStopJobNE(job.getName(), job.getRunID());
+					remoteStopJobNE(job);
 					job.setStatus(KettleVariables.RECORD_STATUS_ERROR);
 					job.setErrMsg("Record[" + job.getId() + "]执行超时,异常状态!");
 				}

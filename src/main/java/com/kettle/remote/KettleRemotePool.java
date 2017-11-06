@@ -150,6 +150,7 @@ public class KettleRemotePool {
 	 */
 	public KettleRecord registeJobMeta(List<TransMeta> dependentTrans, List<JobMeta> dependentJobs, JobMeta mainJob)
 			throws KettleException {
+		
 		JobEntryCopy jec = mainJob.getStart();
 		if (jec == null) {
 			throw new KettleException("JobMeta的核心Job[" + mainJob.getName() + "]没有定义Start,无法受理!");
