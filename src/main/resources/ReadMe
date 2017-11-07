@@ -1,2 +1,28 @@
 1. 远程节点在/root/.kettle中放入repositories.xml.   JOB中指定Trans需要预定义的资源库支持
 2. 在数据库中创建的Kettle资源库,需要修改repositories.xml中的connect即可,不要更改名称
+
+# 参考
+http://www.cnblogs.com/whiteyun/archive/2011/05/27/2059670.html
+
+chmod R o+w /var/ftp
+
+fusermount -u /var/ftp
+curlftpfs -o ftp://192.168.80.131 /var/ftp
+curlftpfs curlftpfs -o rw,allow_other ftp://192.168.80.131 /var/ftp
+
+
+[global]
+workgroup = LinuxSir
+netbios name = LinuxSir05
+server string = Linux Samba Server TestServer
+security = share
+
+[linuxsir]
+path = /opt/linuxsir
+writeable = yes
+browseable = yes 
+guest ok = yes
+
+mkdir -p /var/linuxsir
+mount -t cifs //192.168.80.131/linuxsir /var/linuxsir
+unmount /var/linuxsir

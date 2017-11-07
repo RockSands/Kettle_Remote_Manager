@@ -23,20 +23,21 @@ import org.pentaho.di.job.entries.trans.JobEntryTrans;
 import org.pentaho.di.job.entry.JobEntryCopy;
 import org.pentaho.di.repository.RepositoryDirectoryInterface;
 import org.pentaho.di.repository.RepositoryMeta;
-import org.pentaho.di.repository.kdr.KettleDatabaseRepository;
-import org.pentaho.di.repository.kdr.KettleDatabaseRepositoryMeta;
+import org.pentaho.di.repository.filerep.KettleFileRepository;
+import org.pentaho.di.repository.filerep.KettleFileRepositoryMeta;
 import org.pentaho.di.trans.TransMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kettle.core.KettleVariables;
 import com.kettle.core.bean.KettleResult;
+import com.kettle.core.db.KettleDBClient;
 import com.kettle.core.instance.metas.CompareTablesDatas;
 import com.kettle.core.instance.metas.KettleSQLSMeta;
 import com.kettle.core.instance.metas.KettleTableMeta;
 import com.kettle.core.instance.metas.SyncTablesDatas;
 import com.kettle.core.instance.metas.TableDataMigration;
-import com.kettle.core.repo.KettleDBRepositoryClient;
+import com.kettle.core.repo.KettleRepositoryClient;
 import com.kettle.record.KettleRecord;
 import com.kettle.remote.KettleRemotePool;
 
@@ -57,11 +58,6 @@ public class KettleMgrInstance {
 	private static KettleMgrInstance instance = null;
 
 	/**
-	 * 资源库
-	 */
-	private KettleDatabaseRepository repository = null;
-
-	/**
 	 * 远程执行池
 	 */
 	private KettleRemotePool kettleRemotePool;
@@ -69,7 +65,12 @@ public class KettleMgrInstance {
 	/**
 	 * 资源池数据库连接
 	 */
-	private KettleDBRepositoryClient dbRepositoryClient;
+	private KettleRepositoryClient repositoryClient;
+
+	/**
+	 * 数据库连接
+	 */
+	private KettleDBClient dbClient;
 
 	/**
 	 * 定时任务
@@ -113,24 +114,25 @@ public class KettleMgrInstance {
 			Properties properties = new Properties();
 			properties.load(is);
 			EnvUtil.applyKettleProperties(properties, true);
-			repository = new KettleDatabaseRepository();
-			RepositoryMeta dbrepositoryMeta = new KettleDatabaseRepositoryMeta(
-					EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_META_ID"),
-					EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_META_NAME"),
-					EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_META_DESCRIPTION"),
-					new DatabaseMeta(EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_DB_NAME"),
-							EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_DB_TYPE"),
-							EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_DB_ACCESS"),
-							EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_DB_HOST"),
-							EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_DB_DATABASENAME"),
-							EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_DB_PORT"),
-							EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_DB_USER"),
-							EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_DB_PASSWD")));
+			KettleFileRepository repository = new KettleFileRepository();
+			RepositoryMeta dbrepositoryMeta = new KettleFileRepositoryMeta(
+					EnvUtil.getSystemProperty("KETTLE_FILE_REPOSITORY_META_ID"),
+					EnvUtil.getSystemProperty("KETTLE_FILE_REPOSITORY_META_NAME"),
+					EnvUtil.getSystemProperty("KETTLE_FILE_REPOSITORY_META_DESCRIPTION"),
+					EnvUtil.getSystemProperty("KETTLE_FILE_REPOSITORY_META_PATH"));
 			repository.init(dbrepositoryMeta);
 			repository.connect(EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_USER"),
 					EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_PASSWD"));
-			dbRepositoryClient = new KettleDBRepositoryClient(repository);
-			kettleRemotePool = new KettleRemotePool(dbRepositoryClient, null, null);
+			repositoryClient = new KettleRepositoryClient(repository);
+			DatabaseMeta databaseMeta = new DatabaseMeta(EnvUtil.getSystemProperty("KETTLE_RECORD_DB_NAME"),
+					EnvUtil.getSystemProperty("KETTLE_RECORD_DB_TYPE"),
+					EnvUtil.getSystemProperty("KETTLE_RECORD_DB_ACCESS"),
+					EnvUtil.getSystemProperty("KETTLE_RECORD_HOST"),
+					EnvUtil.getSystemProperty("KETTLE_RECORD_DATABASENAME"),
+					EnvUtil.getSystemProperty("KETTLE_RECORD_PORT"), EnvUtil.getSystemProperty("KETTLE_RECORD_USER"),
+					EnvUtil.getSystemProperty("KETTLE_RECORD_PASSWD"));
+			dbClient = new KettleDBClient(databaseMeta);
+			kettleRemotePool = new KettleRemotePool(repositoryClient, dbClient);
 		} catch (Exception ex) {
 			throw new RuntimeException("KettleMgrInstance初始化失败", ex);
 		}

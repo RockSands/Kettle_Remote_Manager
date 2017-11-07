@@ -15,15 +15,17 @@ import org.pentaho.di.core.logging.LogLevel;
 import org.pentaho.di.job.JobMeta;
 import org.pentaho.di.job.entries.special.JobEntrySpecial;
 import org.pentaho.di.job.entry.JobEntryCopy;
+import org.pentaho.di.repository.Repository;
 import org.pentaho.di.repository.RepositoryDirectoryInterface;
-import org.pentaho.di.repository.kdr.KettleDatabaseRepository;
 import org.pentaho.di.trans.TransMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kettle.core.KettleVariables;
-import com.kettle.core.repo.KettleDBRepositoryClient;
+import com.kettle.core.db.KettleDBClient;
+import com.kettle.core.repo.KettleRepositoryClient;
 import com.kettle.record.KettleRecord;
+import com.kettle.record.KettleRecordDepend;
 import com.kettle.record.KettleRecordPool;
 
 /**
@@ -45,9 +47,14 @@ public class KettleRemotePool {
 	private final ConcurrentMap<String, KettleRemoteClient> remoteclients;
 
 	/**
+	 * 数据库连接
+	 */
+	private final KettleDBClient dbClient;
+
+	/**
 	 * 资源链接
 	 */
-	private final KettleDBRepositoryClient dbRepositoryClient;
+	private final KettleRepositoryClient repositoryClient;
 
 	/**
 	 * 任务池
@@ -64,25 +71,13 @@ public class KettleRemotePool {
 	 */
 	private RepositoryDirectoryInterface repositoryDirectory;
 
-	/**
-	 * @param dbRepositoryClient
-	 * @param includeServers
-	 * @param excludeServers
-	 * @throws Exception
-	 */
-	public KettleRemotePool(final KettleDBRepositoryClient dbRepositoryClient, List<String> includeHostNames,
-			List<String> excludeHostNames) throws Exception {
+	public KettleRemotePool(KettleRepositoryClient repositoryClient, KettleDBClient dbClient) throws Exception {
 		this.remoteclients = new ConcurrentHashMap<String, KettleRemoteClient>();
-		this.dbRepositoryClient = dbRepositoryClient;
+		this.repositoryClient = repositoryClient;
+		this.dbClient = dbClient;
 		this.kettleRecordPool = new KettleRecordPool();
 		int i = 1;
-		for (SlaveServer server : dbRepositoryClient.getRepository().getSlaveServers()) {
-			if (excludeHostNames != null && excludeHostNames.contains(server.getHostname())) {
-				continue;
-			}
-			if (includeHostNames != null && !includeHostNames.contains(server.getHostname())) {
-				continue;
-			}
+		for (SlaveServer server : repositoryClient.getRepository().getSlaveServers()) {
 			server.getLogChannel().setLogLevel(LogLevel.ERROR);
 			addRemoteClient(new KettleRemoteClient(this, server, 3 * i));
 			hostNames.add(server.getHostname());
@@ -90,7 +85,7 @@ public class KettleRemotePool {
 		}
 		logger.info("Kettle远程池已经加载Client" + remoteclients.keySet());
 		List<KettleRecord> records = new LinkedList<KettleRecord>();
-		records.addAll(dbRepositoryClient.allHandleRecord());
+		records.addAll(dbClient.allHandleRecord());
 		for (KettleRecord record : records) {
 			if (record.isRunning()) {
 				kettleRecordPool.addPrioritizeRecord(record);
@@ -134,7 +129,13 @@ public class KettleRemotePool {
 	private void saveMetas(List<TransMeta> dependentTrans, List<JobMeta> dependentJobs, JobMeta mainJob)
 			throws KettleException {
 		try {
-			dbRepositoryClient.saveDependentsRelation(dependentTrans, dependentJobs, mainJob);
+			for (TransMeta tran : dependentTrans) {
+				repositoryClient.saveTransMeta(tran);
+			}
+			for (JobMeta job : dependentJobs) {
+				repositoryClient.saveJobMeta(job);
+			}
+			dbClient.saveDependentsRelation(dependentTrans, dependentJobs, mainJob);
 		} catch (Exception ex) {
 			logger.error("Job[" + mainJob.getName() + "]执行保存元数据时发生异常!", ex);
 			throw new KettleException("Job[" + mainJob.getName() + "]执行保存元数据时发生异常!");
@@ -150,7 +151,7 @@ public class KettleRemotePool {
 	 */
 	public KettleRecord registeJobMeta(List<TransMeta> dependentTrans, List<JobMeta> dependentJobs, JobMeta mainJob)
 			throws KettleException {
-		
+
 		JobEntryCopy jec = mainJob.getStart();
 		if (jec == null) {
 			throw new KettleException("JobMeta的核心Job[" + mainJob.getName() + "]没有定义Start,无法受理!");
@@ -175,7 +176,7 @@ public class KettleRemotePool {
 		record.setName(mainJob.getName());
 		record.setStatus(KettleVariables.RECORD_STATUS_REGISTE);
 		try {
-			dbRepositoryClient.insertRecord(record);
+			dbClient.insertRecord(record);
 		} catch (Exception ex) {
 			logger.error("Job[" + mainJob.getName() + "]执行注册操作发生异常!", ex);
 			deleteJobAndDependentsForce(Long.valueOf(mainJob.getObjectId().getId()));
@@ -189,7 +190,16 @@ public class KettleRemotePool {
 	 */
 	private void deleteJobAndDependentsForce(long mainJobID) {
 		try {
-			dbRepositoryClient.deleteJobAndDependents(mainJobID);
+			List<KettleRecordDepend> depends = dbClient.queryDependents(mainJobID);
+			for (KettleRecordDepend depend : depends) {
+				if (KettleVariables.RECORD_TYPE_JOB.equals(depend.getType())) {
+					repositoryClient.deleteJobMeta(depend.getId());
+				} else if (KettleVariables.RECORD_TYPE_TRANS.equals(depend.getType())) {
+					repositoryClient.deleteTransMeta(depend.getId());
+				}
+			}
+			repositoryClient.deleteJobMeta(mainJobID);
+			dbClient.deleteRecord(mainJobID);
 		} catch (Exception ex) {
 			logger.error("Job[" + mainJobID + "]执行持久化清理操作失败!", ex);
 		}
@@ -203,7 +213,7 @@ public class KettleRemotePool {
 	 * @throws KettleException
 	 */
 	public KettleRecord exuteJobMeta(long jobID) throws KettleException {
-		KettleRecord record = dbRepositoryClient.queryRecord(jobID);
+		KettleRecord record = dbClient.queryRecord(jobID);
 		if (record == null) {
 			throw new KettleException("Job[" + jobID + "]未找到,请先注册!");
 		}
@@ -229,7 +239,7 @@ public class KettleRemotePool {
 	 */
 	public void deleteJob(long jobID) throws KettleException {
 		kettleRecordPool.deleteRecord(jobID);
-		dbRepositoryClient.deleteRecord(jobID);
+		dbClient.deleteRecord(jobID);
 	}
 
 	/**
@@ -251,7 +261,7 @@ public class KettleRemotePool {
 		record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
 		record.setCronExpression(cronExpression);
 		try {
-			dbRepositoryClient.insertRecord(record);
+			dbClient.insertRecord(record);
 			kettleRecordPool.addSchedulerRecord(record);
 		} catch (Exception ex) {
 			logger.error("Job[" + mainJob.getName() + "]注册轮询任务操作时发生异常!", ex);
@@ -267,7 +277,7 @@ public class KettleRemotePool {
 	 * @throws Exception
 	 */
 	public void modifyRecordSchedule(long id, String newCron) throws Exception {
-		KettleRecord record = dbRepositoryClient.queryRecord(id);
+		KettleRecord record = dbClient.queryRecord(id);
 		if (record == null) {
 			throw new KettleException("Kettle不存在ID为[" + id + "]的记录!");
 		}
@@ -298,20 +308,6 @@ public class KettleRemotePool {
 	}
 
 	/**
-	 * @return
-	 */
-	public KettleDBRepositoryClient getDbRepositoryClient() {
-		return dbRepositoryClient;
-	}
-
-	/**
-	 * @return
-	 */
-	public KettleDatabaseRepository getDbRepository() {
-		return dbRepositoryClient.getRepository();
-	}
-
-	/**
 	 * 获取所有Client
 	 * 
 	 * @return
@@ -330,10 +326,7 @@ public class KettleRemotePool {
 	 * @throws IllegalAccessException
 	 */
 	public KettleRecord getRecord(long id) throws Exception {
-		KettleRecord record = kettleRecordPool.getRecord(id);
-		if (record == null) {
-			record = dbRepositoryClient.queryRecord(id);
-		}
+		KettleRecord record = dbClient.queryRecord(id);
 		if (record == null) {
 			return null;
 		}
@@ -360,8 +353,29 @@ public class KettleRemotePool {
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");// 设置日期格式
 		String current = df.format(new Date());
 		if (repositoryDirectory == null || !repositoryDirectory.getPath().contains(current)) {
-			repositoryDirectory = dbRepositoryClient.createDirectory(current);
+			repositoryDirectory = repositoryClient.createDirectory(current);
 		}
 		return repositoryDirectory;
+	}
+
+	/**
+	 * @return
+	 */
+	public KettleDBClient getDbClient() {
+		return dbClient;
+	}
+
+	/**
+	 * @return
+	 */
+	public KettleRepositoryClient getRepositoryClient() {
+		return repositoryClient;
+	}
+
+	/**
+	 * @return
+	 */
+	public Repository getRepository() {
+		return repositoryClient.getRepository();
 	}
 }

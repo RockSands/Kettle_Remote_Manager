@@ -2,7 +2,7 @@
 <repositories>
   <connection>
     <name>KettleDBRepository</name>
-    <server>192.168.80.139</server>
+    <server>192.168.80.138</server>
     <type>MYSQL</type>
     <access>Native</access>
     <database>kettle</database>
@@ -32,4 +32,11 @@
     <description>Database repository</description>
     <is_default>false</is_default>
     <connection>KettleDBRepository</connection>
+  </repository>  <repository>    <id>KettleFileRepository</id>
+    <name>KettleFileRepo</name>
+    <description>File repository</description>
+    <is_default>false</is_default>
+    <base_directory>&#x5c;&#x5c;192.168.80.131&#x5c;linuxsir</base_directory>
+    <read_only>N</read_only>
+    <hides_hidden_files>Y</hides_hidden_files>
   </repository>  </repositories>
