@@ -1,5 +1,19 @@
-1. 远程节点在/root/.kettle中放入repositories.xml.   JOB中指定Trans需要预定义的资源库支持
-2. 在数据库中创建的Kettle资源库,需要修改repositories.xml中的connect即可,不要更改名称
+说明:
+	该kettle管理系统的repository仅支持File与DB(非Mysql).其原因是Mysql的操作锁表,导致远端与本管理系统争夺数据库锁,如意发生锁的问题
+
+一、远程文件搭建步骤
+	1.搭建NFS服务器
+	2.将所有Kettle远端,mount NFS文件
+	3.修改repositories.xml  将路径指定为mount的路径
+	4.修改carte-config-master-8080.xml,设置为自动连接
+	5.启动
+
+二、数据库搭建步骤
+	1.使用Kettle用户界面，设定DB-repository到指定数据库
+	2.将所有Kettle远端的repositories.xml,设置为数据库
+	3.修改carte-config-master-8080.xml,删除对应的自动连接
+	4.启动
+
 
 # 参考
 http://www.cnblogs.com/whiteyun/archive/2011/05/27/2059670.html

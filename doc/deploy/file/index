@@ -1,0 +1,227 @@
+########## 该文档为详细部署文件资源池的样例文档############
+
+# 说明：如果为纯Linux环境，可以考虑samba共享文件。如果存在windows则推荐NFS
+# samba资料：
+# 	http://www.cnblogs.com/whiteyun/archive/2011/05/27/2059670.html
+# NFS资料:
+#	http://www.linuxidc.com/Linux/2015-01/112051.htm
+#	http://www.xitongcheng.com/jiaocheng/win7_article_16732.html
+#	http://jingyan.baidu.com/article/c910274bfd6800cd361d2df3.html
+
+一、部署NFS共享文件
+	1.安装nfs
+		yum install -y nfs-utils rpcbind
+	2.编辑配置
+		vi /etc/sysconfig/nfs
+		# 文件最后写入
+		
+		RQUOTAD_PORT=30001
+		LOCKD_TCPPORT=30002
+		LOCKD_UDPPORT=30002
+		MOUNTD_PORT=30003
+		STATD_PORT=30004
+		
+		wq!
+	3.创建共享目录
+		mkdir -p /data/kettleFileRepo
+	
+	4.设置共享权限
+		vi /etc/exports
+		
+		/data/kettleFileRepo 192.168.80.*(rw,sync,no_root_squash)
+		
+		wq!
+		
+		##说明##
+		该配置为192.168.80.* IP段有读写权限,同步,无需用户名密码
+		
+		
+	5.启动与自启动
+		chkconfig nfs on
+		chkconfig rpcbind on
+		service nfs start
+		service rpcbind start
+
+二、搭建Kettle客户端(Linux)
+	1.安装依赖包(需要nfs、zip与nohub命令)
+		yum -y install coreutils zip unzip nfs-utils
+	
+	2.下载Kettle最新稳定版本(以下载至/root目录下为例)
+		https://sourceforge.net/projects/pentaho/files/Data%20Integration/7.1/
+		
+	3.下载JDK8
+		http://www.oracle.com/technetwork/java/javase/downloads/index.html
+		
+	4.安装JDK
+		rpm -ivh JDK-xxxxx.rpm
+	
+	5.解压缩Kettle
+		unzip pdi-xxxx.zip
+		
+	6.进入Kettle,并设置执行权限
+		cd /root/data-integration/
+		chmod +x *.sh
+	
+	7.修改kettle启动参数,修改Xms与Xmx
+		vi spoon.sh 
+		
+		if [ -z "$PENTAHO_DI_JAVA_OPTIONS" ]; then
+    		PENTAHO_DI_JAVA_OPTIONS="-Xms1024m -Xmx2048m -XX:MaxPermSize=256m"
+		fi
+		
+	8.编辑Kettle启动文件
+		vi pwd/carte-config-master-8080.xml 
+		
+		  <slaveserver>
+		  	<!-- 第一台为master1,第二台为master2以此类推 -->
+		    <name>master1</name>
+		    <!-- 输入该远端IP -->
+		    <hostname>IP地址</hostname>
+		    <port>8080</port>
+		    <master>Y</master>
+		    <username>cluster</username>
+		    <password>cluster</password>
+		  </slaveserver>
+		  <max_log_lines>50000</max_log_lines>
+		  <max_log_timeout_minutes>1440</max_log_timeout_minutes>
+		  <object_timeout_minutes>1440</object_timeout_minutes>
+		  <!--
+		  <repository>
+		    <name>KettleFileRepo</name>
+		    <username>admin</username>
+		    <password>admin</password>
+		  </repository>
+		  -->
+		</slave_config>
+		
+		wq!
+	
+	9.初次启动
+		./carte.sh pwd/carte-config-master-8080.xml 
+		
+		在浏览器登录http://<远端IP>:8080  如果弹出输入用户名密码则启动成功
+		
+	10.挂载NFS目录
+		mkdir -p /data/kettleFileRepo
+		mount -t nfs <NFS服务IP>:/data/kettleFileRepo /data/kettleFileRepo
+		
+	11.在/data/kettleFileRepo目录中写入master1.ksl文件
+	# 第一台为master1.ksl,第二台为master2.ksl 以此类推.
+		<slaveserver>
+			<!-- 与carte-config-master-8080.xml的name一致 -->
+        	<name>master1</name>
+        	<!-- 与carte-config-master-8080.xml的hostname一致 -->
+        	<hostname>IP</hostname>
+        	<port>8080</port>
+        	<webAppName/>
+        	<username>cluster</username>
+			<password>Encrypted 2be98afc86aa7f2e4cb1aa265cd86aac8</password
+			<proxy_hostname/>
+        	<proxy_port/>
+        	<non_proxy_hosts/>
+        	<master>Y</master>
+        	<sslMode>N</sslMode>
+		</slaveserver>
+		
+	12.编辑Repo配置文件
+		vi /root/.kettle/repositories.xml 
+		
+		<?xml version="1.0" encoding="UTF-8"?>
+		<repositories>
+			<repository>
+				<id>KettleFileRepository</id>
+    			<name>KettleFileRepo</name>
+    			<description>File repository</description>
+    			<is_default>true</is_default>
+    			<base_directory>&#x2f;data&#x2f;kettleFileRepo</base_directory>
+    			<read_only>Y</read_only>
+    			<hides_hidden_files>Y</hides_hidden_files>
+  			</repository>
+		</repositories>
+		
+		wq!
+		
+	13.编辑Kettle启动文件
+		vi pwd/carte-config-master-8080.xml 
+		
+		将上文的如下文字去掉注释
+		<!--
+		  <repository>
+		    <name>KettleFileRepo</name>
+		    <username>admin</username>
+		    <password>admin</password>
+		  </repository>
+		  -->
+		  
+	14.正式启动
+		nohup ./carte.sh pwd/carte-config-master-8080.xml >/dev/null 2>&1
+	
+	15.查看页面
+		在浏览器登录http://<远端IP>:8080  如果弹出输入用户名密码则启动成功.
+		使用cluster/cluster进行登录
+		
+三、搭建Kettle客户端(windows)
+	# windows与linux一致,仅NFS操作有差别
+	1.开启NFS服务
+		# 参考 https://wenku.baidu.com/view/95ea18311a37f111f0855b0b.html
+		
+		我的电脑 --> 右键 --> 属性 --> 控制面板 --> 程序 --> 启用或关闭windows功能 --> 找到NFS服务并开启服务
+		
+	2.修改注册表
+		# 参考
+		win + R --> regedit --> 打开 HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\ClientForNFS\CurrentVersion\Default
+		--> 添加两个DWORD  AnonymousUid与AnonymousGid
+		
+	3.重启使得注册表生效
+	
+	4.执行挂载命令
+		cmd
+		mount \\<NFS服务IP>:\data\kettleFileRepo z:
+		
+	5.修改repositories.xml
+		<?xml version="1.0" encoding="UTF-8"?>
+		<repositories>
+			<repository>
+				<id>KettleFileRepository</id>
+    			<name>KettleFileRepo</name>
+    			<description>File repository</description>
+    			<is_default>true</is_default>
+    			<base_directory>Z&#x3a;&#x5c;</base_directory>
+    			<read_only>N</read_only>
+    			<hides_hidden_files>Y</hides_hidden_files>
+  			</repository>
+		</repositories>
+		
+四、搭建数据库
+	执行同级目录的kettle-init.sql
+	
+五、kettl_env.properties样例
+
+KETTLE_REPOSITORY_USER=admin
+KETTLE_REPOSITORY_PASSWD=admin
+KETTLE_FILE_REPOSITORY_META_ID=KettleFileRepository
+KETTLE_FILE_REPOSITORY_META_NAME=KettleFileRepo
+KETTLE_FILE_REPOSITORY_META_DESCRIPTION=File repository
+KETTLE_FILE_REPOSITORY_META_PATH=z:////
+# Kettle Record\u7684\u6570\u636E\u5E93\u8FDE\u63A5\u914D\u7F6E
+KETTLE_RECORD_DB_NAME=KettleRecordDB
+KETTLE_RECORD_DB_TYPE=MySQL
+KETTLE_RECORD_DB_ACCESS=Native
+KETTLE_RECORD_DB_HOST=192.168.80.138
+KETTLE_RECORD_DB_DATABASENAME=kettle
+KETTLE_RECORD_DB_PORT=3306
+KETTLE_RECORD_DB_USER=root
+KETTLE_RECORD_DB_PASSWD=123456
+KETTLE_RECORD_DB_POOL=Y
+KETTLE_RECORD_DB_POOL_INIT=10
+KETTLE_RECORD_DB_POOL_MAX=20
+# Record任务池最多容纳数量 ，-1则为Integer.Max
+KETTLE_RECORD_POOL_MAX=100
+# Kettle远端并行任务数量
+KETTLE_RECORD_MAX_PER_REMOTE=6
+# Kettle的任务保留时间,目前Kettle的清理线程为每天的凌晨2点执行
+KETTLE_RECORD_PERSIST_MAX_HOUR=36
+# Kettle远端运行中状态的最大时间(即超时),-1为不判断
+KETTLE_RECORD_RUNNING_MAX_MINUTE=120
+
+		
