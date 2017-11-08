@@ -11,7 +11,12 @@ public class KettleRecord {
 	/**
 	 * ID
 	 */
-	private long id;
+	private String uuid;
+
+	/**
+	 * ID
+	 */
+	private String jobid;
 
 	/**
 	 * 名称
@@ -68,12 +73,20 @@ public class KettleRecord {
 		KettleMeta = kettleMeta;
 	}
 
-	public long getId() {
-		return id;
+	public String getUuid() {
+		return uuid;
 	}
 
-	public void setId(long id) {
-		this.id = id;
+	public void setUuid(String uuid) {
+		this.uuid = uuid;
+	}
+
+	public String getJobid() {
+		return jobid;
+	}
+
+	public void setJobid(String jobid) {
+		this.jobid = jobid;
 	}
 
 	public String getName() {

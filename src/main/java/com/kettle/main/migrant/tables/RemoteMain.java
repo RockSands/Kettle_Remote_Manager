@@ -120,8 +120,8 @@ public class RemoteMain {
 			for (CreateTDMThread createDataTransfer : createDataTransfers) {
 				if (createDataTransfer.getResult() != null) {
 					KettleResult result = KettleMgrInstance.getInstance()
-							.queryResult(createDataTransfer.getResult().getId());
-					System.out.println("=DataTransfer[" + result.getId() + "]=>" + result.getStatus());
+							.queryResult(createDataTransfer.getResult().getUuid());
+					System.out.println("=DataTransfer[" + result.getUuid() + "]=>" + result.getStatus());
 				}
 			}
 			System.out.println("------------------------------");

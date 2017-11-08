@@ -14,6 +14,7 @@ import org.pentaho.di.core.exception.KettleDatabaseException;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.logging.LoggingObjectType;
 import org.pentaho.di.core.logging.SimpleLoggingObject;
+import org.pentaho.di.core.row.RowDataUtil;
 import org.pentaho.di.core.row.RowMeta;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMeta;
@@ -31,7 +32,7 @@ public class KettleDBClient {
 	 */
 	private final Database database;
 
-	public KettleDBClient(DatabaseMeta databaseMeta) {
+	public KettleDBClient(DatabaseMeta databaseMeta) throws KettleDatabaseException {
 		database = new Database(new SimpleLoggingObject("Kettel DB", LoggingObjectType.DATABASE, null), databaseMeta);
 	}
 
@@ -42,7 +43,9 @@ public class KettleDBClient {
 		try {
 			database.initializeVariablesFrom(null);
 			database.connect();
+			database.setAutoCommit(false);
 		} catch (KettleException e) {
+			e.printStackTrace();
 			throw new RuntimeException("Kettle的数据库无法连接!");
 		}
 	}
@@ -51,6 +54,12 @@ public class KettleDBClient {
 	 * 数据库断开
 	 */
 	private synchronized void disConnect() {
+		try {
+			database.commit();
+		} catch (KettleDatabaseException e) {
+			e.printStackTrace();
+			throw new RuntimeException("Kettle的数据库提交失败!");
+		}
 		database.disconnect();
 	}
 
@@ -61,13 +70,31 @@ public class KettleDBClient {
 	 * @param type
 	 * @param id
 	 * @return
+	 * @throws KettleException
 	 * @throws KettleDatabaseException
 	 */
-	private RowMetaAndData queryOneRow(String sql, int type, Object id) throws KettleDatabaseException {
-		RowMetaInterface parameterMeta = new RowMeta();
-		parameterMeta.addValueMeta(new ValueMeta("id", ValueMetaInterface.TYPE_INTEGER));
-		Object[] parameterData = new Object[] { id };
-		return database.getOneRow(sql, parameterMeta, parameterData);
+	private synchronized RowMetaAndData queryOneRow(String sql, int type, Object id) throws KettleException {
+		ResultSet resultSet = null;
+		try {
+			PreparedStatement ps = database.prepareSQL(sql);
+			RowMetaInterface parameterMeta = new RowMeta();
+			parameterMeta.addValueMeta(new ValueMeta("id", ValueMetaInterface.TYPE_STRING));
+			Object[] parameterData = new Object[] { id, };
+			resultSet = database.openQuery(ps, parameterMeta, parameterData);
+			Object[] result = database.getRow(resultSet);
+			if (result == null) {
+				return new RowMetaAndData(database.getReturnRowMeta(),
+						RowDataUtil.allocateRowData(database.getReturnRowMeta().size()));
+			}
+			return new RowMetaAndData(database.getReturnRowMeta(), result);
+		} catch (KettleDatabaseException e) {
+			throw new KettleException("KettleDB查询发生异常!", e);
+		} finally {
+			if (resultSet != null) {
+				database.closeQuery(resultSet);
+			}
+		}
+
 	}
 
 	/**
@@ -102,8 +129,11 @@ public class KettleDBClient {
 		}
 		String[] codes = new String[] { idfield };
 		String[] condition = new String[] { "=" };
+
 		database.prepareUpdate(tablename, codes, condition, sets);
+
 		values.addValue(new ValueMeta(idfield, type), id);
+
 		database.setValuesUpdate(values.getRowMeta(), values.getData());
 		database.updateRow();
 		database.closeUpdate();
@@ -117,13 +147,13 @@ public class KettleDBClient {
 	 * @param id
 	 * @throws KettleException
 	 */
-	private void deleteTableRow(String sql, int type, Object id) throws KettleException {
+	private synchronized void deleteTableRow(String sql, int type, Object id) throws KettleException {
 		try {
 			PreparedStatement ps = database.prepareSQL(sql);
 			RowMetaInterface parameterMeta = new RowMeta();
 			parameterMeta.addValueMeta(new ValueMeta("id1", type));
 			Object[] parameterData = new Object[1];
-			parameterData[1] = id;
+			parameterData[0] = id;
 			RowMetaAndData param = new RowMetaAndData(parameterMeta, parameterData);
 			database.setValues(param, ps);
 			ps.execute();
@@ -137,14 +167,14 @@ public class KettleDBClient {
 	 * 
 	 * @throws KettleException
 	 */
-	public KettleRecord queryRecord(long id) throws KettleException {
+	public synchronized KettleRecord queryRecord(String uuid) throws KettleException {
 		connect();
 		RowMetaAndData table;
 		ResultSet resultSet = null;
 		try {
-			String sql = "SELECT * FROM " + KettleVariables.R_JOB_RECORD + " WHERE "
-					+ KettleVariables.R_JOB_RECORD_ID_JOB + " = ?";
-			table = queryOneRow(sql, ValueMetaInterface.TYPE_INTEGER, id);
+			String sql = "SELECT * FROM " + KettleVariables.R_JOB_RECORD + " WHERE " + KettleVariables.R_JOB_RECORD_UUID
+					+ " = ?";
+			table = queryOneRow(sql, ValueMetaInterface.TYPE_STRING, uuid);
 		} finally {
 			if (resultSet != null) {
 				database.closeQuery(resultSet);
@@ -155,7 +185,8 @@ public class KettleDBClient {
 		if (table == null || table.size() < 1) {
 			return null;
 		}
-		job.setId(id);
+		job.setUuid(table.getString(KettleVariables.R_JOB_RECORD_UUID, null));
+		job.setJobid(table.getString(KettleVariables.R_JOB_RECORD_ID_JOB, null));
 		job.setName(table.getString(KettleVariables.R_JOB_RECORD_NAME_JOB, null));
 		job.setRunID(table.getString(KettleVariables.R_RECORD_ID_RUN, null));
 		job.setStatus(table.getString(KettleVariables.R_RECORD_STATUS, null));
@@ -178,8 +209,10 @@ public class KettleDBClient {
 		record.setCreateTime(now);
 		record.setUpdateTime(now);
 		RowMetaAndData table = new RowMetaAndData();
-		table.addValue(new ValueMeta(KettleVariables.R_JOB_RECORD_ID_JOB, ValueMetaInterface.TYPE_INTEGER),
-				record.getId());
+		table.addValue(new ValueMeta(KettleVariables.R_JOB_RECORD_UUID, ValueMetaInterface.TYPE_STRING),
+				record.getUuid());
+		table.addValue(new ValueMeta(KettleVariables.R_JOB_RECORD_ID_JOB, ValueMetaInterface.TYPE_STRING),
+				record.getJobid());
 		table.addValue(new ValueMeta(KettleVariables.R_JOB_RECORD_NAME_JOB, ValueMetaInterface.TYPE_STRING),
 				record.getName());
 		table.addValue(new ValueMeta(KettleVariables.R_RECORD_ID_RUN, ValueMetaInterface.TYPE_STRING),
@@ -213,8 +246,10 @@ public class KettleDBClient {
 	private synchronized void insertHistory(KettleRecord record) throws KettleException {
 		if (record.isFinished() || record.isError()) {
 			RowMetaAndData table = new RowMetaAndData();
-			table.addValue(new ValueMeta(KettleVariables.R_HISTORY_RECORD_ID, ValueMetaInterface.TYPE_INTEGER),
-					record.getId());
+			table.addValue(new ValueMeta(KettleVariables.R_JOB_RECORD_UUID, ValueMetaInterface.TYPE_STRING),
+					record.getUuid());
+			table.addValue(new ValueMeta(KettleVariables.R_HISTORY_RECORD_ID, ValueMetaInterface.TYPE_STRING),
+					record.getJobid());
 			table.addValue(new ValueMeta(KettleVariables.R_HISTORY_RECORD_NAME, ValueMetaInterface.TYPE_STRING),
 					record.getName());
 			table.addValue(new ValueMeta(KettleVariables.R_RECORD_ID_RUN, ValueMetaInterface.TYPE_STRING),
@@ -227,12 +262,7 @@ public class KettleDBClient {
 					record.getErrMsg());
 			table.addValue(new ValueMeta(KettleVariables.R_RECORD_CREATETIME, ValueMetaInterface.TYPE_DATE),
 					new Date());
-			connect();
-			try {
-				insertTableRow(KettleVariables.R_HISTORY_RECORD, table);
-			} finally {
-				disConnect();
-			}
+			insertTableRow(KettleVariables.R_HISTORY_RECORD, table);
 		}
 	}
 
@@ -261,12 +291,9 @@ public class KettleDBClient {
 			for (int i = 0; i < table.size(); i++) {
 				sets[i] = table.getValueMeta(i).getName();
 			}
-			updateTableRow(KettleVariables.R_JOB_RECORD, table, KettleVariables.R_JOB_RECORD_ID_JOB,
-					ValueMetaInterface.TYPE_INTEGER, record.getId());
+			updateTableRow(KettleVariables.R_JOB_RECORD, table, KettleVariables.R_JOB_RECORD_UUID,
+					ValueMetaInterface.TYPE_STRING, record.getUuid());
 			insertHistory(record);
-			if (!database.isAutoCommit()) {
-				database.commit();
-			}
 		} finally {
 			disConnect();
 		}
@@ -278,11 +305,11 @@ public class KettleDBClient {
 	 * @param mainJobID
 	 * @throws KettleException
 	 */
-	public synchronized List<KettleRecordDepend> queryDependents(long mainJobID) throws KettleException {
-		String sql = "SELECT " + KettleVariables.R_RECORD_DEPENDENT_MASTER_ID + ","
+	public synchronized List<KettleRecordDepend> queryDependents(String mainJobUUID) throws KettleException {
+		String sql = "SELECT " + KettleVariables.R_RECORD_DEPENDENT_MASTER_UUID_ID + ","
 				+ KettleVariables.R_RECORD_DEPENDENT_META_ID + "," + KettleVariables.R_RECORD_DEPENDENT_META_TYPE
 				+ " FROM " + KettleVariables.R_RECORD_DEPENDENT + " WHERE "
-				+ KettleVariables.R_RECORD_DEPENDENT_MASTER_ID + " = " + mainJobID;
+				+ KettleVariables.R_RECORD_DEPENDENT_MASTER_UUID_ID + " = " + mainJobUUID;
 		List<Object[]> result = null;
 		List<KettleRecordDepend> depends = new LinkedList<KettleRecordDepend>();
 		connect();
@@ -297,7 +324,8 @@ public class KettleDBClient {
 		KettleRecordDepend depend = null;
 		for (Object[] row : result) {
 			depend = new KettleRecordDepend();
-			depend.setId((Long) row[1]);
+			depend.setMasterUUID((String) row[0]);
+			depend.setMetaid((String) row[1]);
 			depend.setType((String) row[2]);
 			depend.setCreateTime((Date) row[3]);
 			depends.add(depend);
@@ -311,13 +339,12 @@ public class KettleDBClient {
 	 * @param jobID
 	 * @throws KettleException
 	 */
-	public synchronized void deleteRecord(long jobID) throws KettleException {
-		String sql = "DELETE FROM " + KettleVariables.R_JOB_RECORD + " WHERE " + KettleVariables.R_JOB_RECORD_ID_JOB
+	public synchronized void deleteRecord(String uuid) throws KettleException {
+		String sql = "DELETE FROM " + KettleVariables.R_JOB_RECORD + " WHERE " + KettleVariables.R_JOB_RECORD_UUID
 				+ " = ? ";
 		connect();
 		try {
-			deleteTableRow(sql, ValueMetaInterface.TYPE_INTEGER, jobID);
-			database.commit();
+			deleteTableRow(sql, ValueMetaInterface.TYPE_STRING, uuid);
 		} finally {
 			disConnect();
 		}
@@ -331,14 +358,14 @@ public class KettleDBClient {
 	 * @throws KettleException
 	 */
 	public synchronized List<KettleRecord> allHandleRecord() throws KettleException {
-		String sql = "SELECT " + KettleVariables.R_JOB_RECORD_ID_JOB + "," + KettleVariables.R_JOB_RECORD_NAME_JOB + ","
-				+ KettleVariables.R_RECORD_ID_RUN + "," + KettleVariables.R_RECORD_STATUS + ","
-				+ KettleVariables.R_RECORD_HOSTNAME + "," + KettleVariables.R_RECORD_CREATETIME + ","
-				+ KettleVariables.R_RECORD_UPDATETIME + "," + KettleVariables.R_RECORD_ERRORMSG + ","
-				+ KettleVariables.R_RECORD_CRON_EXPRESSION + " FROM " + KettleVariables.R_JOB_RECORD + " WHERE ("
-				+ KettleVariables.R_RECORD_CRON_EXPRESSION + " IS NOT NULL OR " + KettleVariables.R_RECORD_STATUS
-				+ " in ('" + KettleVariables.RECORD_STATUS_RUNNING + "', '" + KettleVariables.RECORD_STATUS_APPLY
-				+ "'))";
+		String sql = "SELECT " + KettleVariables.R_JOB_RECORD_UUID + "," + KettleVariables.R_JOB_RECORD_ID_JOB + ","
+				+ KettleVariables.R_JOB_RECORD_NAME_JOB + "," + KettleVariables.R_RECORD_ID_RUN + ","
+				+ KettleVariables.R_RECORD_STATUS + "," + KettleVariables.R_RECORD_HOSTNAME + ","
+				+ KettleVariables.R_RECORD_CREATETIME + "," + KettleVariables.R_RECORD_UPDATETIME + ","
+				+ KettleVariables.R_RECORD_ERRORMSG + "," + KettleVariables.R_RECORD_CRON_EXPRESSION + " FROM "
+				+ KettleVariables.R_JOB_RECORD + " WHERE (" + KettleVariables.R_RECORD_CRON_EXPRESSION
+				+ " IS NOT NULL OR " + KettleVariables.R_RECORD_STATUS + " in ('"
+				+ KettleVariables.RECORD_STATUS_RUNNING + "', '" + KettleVariables.RECORD_STATUS_APPLY + "'))";
 		List<Object[]> result = null;
 		connect();
 		try {
@@ -353,15 +380,16 @@ public class KettleDBClient {
 		KettleRecord bean = null;
 		for (Object[] record : result) {
 			bean = new KettleRecord();
-			bean.setId((Long) record[0]);
-			bean.setName((String) record[1]);
-			bean.setRunID((String) record[2]);
-			bean.setStatus((String) record[3]);
-			bean.setHostname(record[4] == null ? null : (String) record[4]);
-			bean.setCreateTime((Date) record[5]);
-			bean.setUpdateTime((Date) record[6]);
-			bean.setErrMsg(record[7] == null ? null : (String) record[7]);
-			bean.setCronExpression(record[8] == null ? null : (String) record[8]);
+			bean.setUuid((String) record[0]);
+			bean.setJobid((String) record[1]);
+			bean.setName((String) record[2]);
+			bean.setRunID((String) record[3]);
+			bean.setStatus((String) record[4]);
+			bean.setHostname(record[5] == null ? null : (String) record[5]);
+			bean.setCreateTime((Date) record[6]);
+			bean.setUpdateTime((Date) record[7]);
+			bean.setErrMsg(record[8] == null ? null : (String) record[8]);
+			bean.setCronExpression(record[9] == null ? null : (String) record[9]);
 			kettleJobBeans.add(bean);
 		}
 		return kettleJobBeans;
@@ -373,10 +401,11 @@ public class KettleDBClient {
 	 * @param dependentTrans
 	 * @param dependentJobs
 	 * @param mainJob
+	 * @param recordUUID
 	 * @throws KettleException
 	 */
 	public synchronized void saveDependentsRelation(List<TransMeta> dependentTrans, List<JobMeta> dependentJobs,
-			JobMeta mainJob) throws KettleException {
+			JobMeta mainJob, String recordUUID) throws KettleException {
 		Date now = new Date();
 		RowMetaAndData data = null;
 		connect();
@@ -384,11 +413,11 @@ public class KettleDBClient {
 			if (dependentTrans != null && !dependentTrans.isEmpty()) {
 				for (TransMeta meta : dependentTrans) {
 					data = new RowMetaAndData();
-					data.addValue(new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_MASTER_ID,
-							ValueMetaInterface.TYPE_INTEGER), Long.valueOf(mainJob.getObjectId().getId()));
+					data.addValue(new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_MASTER_UUID_ID,
+							ValueMetaInterface.TYPE_STRING), recordUUID);
 					data.addValue(
-							new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_META_ID, ValueMetaInterface.TYPE_INTEGER),
-							Long.valueOf(meta.getObjectId().getId()));
+							new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_META_ID, ValueMetaInterface.TYPE_STRING),
+							meta.getObjectId().getId());
 					data.addValue(
 							new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_META_TYPE, ValueMetaInterface.TYPE_STRING),
 							KettleVariables.RECORD_TYPE_TRANS);
@@ -400,11 +429,11 @@ public class KettleDBClient {
 			if (dependentJobs != null && !dependentJobs.isEmpty()) {
 				for (JobMeta meta : dependentJobs) {
 					data = new RowMetaAndData();
-					data.addValue(new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_MASTER_ID,
-							ValueMetaInterface.TYPE_INTEGER), Long.valueOf(mainJob.getObjectId().getId()));
+					data.addValue(new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_MASTER_UUID_ID,
+							ValueMetaInterface.TYPE_STRING), recordUUID);
 					data.addValue(
-							new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_META_ID, ValueMetaInterface.TYPE_INTEGER),
-							Long.valueOf(meta.getObjectId().getId()));
+							new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_META_ID, ValueMetaInterface.TYPE_STRING),
+							meta.getObjectId().getId());
 					data.addValue(
 							new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_META_TYPE, ValueMetaInterface.TYPE_STRING),
 							KettleVariables.RECORD_TYPE_JOB);
@@ -425,14 +454,14 @@ public class KettleDBClient {
 	 * @throws KettleDatabaseException
 	 */
 	public synchronized List<KettleRecord> allStopRecord() throws KettleDatabaseException {
-		String sql = "SELECT " + KettleVariables.R_JOB_RECORD_ID_JOB + "," + KettleVariables.R_JOB_RECORD_NAME_JOB + ","
-				+ KettleVariables.R_RECORD_ID_RUN + "," + KettleVariables.R_RECORD_STATUS + ","
-				+ KettleVariables.R_RECORD_HOSTNAME + "," + KettleVariables.R_RECORD_CREATETIME + ","
-				+ KettleVariables.R_RECORD_UPDATETIME + "," + KettleVariables.R_RECORD_ERRORMSG + ","
-				+ KettleVariables.R_RECORD_CRON_EXPRESSION + " FROM " + KettleVariables.R_JOB_RECORD + " WHERE "
-				+ KettleVariables.R_RECORD_CRON_EXPRESSION + " IS NULL AND " + KettleVariables.R_RECORD_STATUS
-				+ " in ('" + KettleVariables.RECORD_STATUS_FINISHED + "', '" + KettleVariables.RECORD_STATUS_ERROR
-				+ "');";
+		String sql = "SELECT " + KettleVariables.R_JOB_RECORD_UUID + "," + KettleVariables.R_JOB_RECORD_ID_JOB + ","
+				+ KettleVariables.R_JOB_RECORD_NAME_JOB + "," + KettleVariables.R_RECORD_ID_RUN + ","
+				+ KettleVariables.R_RECORD_STATUS + "," + KettleVariables.R_RECORD_HOSTNAME + ","
+				+ KettleVariables.R_RECORD_CREATETIME + "," + KettleVariables.R_RECORD_UPDATETIME + ","
+				+ KettleVariables.R_RECORD_ERRORMSG + "," + KettleVariables.R_RECORD_CRON_EXPRESSION + " FROM "
+				+ KettleVariables.R_JOB_RECORD + " WHERE " + KettleVariables.R_RECORD_CRON_EXPRESSION + " IS NULL AND "
+				+ KettleVariables.R_RECORD_STATUS + " in ('" + KettleVariables.RECORD_STATUS_FINISHED + "', '"
+				+ KettleVariables.RECORD_STATUS_ERROR + "');";
 		List<Object[]> result = null;
 		connect();
 		try {
@@ -447,18 +476,18 @@ public class KettleDBClient {
 		KettleRecord bean = null;
 		for (Object[] record : result) {
 			bean = new KettleRecord();
-			bean.setId((Long) record[0]);
-			bean.setName((String) record[1]);
-			bean.setRunID((String) record[2]);
-			bean.setStatus((String) record[3]);
-			bean.setHostname(record[4] == null ? null : (String) record[4]);
-			bean.setCreateTime((Date) record[5]);
-			bean.setUpdateTime((Date) record[6]);
-			bean.setErrMsg(record[7] == null ? null : (String) record[7]);
-			bean.setCronExpression(record[8] == null ? null : (String) record[8]);
+			bean.setUuid((String) record[0]);
+			bean.setJobid((String) record[1]);
+			bean.setName((String) record[2]);
+			bean.setRunID((String) record[3]);
+			bean.setStatus((String) record[4]);
+			bean.setHostname(record[5] == null ? null : (String) record[5]);
+			bean.setCreateTime((Date) record[6]);
+			bean.setUpdateTime((Date) record[7]);
+			bean.setErrMsg(record[8] == null ? null : (String) record[8]);
+			bean.setCronExpression(record[9] == null ? null : (String) record[9]);
 			kettleJobBeans.add(bean);
 		}
 		return kettleJobBeans;
 	}
-
 }

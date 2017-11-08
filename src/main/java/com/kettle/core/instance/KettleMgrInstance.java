@@ -127,10 +127,11 @@ public class KettleMgrInstance {
 			DatabaseMeta databaseMeta = new DatabaseMeta(EnvUtil.getSystemProperty("KETTLE_RECORD_DB_NAME"),
 					EnvUtil.getSystemProperty("KETTLE_RECORD_DB_TYPE"),
 					EnvUtil.getSystemProperty("KETTLE_RECORD_DB_ACCESS"),
-					EnvUtil.getSystemProperty("KETTLE_RECORD_HOST"),
-					EnvUtil.getSystemProperty("KETTLE_RECORD_DATABASENAME"),
-					EnvUtil.getSystemProperty("KETTLE_RECORD_PORT"), EnvUtil.getSystemProperty("KETTLE_RECORD_USER"),
-					EnvUtil.getSystemProperty("KETTLE_RECORD_PASSWD"));
+					EnvUtil.getSystemProperty("KETTLE_RECORD_DB_HOST"),
+					EnvUtil.getSystemProperty("KETTLE_RECORD_DB_DATABASENAME"),
+					EnvUtil.getSystemProperty("KETTLE_RECORD_DB_PORT"),
+					EnvUtil.getSystemProperty("KETTLE_RECORD_DB_USER"),
+					EnvUtil.getSystemProperty("KETTLE_RECORD_DB_PASSWD"));
 			dbClient = new KettleDBClient(databaseMeta);
 			kettleRemotePool = new KettleRemotePool(repositoryClient, dbClient);
 		} catch (Exception ex) {
@@ -178,7 +179,7 @@ public class KettleMgrInstance {
 			KettleResult result = new KettleResult();
 			result.setErrMsg(record.getErrMsg());
 			result.setStatus(record.getStatus());
-			result.setId(record.getId());
+			result.setUuid(record.getUuid());
 			return result;
 		} catch (Exception e) {
 			logger.error("Kettle环境注册SyncTablesDatas发生异常!", e);
@@ -226,7 +227,7 @@ public class KettleMgrInstance {
 			KettleResult result = new KettleResult();
 			result.setErrMsg(record.getErrMsg());
 			result.setStatus(record.getStatus());
-			result.setId(record.getId());
+			result.setUuid(record.getUuid());
 			return result;
 		} catch (Exception e) {
 			logger.error("Kettle环境注册CompareTablesDatas发生异常!", e);
@@ -274,7 +275,7 @@ public class KettleMgrInstance {
 			KettleResult result = new KettleResult();
 			result.setErrMsg(record.getErrMsg());
 			result.setStatus(record.getStatus());
-			result.setId(record.getId());
+			result.setUuid(record.getUuid());
 			return result;
 		} catch (Exception e) {
 			logger.error("Kettle环境执行scheduleSyncTablesData发生异常!", e);
@@ -371,7 +372,7 @@ public class KettleMgrInstance {
 			KettleResult result = new KettleResult();
 			result.setErrMsg(record.getErrMsg());
 			result.setStatus(record.getStatus());
-			result.setId(record.getId());
+			result.setUuid(record.getUuid());
 			return result;
 		} catch (Exception e) {
 			logger.error("Kettle环境注册tableDataMigration发生异常!", e);
@@ -385,12 +386,12 @@ public class KettleMgrInstance {
 	 * @return
 	 * @throws KettleException
 	 */
-	public void modifySchedule(long id, String newCron) throws KettleException {
+	public void modifySchedule(String uuid, String newCron) throws KettleException {
 		try {
-			kettleRemotePool.modifyRecordSchedule(id, newCron);
+			kettleRemotePool.modifyRecordSchedule(uuid, newCron);
 		} catch (Exception e) {
-			logger.error("Kettle环境更新定时任务[" + id + "]失败!", e);
-			throw new KettleException("Kettle环境更新定时任务[" + id + "]失败!");
+			logger.error("Kettle环境更新定时任务[" + uuid + "]失败!", e);
+			throw new KettleException("Kettle环境更新定时任务[" + uuid + "]失败!");
 		}
 	}
 
@@ -401,10 +402,10 @@ public class KettleMgrInstance {
 	 * @return
 	 * @throws KettleException
 	 */
-	public KettleResult excuteJob(long id) throws KettleException {
-		KettleRecord bean = kettleRemotePool.exuteJobMeta(id);
+	public KettleResult excuteJob(String uuid) throws KettleException {
+		KettleRecord bean = kettleRemotePool.exuteJobMeta(uuid);
 		KettleResult result = new KettleResult();
-		result.setId(bean.getId());
+		result.setUuid(bean.getUuid());
 		result.setStatus(bean.getStatus());
 		result.setErrMsg(bean.getErrMsg());
 		return result;
@@ -417,13 +418,13 @@ public class KettleMgrInstance {
 	 * @return
 	 * @throws KettleException
 	 */
-	public KettleResult queryResult(long id) throws Exception {
-		KettleRecord bean = kettleRemotePool.getRecord(id);
+	public KettleResult queryResult(String uuid) throws Exception {
+		KettleRecord bean = kettleRemotePool.getRecord(uuid);
 		if (bean == null) {
 			return null;
 		}
 		KettleResult result = new KettleResult();
-		result.setId(bean.getId());
+		result.setUuid(bean.getUuid());
 		if (bean.isApply() || bean.isRepeat()) {
 			result.setStatus(KettleVariables.RECORD_STATUS_RUNNING);
 		}
@@ -439,8 +440,8 @@ public class KettleMgrInstance {
 	 * @return
 	 * @throws KettleException
 	 */
-	public void deleteJob(long id) throws Exception {
-		kettleRemotePool.deleteJob(id);
+	public void deleteJob(String uuid) throws Exception {
+		kettleRemotePool.deleteJob(uuid);
 	}
 
 	private class DelAbandonedRecord implements Runnable {
@@ -451,7 +452,7 @@ public class KettleMgrInstance {
 				Long current = System.currentTimeMillis();
 				for (KettleRecord record : records) {
 					if ((current - record.getUpdateTime().getTime()) / 1000 / 60 / 60 > recordPersistMax) {
-						deleteJob(record.getId());
+						deleteJob(record.getUuid());
 					}
 				}
 			} catch (Exception e) {

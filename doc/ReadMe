@@ -1,0 +1,42 @@
+1. 远程节点在/root/.kettle中放入repositories.xml.   JOB中指定Trans需要预定义的资源库支持
+2. 在数据库中创建的Kettle资源库,需要修改repositories.xml中的connect即可,不要更改名称
+
+# 参考
+http://www.cnblogs.com/whiteyun/archive/2011/05/27/2059670.html
+http://www.xitongcheng.com/jiaocheng/win7_article_16732.html
+http://www.linuxidc.com/Linux/2015-01/112051.htm
+http://jingyan.baidu.com/article/c910274bfd6800cd361d2df3.html
+
+yum -y install samba samba-client samba-common
+
+cd /etc/samba
+mv smb.conf smb.confbak
+
+# security=share centos6支持,centos7上不支持改参数
+vi smb.conf
+
+[global]
+workgroup=kettleRepo
+netbios name=kettleRepo
+server string=Linux Samba Server TestServer
+security=share
+
+[kettleRepo]
+path=/usr/local/kettleRepo
+writeable=yes
+browseable=yes 
+guest ok=yes
+
+mkdir -p /usr/local/kettleRepo
+id nobody
+chown -R nobody:nobody /usr/local/kettleRepo
+service smb restart
+chkconfig smb on
+
+yum -y install cifs-utils
+mount -t cifs //192.168.80.138/kettleRepo /usr/local/kettleRepo
+unmount /var/kettleRepo
+
+[window]连接
+win+R
+\\192.168.80.138\kettleRepo

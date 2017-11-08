@@ -9,14 +9,14 @@ import java.util.Date;
  */
 public class KettleRecordDepend {
 	/**
-	 * 主JobID
+	 * 主JobUUID
 	 */
-	private long masterID;
+	private String masterUUID;
 
 	/**
-	 * 本对象ID
+	 * Kettle对象ID
 	 */
-	private long id;
+	private String metaid;
 
 	/**
 	 * 类型
@@ -28,20 +28,20 @@ public class KettleRecordDepend {
 	 */
 	private Date createTime;
 
-	public long getMasterID() {
-		return masterID;
+	public String getMasterUUID() {
+		return masterUUID;
 	}
 
-	public void setMasterID(long masterID) {
-		this.masterID = masterID;
+	public void setMasterUUID(String masterUUID) {
+		this.masterUUID = masterUUID;
 	}
 
-	public long getId() {
-		return id;
+	public String getMetaid() {
+		return metaid;
 	}
 
-	public void setId(long id) {
-		this.id = id;
+	public void setMetaid(String metaid) {
+		this.metaid = metaid;
 	}
 
 	public String getType() {

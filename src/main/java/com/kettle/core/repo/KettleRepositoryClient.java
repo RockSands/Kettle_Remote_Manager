@@ -6,9 +6,9 @@ import java.util.Calendar;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.util.EnvUtil;
 import org.pentaho.di.job.JobMeta;
-import org.pentaho.di.repository.LongObjectId;
 import org.pentaho.di.repository.Repository;
 import org.pentaho.di.repository.RepositoryDirectoryInterface;
+import org.pentaho.di.repository.StringObjectId;
 import org.pentaho.di.trans.TransMeta;
 
 /**
@@ -74,9 +74,9 @@ public class KettleRepositoryClient {
 	 * @return
 	 * @throws KettleException
 	 */
-	public synchronized TransMeta getTransMeta(long transID) throws KettleException {
+	public synchronized TransMeta getTransMeta(String transID) throws KettleException {
 		connect();
-		TransMeta transMeta = repository.loadTransformation(new LongObjectId(transID), null);
+		TransMeta transMeta = repository.loadTransformation(new StringObjectId(transID), null);
 		return transMeta;
 	}
 
@@ -87,9 +87,9 @@ public class KettleRepositoryClient {
 	 * @return
 	 * @throws KettleException
 	 */
-	public synchronized JobMeta getJobMeta(long jobID) throws KettleException {
+	public synchronized JobMeta getJobMeta(String jobId) throws KettleException {
 		connect();
-		JobMeta jobMeta = repository.loadJob(new LongObjectId(jobID), null);
+		JobMeta jobMeta = repository.loadJob(new StringObjectId(jobId), null);
 		return jobMeta;
 	}
 
@@ -126,9 +126,9 @@ public class KettleRepositoryClient {
 	 * @param transMeta
 	 * @throws KettleException
 	 */
-	public synchronized void deleteTransMeta(long transID) throws KettleException {
+	public synchronized void deleteTransMeta(String transID) throws KettleException {
 		connect();
-		repository.deleteTransformation(new LongObjectId(transID));
+		repository.deleteTransformation(new StringObjectId(transID));
 	}
 
 	/**
@@ -137,13 +137,14 @@ public class KettleRepositoryClient {
 	 * @param jobID
 	 * @throws KettleException
 	 */
-	public synchronized void deleteJobMeta(long jobID) throws KettleException {
+	public synchronized void deleteJobMeta(String jobID) throws KettleException {
 		connect();
-		repository.deleteJob(new LongObjectId(jobID));
+		repository.deleteJob(new StringObjectId(jobID));
 	}
-	
+
 	/**
 	 * 获取资源
+	 * 
 	 * @return
 	 */
 	public Repository getRepository() {

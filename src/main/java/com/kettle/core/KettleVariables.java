@@ -20,7 +20,7 @@ public class KettleVariables {
 	/**
 	 * 关系表的主ID
 	 */
-	public static final String R_RECORD_DEPENDENT_MASTER_ID = "MASTER_ID";
+	public static final String R_RECORD_DEPENDENT_MASTER_UUID_ID = "MASTER_UUID_ID";
 
 	/**
 	 * 关系表的关联ID
@@ -51,6 +51,11 @@ public class KettleVariables {
 	 * 记录的CRON表达式
 	 */
 	public static final String R_RECORD_CRON_EXPRESSION = "CRON_EXPRESSION";
+
+	/**
+	 * 工作记录的元数据ID:唯一
+	 */
+	public static final String R_JOB_RECORD_UUID = "UUID";
 
 	/**
 	 * 工作记录的元数据ID:唯一
@@ -111,7 +116,7 @@ public class KettleVariables {
 	 * 记录的运行状态:注册
 	 */
 	public static final String RECORD_STATUS_REGISTE = "REGISTE";
-	
+
 	/**
 	 * 记录的运行状态:受理
 	 */

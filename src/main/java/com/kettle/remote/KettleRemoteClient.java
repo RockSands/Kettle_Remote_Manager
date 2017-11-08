@@ -22,11 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kettle.core.KettleVariables;
-import com.kettle.core.db.KettleDBClient;
-import com.kettle.core.repo.KettleDBRepositoryClient;
-import com.kettle.core.repo.KettleRepositoryClient;
 import com.kettle.record.KettleRecord;
-import com.kettle.record.KettleRecordPool;
 
 public class KettleRemoteClient {
 
@@ -36,15 +32,10 @@ public class KettleRemoteClient {
 	private static Logger logger = LoggerFactory.getLogger(KettleRemoteClient.class);
 
 	/**
-	 * 远程执行锁
-	 */
-	private static Object remoteLock = new Object();
-
-	/**
 	 * 远程池
 	 */
 	private final KettleRemotePool kettleRemotePool;
-	
+
 	/**
 	 * 远端状态
 	 */
@@ -160,20 +151,16 @@ public class KettleRemoteClient {
 	 * @throws KettleException
 	 */
 	public String remoteSendJob(JobMeta jobMeta) throws KettleException {
-
 		JobExecutionConfiguration jobExecutionConfiguration = new JobExecutionConfiguration();
 		jobExecutionConfiguration.setRemoteServer(remoteServer);
 		jobExecutionConfiguration.setLogLevel(LogLevel.ERROR);
 		jobExecutionConfiguration.setPassingExport(false);
 		jobExecutionConfiguration.setExecutingRemotely(true);
 		jobExecutionConfiguration.setExecutingLocally(false);
-		// jobExecutionConfiguration.setRepository(kettleRemotePool.getDbRepository());
+		jobExecutionConfiguration.setRepository(kettleRemotePool.getRepository());
 		String runID = null;
-		synchronized (remoteLock) {
-			runID = Job.sendToSlaveServer(jobMeta, jobExecutionConfiguration,
-					kettleRemotePool.getRepository(),
-					kettleRemotePool.getRepository().getMetaStore());
-		}
+		runID = Job.sendToSlaveServer(jobMeta, jobExecutionConfiguration, kettleRemotePool.getRepository(),
+				kettleRemotePool.getRepository().getMetaStore());
 		return runID;
 	}
 
@@ -190,7 +177,7 @@ public class KettleRemoteClient {
 	public void remoteStartJob(KettleRecord job) throws KettleException, Exception {
 		WebResult result = remoteServer.startJob(job.getName(), job.getRunID());
 		if (!"OK".equals(result.getResult())) {
-			throw new KettleException("Kettle远端[" + this.getHostName() + "]启动Job[" + job.getId() + "]失败!");
+			throw new KettleException("Kettle远端[" + this.getHostName() + "]启动Job[" + job.getUuid() + "]失败!");
 		}
 	}
 
@@ -206,10 +193,10 @@ public class KettleRemoteClient {
 		try {
 			WebResult result = remoteServer.stopJob(job.getName(), job.getRunID());
 			if (!"OK".equals(result.getResult())) {
-				logger.debug("Kettle远端[" + this.getHostName() + "]停止Job[" + job.getId() + "]失败!");
+				logger.debug("Kettle远端[" + this.getHostName() + "]停止Job[" + job.getUuid() + "]失败!");
 			}
 		} catch (Exception ex) {
-			logger.debug("Kettle远端[" + this.getHostName() + "]停止Job[" + job.getId() + "]失败!");
+			logger.debug("Kettle远端[" + this.getHostName() + "]停止Job[" + job.getUuid() + "]失败!");
 		}
 	}
 
@@ -222,7 +209,7 @@ public class KettleRemoteClient {
 	 */
 	public String remoteJobStatus(KettleRecord job) throws Exception {
 		SlaveServerJobStatus jobStatus = remoteServer.getJobStatus(job.getName(), job.getRunID(), 0);
-		logger.debug("Kettle Remote[" + remoteServer.getHostname() + "]转换[" + job.getId() + "]状态为:"
+		logger.debug("Kettle Remote[" + remoteServer.getHostname() + "]转换[" + job.getUuid() + "]状态为:"
 				+ jobStatus.getStatusDescription());
 		if (jobStatus == null || jobStatus.getStatusDescription() == null) {
 			return KettleVariables.RECORD_STATUS_ERROR;
@@ -347,15 +334,9 @@ public class KettleRemoteClient {
 		 */
 		private void cleanRecords() {
 			for (KettleRecord roll : updateRecords) {
-				if (roll.isError() || roll.isFinished()) {
-					kettleRemotePool.getDbClient().deleteRecord(roll.getId());
-				}
 				// 完成的进行清理
 				if (roll.isFinished()) {
-					if (KettleRecord.class.isInstance(roll)) {
-						KettleRecord job = (KettleRecord) roll;
-						remoteRemoveJobNE(job.getName(), job.getRunID());
-					}
+					remoteRemoveJobNE(roll.getName(), roll.getRunID());
 				}
 			}
 		}
@@ -365,7 +346,7 @@ public class KettleRemoteClient {
 		 */
 		private void dealErrorRemoteRecord(KettleRecord record) {
 			if (record.isApply()) {
-				kettleRecordPool.addPrioritizeRecord(record);
+				kettleRemotePool.getKettleRecordPool().addPrioritizeRecord(record);
 			} else if (record.isRunning()) {
 				record.setStatus(KettleVariables.RECORD_STATUS_ERROR);
 			}
@@ -383,16 +364,16 @@ public class KettleRemoteClient {
 				try {
 					status = remoteJobStatus(job);
 				} catch (Exception e) {
-					logger.error("Kettle远端[" + getHostName() + "]查询Job[" + job.getId() + "]发生异常\n", e);
+					logger.error("Kettle远端[" + getHostName() + "]查询Record[" + job.getUuid() + "]发生异常\n", e);
 					status = KettleVariables.RECORD_STATUS_ERROR;
 				}
 				job.setStatus(status);
 				checkJobRunOvertime(job);
 				if (roll.isError() || roll.isFinished()) {
 					try {
-						dbClient.updateRecord(roll);
+						kettleRemotePool.getDbClient().updateRecord(roll);
 					} catch (KettleException e) {
-						logger.error("Kettle更新Job[" + job.getId() + "]状态[" + roll.getStatus() + "]发生异常\n", e);
+						logger.error("Kettle更新Record[" + job.getUuid() + "]状态[" + roll.getStatus() + "]发生异常\n", e);
 					}
 				}
 			}
@@ -408,7 +389,7 @@ public class KettleRemoteClient {
 				if ((System.currentTimeMillis() - job.getUpdateTime().getTime()) / 1000 / 60 > recordRunningMax) {
 					remoteStopJobNE(job);
 					job.setStatus(KettleVariables.RECORD_STATUS_ERROR);
-					job.setErrMsg("Record[" + job.getId() + "]执行超时,异常状态!");
+					job.setErrMsg("Record[" + job.getUuid() + "]执行超时,异常状态!");
 				}
 			}
 		}
@@ -418,23 +399,22 @@ public class KettleRemoteClient {
 		 * 
 		 * @param roll
 		 */
-		private void dealNotSendRecord(KettleRecord roll) {
-			if (roll.isApply() || roll.isRepeat()) {
-				KettleRecord job = (KettleRecord) roll;
+		private void dealNotSendRecord(KettleRecord job) {
+			if (job.isApply() || job.isRepeat()) {
 				try {
 					if (job.getKettleMeta() == null) {
-						job.setKettleMeta(this..getJobMeta(job.getId()));
+						job.setKettleMeta(kettleRemotePool.getRepositoryClient().getJobMeta(job.getJobid()));
 					}
 					String runID = remoteSendJob(job.getKettleMeta());
-					roll.setRunID(runID);
-					roll.setHostname(getHostName());
-					roll.setStatus(KettleVariables.RECORD_STATUS_RUNNING);
-					updateRecords.add(roll);
+					job.setRunID(runID);
+					job.setHostname(getHostName());
+					job.setStatus(KettleVariables.RECORD_STATUS_RUNNING);
+					updateRecords.add(job);
 				} catch (Exception e) {
-					logger.error("Kettle远端[" + getHostName() + "]发送Job[" + job.getId() + "]发生异常\n", e);
-					roll.setStatus(KettleVariables.REMOTE_STATUS_ERROR);
-					roll.setErrMsg("Kettle远端[" + getHostName() + "]发送Job[" + job.getId() + "]发生异常");
-					roll.setHostname(getHostName());
+					logger.error("Kettle远端[" + getHostName() + "]发送Record[" + job.getUuid() + "]发生异常\n", e);
+					job.setStatus(KettleVariables.REMOTE_STATUS_ERROR);
+					job.setErrMsg("Kettle远端[" + getHostName() + "]发送Record[" + job.getUuid() + "]发生异常");
+					job.setHostname(getHostName());
 					updateRecords.add(job);
 				}
 			}

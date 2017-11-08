@@ -29,7 +29,7 @@ public class CreateCTDThread implements Runnable {
 			long now = System.currentTimeMillis();
 			result = KettleMgrInstance.getInstance().registeCompareTablesDatas(base, compare, newOption);
 			System.out.println("==>registe used: " + (System.currentTimeMillis() - now));
-			KettleMgrInstance.getInstance().excuteJob(result.getId());
+			KettleMgrInstance.getInstance().excuteJob(result.getUuid());
 			System.out.println("==>apply used: " + (System.currentTimeMillis() - now));
 		} catch (KettleException e) {
 			e.printStackTrace();
@@ -37,7 +37,7 @@ public class CreateCTDThread implements Runnable {
 	}
 
 	public void modifyCron(String newCron) throws KettleException {
-		KettleMgrInstance.getInstance().modifySchedule(result.getId(), newCron);
+		KettleMgrInstance.getInstance().modifySchedule(result.getUuid(), newCron);
 	}
 
 	public KettleResult getResult() {

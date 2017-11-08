@@ -26,7 +26,7 @@ public class CreateSTDThread implements Runnable {
 	public void run() {
 		try {
 			if (result != null) {
-				result = KettleMgrInstance.getInstance().queryResult(result.getId());
+				result = KettleMgrInstance.getInstance().queryResult(result.getUuid());
 				// System.out.println("==>[" + result.getId() + "]状态: " +
 				// result.getStatus());
 			}
@@ -35,13 +35,13 @@ public class CreateSTDThread implements Runnable {
 				result = KettleMgrInstance.getInstance().registeSyncTablesDatas(source, target);
 				// System.out.println("==>registe used: " +
 				// (System.currentTimeMillis() - now));
-				KettleMgrInstance.getInstance().excuteJob(result.getId());
+				KettleMgrInstance.getInstance().excuteJob(result.getUuid());
 				// System.out.println("==>apply used: " +
 				// (System.currentTimeMillis() - now));
 			}
 			if (KettleVariables.RECORD_STATUS_ERROR.equals(result.getStatus())
 					|| KettleVariables.RECORD_STATUS_FINISHED.equals(result.getStatus())) {
-				KettleMgrInstance.getInstance().deleteJob(result.getId());
+				// KettleMgrInstance.getInstance().deleteJob(result.getUuid());
 				result = null;
 			}
 		} catch (KettleException e) {
@@ -52,7 +52,7 @@ public class CreateSTDThread implements Runnable {
 	}
 
 	public void modifyCron(String newCron) throws KettleException {
-		KettleMgrInstance.getInstance().modifySchedule(result.getId(), newCron);
+		KettleMgrInstance.getInstance().modifySchedule(result.getUuid(), newCron);
 	}
 
 	public KettleResult getResult() {

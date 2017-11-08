@@ -1,0 +1,11 @@
+      <slaveserver>
+        <name>master1</name>
+        <hostname>192.168.80.131</hostname>
+        <port>8080</port>
+        <webAppName/>
+        <username>cluster</username>
+<password>Encrypted 2be98afc86aa7f2e4cb1aa265cd86aac8</password>        <proxy_hostname/>
+        <proxy_port/>
+        <non_proxy_hosts/>
+        <master>Y</master>
+        <sslMode>N</sslMode>      </slaveserver>

@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -124,18 +125,24 @@ public class KettleRemotePool {
 	 * @param dependentTrans
 	 * @param dependentJobs
 	 * @param mainJob
+	 * @param recordUUID
 	 * @throws KettleException
 	 */
-	private void saveMetas(List<TransMeta> dependentTrans, List<JobMeta> dependentJobs, JobMeta mainJob)
-			throws KettleException {
+	private void saveMetas(List<TransMeta> dependentTrans, List<JobMeta> dependentJobs, JobMeta mainJob,
+			String recordUUID) throws KettleException {
 		try {
-			for (TransMeta tran : dependentTrans) {
-				repositoryClient.saveTransMeta(tran);
+			if (dependentTrans != null && !dependentTrans.isEmpty()) {
+				for (TransMeta tran : dependentTrans) {
+					repositoryClient.saveTransMeta(tran);
+				}
 			}
-			for (JobMeta job : dependentJobs) {
-				repositoryClient.saveJobMeta(job);
+			if (dependentJobs != null && !dependentJobs.isEmpty()) {
+				for (JobMeta job : dependentJobs) {
+					repositoryClient.saveJobMeta(job);
+				}
 			}
-			dbClient.saveDependentsRelation(dependentTrans, dependentJobs, mainJob);
+			repositoryClient.saveJobMeta(mainJob);
+			dbClient.saveDependentsRelation(dependentTrans, dependentJobs, mainJob, recordUUID);
 		} catch (Exception ex) {
 			logger.error("Job[" + mainJob.getName() + "]执行保存元数据时发生异常!", ex);
 			throw new KettleException("Job[" + mainJob.getName() + "]执行保存元数据时发生异常!");
@@ -168,18 +175,20 @@ public class KettleRemotePool {
 		if (jobStart.isRepeat() || jobStart.getSchedulerType() != JobEntrySpecial.NOSCHEDULING) {
 			throw new KettleException("JobMeta的核心Job[" + mainJob.getName() + "]必须是即时任务!");
 		}
-		saveMetas(dependentTrans, dependentJobs, mainJob);
+		String recordUUID = UUID.randomUUID().toString().replace("-", "");
+		saveMetas(dependentTrans, dependentJobs, mainJob, recordUUID);
 		KettleRecord record = null;
 		record = new KettleRecord();
 		record.setKettleMeta(mainJob);
-		record.setId(Long.valueOf(mainJob.getObjectId().getId()));
+		record.setUuid(recordUUID);
+		record.setJobid(mainJob.getObjectId().getId());
 		record.setName(mainJob.getName());
 		record.setStatus(KettleVariables.RECORD_STATUS_REGISTE);
 		try {
 			dbClient.insertRecord(record);
 		} catch (Exception ex) {
 			logger.error("Job[" + mainJob.getName() + "]执行注册操作发生异常!", ex);
-			deleteJobAndDependentsForce(Long.valueOf(mainJob.getObjectId().getId()));
+			deleteJobAndDependentsForce(record);
 			throw new KettleException("Job[" + mainJob.getName() + "]执行注册操作发生异常!");
 		}
 		return record;
@@ -188,20 +197,20 @@ public class KettleRemotePool {
 	/**
 	 * @param mainJobID
 	 */
-	private void deleteJobAndDependentsForce(long mainJobID) {
+	private void deleteJobAndDependentsForce(KettleRecord record) {
 		try {
-			List<KettleRecordDepend> depends = dbClient.queryDependents(mainJobID);
+			List<KettleRecordDepend> depends = dbClient.queryDependents(record.getUuid());
 			for (KettleRecordDepend depend : depends) {
 				if (KettleVariables.RECORD_TYPE_JOB.equals(depend.getType())) {
-					repositoryClient.deleteJobMeta(depend.getId());
+					repositoryClient.deleteJobMeta(depend.getMetaid());
 				} else if (KettleVariables.RECORD_TYPE_TRANS.equals(depend.getType())) {
-					repositoryClient.deleteTransMeta(depend.getId());
+					repositoryClient.deleteTransMeta(depend.getMetaid());
 				}
 			}
-			repositoryClient.deleteJobMeta(mainJobID);
-			dbClient.deleteRecord(mainJobID);
+			repositoryClient.deleteJobMeta(record.getJobid());
+			dbClient.deleteRecord(record.getUuid());
 		} catch (Exception ex) {
-			logger.error("Job[" + mainJobID + "]执行持久化清理操作失败!", ex);
+			logger.error("Job[" + record.getUuid() + "]执行持久化清理操作失败!", ex);
 		}
 	}
 
@@ -212,34 +221,34 @@ public class KettleRemotePool {
 	 * @return
 	 * @throws KettleException
 	 */
-	public KettleRecord exuteJobMeta(long jobID) throws KettleException {
-		KettleRecord record = dbClient.queryRecord(jobID);
+	public KettleRecord exuteJobMeta(String uuid) throws KettleException {
+		KettleRecord record = dbClient.queryRecord(uuid);
 		if (record == null) {
-			throw new KettleException("Job[" + jobID + "]未找到,请先注册!");
+			throw new KettleException("Job[" + uuid + "]未找到,请先注册!");
 		}
 		if (record.isRunning()) {
-			throw new KettleException("Job[" + jobID + "]执行中,无法再次执行!");
+			throw new KettleException("Job[" + uuid + "]执行中,无法再次执行!");
 		}
 		if (record.isApply()) {
-			throw new KettleException("Job[" + jobID + "]已经在执行队列中,无法再次执行!");
+			throw new KettleException("Job[" + uuid + "]已经在执行队列中,无法再次执行!");
 		}
 		if (record.getCronExpression() != null) {
-			throw new KettleException("Job[" + jobID + "]为定时任务,无法手动执行!");
+			throw new KettleException("Job[" + uuid + "]为定时任务,无法手动执行!");
 		}
 		kettleRecordPool.addRecord(record);
 		return record;
 	}
 
 	/**
-	 * 注册作业
+	 * 删除作业
 	 * 
 	 * @param transMeta
 	 * @return
 	 * @throws KettleException
 	 */
-	public void deleteJob(long jobID) throws KettleException {
-		kettleRecordPool.deleteRecord(jobID);
-		dbClient.deleteRecord(jobID);
+	public void deleteJob(String uuid) throws KettleException {
+		kettleRecordPool.deleteRecord(uuid);
+		dbClient.deleteRecord(uuid);
 	}
 
 	/**
@@ -252,11 +261,13 @@ public class KettleRemotePool {
 	public KettleRecord applyScheduleJobMeta(List<TransMeta> dependentTrans, List<JobMeta> dependentJobs,
 			JobMeta mainJob, String cronExpression) throws KettleException {
 		checkRemotePoolStatus();
-		saveMetas(dependentTrans, dependentJobs, mainJob);
+		String recordUUID = UUID.randomUUID().toString().replace("-", "");
+		saveMetas(dependentTrans, dependentJobs, mainJob, recordUUID);
 		KettleRecord record = null;
 		record = new KettleRecord();
 		record.setKettleMeta(mainJob);
-		record.setId(Long.valueOf(mainJob.getObjectId().getId()));
+		record.setUuid(recordUUID);
+		record.setJobid(mainJob.getObjectId().getId());
 		record.setName(mainJob.getName());
 		record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
 		record.setCronExpression(cronExpression);
@@ -276,12 +287,12 @@ public class KettleRemotePool {
 	 * 
 	 * @throws Exception
 	 */
-	public void modifyRecordSchedule(long id, String newCron) throws Exception {
-		KettleRecord record = dbClient.queryRecord(id);
+	public void modifyRecordSchedule(String uuid, String newCron) throws Exception {
+		KettleRecord record = dbClient.queryRecord(uuid);
 		if (record == null) {
-			throw new KettleException("Kettle不存在ID为[" + id + "]的记录!");
+			throw new KettleException("Kettle不存在ID为[" + uuid + "]的记录!");
 		}
-		kettleRecordPool.modifySchedulerRecord(id, newCron);
+		kettleRecordPool.modifySchedulerRecord(uuid, newCron);
 		record.setCronExpression(newCron);
 
 	}
@@ -319,14 +330,14 @@ public class KettleRemotePool {
 	/**
 	 * 获取Record
 	 * 
-	 * @param id
+	 * @param uuid
 	 * @return
 	 * @throws KettleException
 	 * @throws InvocationTargetException
 	 * @throws IllegalAccessException
 	 */
-	public KettleRecord getRecord(long id) throws Exception {
-		KettleRecord record = dbClient.queryRecord(id);
+	public KettleRecord getRecord(String uuid) throws Exception {
+		KettleRecord record = dbClient.queryRecord(uuid);
 		if (record == null) {
 			return null;
 		}
@@ -335,7 +346,8 @@ public class KettleRemotePool {
 		r_record.setCronExpression(record.getCronExpression());
 		r_record.setErrMsg(record.getErrMsg());
 		r_record.setHostname(record.getHostname());
-		r_record.setId(record.getId());
+		r_record.setUuid(record.getUuid());
+		r_record.setJobid(record.getJobid());
 		r_record.setName(record.getName());
 		r_record.setRunID(record.getRunID());
 		r_record.setStatus(record.getStatus());

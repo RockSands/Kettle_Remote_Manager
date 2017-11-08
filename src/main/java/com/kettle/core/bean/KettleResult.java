@@ -4,7 +4,7 @@ public class KettleResult {
 	/**
 	 * id
 	 */
-	private long id;
+	private String uuid;
 	/**
 	 * 状态
 	 */
@@ -15,12 +15,12 @@ public class KettleResult {
 	 */
 	private String errMsg;
 
-	public long getId() {
-		return id;
+	public String getUuid() {
+		return uuid;
 	}
 
-	public void setId(long id) {
-		this.id = id;
+	public void setUuid(String uuid) {
+		this.uuid = uuid;
 	}
 
 	public String getStatus() {
