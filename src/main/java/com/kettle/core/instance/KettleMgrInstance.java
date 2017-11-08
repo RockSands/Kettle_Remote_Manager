@@ -447,7 +447,7 @@ public class KettleMgrInstance {
 		@Override
 		public void run() {
 			try {
-				List<KettleRecord> records = dbRepositoryClient.allStopRecord();
+				List<KettleRecord> records = dbClient.allStopRecord();
 				Long current = System.currentTimeMillis();
 				for (KettleRecord record : records) {
 					if ((current - record.getUpdateTime().getTime()) / 1000 / 60 / 60 > recordPersistMax) {
