@@ -21,9 +21,15 @@ import org.quartz.impl.StdSchedulerFactory;
 
 import com.kettle.core.KettleVariables;
 
+/**
+ * Kettle任务池
+ * 
+ * @author chenkw
+ *
+ */
 public class KettleRecordPool {
 	/**
-	 * 任务调度工厂
+	 * Repeat任务调度工厂
 	 */
 	private static Scheduler scheduler = null;
 
@@ -38,12 +44,12 @@ public class KettleRecordPool {
 	private Map<String, KettleRecord> recordCache = new HashMap<String, KettleRecord>();
 
 	/**
-	 * Tran/Job 保存记录名称,队列
+	 * 记录队列
 	 */
 	private final Queue<KettleRecord> recordQueue = new LinkedBlockingQueue<KettleRecord>();
 
 	/**
-	 * Tran/Job 保存记录名称,优先队列
+	 * 优先记录队列
 	 */
 	private final Queue<KettleRecord> recordPrioritizeQueue = new LinkedBlockingQueue<KettleRecord>();
 
@@ -58,29 +64,6 @@ public class KettleRecordPool {
 		SchedulerFactory schedulerfactory = new StdSchedulerFactory();
 		scheduler = schedulerfactory.getScheduler();
 		scheduler.start();
-	}
-
-	/**
-	 * 任务数量验证
-	 * 
-	 * @return
-	 * @throws KettleException
-	 */
-	private void check() throws KettleException {
-		if (size() > recordMax) {
-			throw new KettleException("KettleRecordPool的任务数量已满,无法接受任务!");
-		}
-	}
-
-	/**
-	 * @param record
-	 * @return
-	 */
-	private boolean isAcceptedRecord(KettleRecord record) {
-		if (record == null) {
-			return true;
-		}
-		return recordCache.containsKey(record.getUuid());
 	}
 
 	/**
@@ -124,7 +107,7 @@ public class KettleRecordPool {
 	}
 
 	/**
-	 * 更新
+	 * 更新重复任务的策略
 	 * 
 	 * @param jobID
 	 * @param newCron
@@ -211,5 +194,28 @@ public class KettleRecordPool {
 	 */
 	public int size() {
 		return recordQueue.size() + recordPrioritizeQueue.size();
+	}
+
+	/**
+	 * 任务数量验证
+	 * 
+	 * @return
+	 * @throws KettleException
+	 */
+	private void check() throws KettleException {
+		if (size() > recordMax) {
+			throw new KettleException("KettleRecordPool的任务数量已满,无法接受任务!");
+		}
+	}
+
+	/**
+	 * @param record
+	 * @return
+	 */
+	private boolean isAcceptedRecord(KettleRecord record) {
+		if (record == null) {
+			return true;
+		}
+		return recordCache.containsKey(record.getUuid());
 	}
 }

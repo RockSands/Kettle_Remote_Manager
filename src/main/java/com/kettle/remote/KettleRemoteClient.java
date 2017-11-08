@@ -24,6 +24,12 @@ import org.slf4j.LoggerFactory;
 import com.kettle.core.KettleVariables;
 import com.kettle.record.KettleRecord;
 
+/**
+ * Kettle远程连接
+ * 
+ * @author chenkw
+ *
+ */
 public class KettleRemoteClient {
 
 	/**

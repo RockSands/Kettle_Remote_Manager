@@ -105,6 +105,11 @@
 		mkdir -p /data/kettleFileRepo
 		mount -t nfs <NFS服务IP>:/data/kettleFileRepo /data/kettleFileRepo
 		
+		# 开机即挂载
+		vi /etc/fstab
+		
+		<NFS服务IP>:/data/kettleFileRepo    /data/kettleFileRepo    nfs    defaults    0 0
+		
 	11.在/data/kettleFileRepo目录中写入master1.ksl文件
 	# 第一台为master1.ksl,第二台为master2.ksl 以此类推.
 		<slaveserver>
@@ -126,18 +131,18 @@
 	12.编辑Repo配置文件
 		vi /root/.kettle/repositories.xml 
 		
-		<?xml version="1.0" encoding="UTF-8"?>
-		<repositories>
-			<repository>
-				<id>KettleFileRepository</id>
-    			<name>KettleFileRepo</name>
-    			<description>File repository</description>
-    			<is_default>true</is_default>
-    			<base_directory>&#x2f;data&#x2f;kettleFileRepo</base_directory>
-    			<read_only>Y</read_only>
-    			<hides_hidden_files>Y</hides_hidden_files>
-  			</repository>
-		</repositories>
+<?xml version="1.0" encoding="UTF-8"?>
+<repositories>
+	<repository>
+		<id>KettleFileRepository</id>
+		<name>KettleFileRepo</name>
+		<description>File repository</description>
+		<is_default>true</is_default>
+		<base_directory>&#x2f;data&#x2f;kettleFileRepo</base_directory>
+		<read_only>Y</read_only>
+		<hides_hidden_files>Y</hides_hidden_files>
+	</repository>
+</repositories>
 		
 		wq!
 		
@@ -164,6 +169,7 @@
 	# windows与linux一致,仅NFS操作有差别
 	1.开启NFS服务
 		# 参考 https://wenku.baidu.com/view/95ea18311a37f111f0855b0b.html
+		# 如果没有 搜索Microsoft Windows Services for UNIX
 		
 		我的电脑 --> 右键 --> 属性 --> 控制面板 --> 程序 --> 启用或关闭windows功能 --> 找到NFS服务并开启服务
 		
