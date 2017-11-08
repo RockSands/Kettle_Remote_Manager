@@ -40,9 +40,7 @@ public class RemoteMain {
 		KettleTableMeta target = null;
 		KettleSQLSMeta success = null;
 		KettleSQLSMeta error = null;
-		int index = 0;
 		for (String flag : flags) {
-			index++;
 			// 源配置
 			source = new KettleTableMeta();
 			source.setType("MySQL");
