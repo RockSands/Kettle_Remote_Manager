@@ -60,7 +60,7 @@ public class KettleMgrInstance {
 	/**
 	 * 远程执行池
 	 */
-	private KettleRemotePool kettleRemotePool;
+	public static KettleMgrEnvironment kettleMgrEnvironment = new KettleMgrEnvironment();
 
 	/**
 	 * 资源池数据库连接
