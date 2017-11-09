@@ -22,19 +22,29 @@ public class RemoteRecordHandler {
 	/**
 	 * 处理的任务
 	 */
-	private KettleRecord applyRecord;
+	private final KettleRecord[] recordArr;
 
+	/**
+	 * @param client
+	 */
 	public RemoteRecordHandler(KettleRemoteClient client) {
 		this.client = client;
+		this.recordArr = new KettleRecord[client.maxRecord];
 	}
 
 	/**
-	 * 是否准备接受Record
+	 * 可以接受多少的任务
 	 * 
 	 * @return
 	 */
-	public synchronized boolean isReady() {
-		return applyRecord == null;
+	public synchronized int readyCount() {
+		int count = 0;
+		for (KettleRecord record : recordArr) {
+			if (record == null) {
+				count++;
+			}
+		}
+		return count;
 	}
 
 	/**
@@ -43,21 +53,27 @@ public class RemoteRecordHandler {
 	 * @param record
 	 * @throws Exception
 	 */
-	public synchronized void startRecord(KettleRecord record) throws Exception {
-		if (!isReady()) {
-			throw new KettleException("RemoteRecordProcess运行中,无法执行新的Record[" + record.getUuid() + "]");
+	public synchronized boolean addRecord(KettleRecord record) {
+		if (readyCount() > 0 && client.isRunning()) {
+			return false;
 		}
-		checkStatus(record);
-		applyRecord = record;
+		int index = 0;
+		for (; index < recordArr.length; index++) {
+			if (recordArr[index] == null) {
+				recordArr[index] = record;
+				break;
+			}
+		}
 		record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
 		try {
 			client.remoteSendJob(record);
+			record.setStatus(KettleVariables.RECORD_STATUS_RUNNING);
+			return true;
 		} catch (Exception ex) {
 			record.setStatus(KettleVariables.RECORD_STATUS_ERROR);
 			record.setErrMsg(ex.getMessage());
-			applyRecord = null;
-			throw new KettleException("Remote[" + client.getHostName() + "]无法远端执行Record[" + record.getUuid() + "]!",
-					ex);
+			recordArr[index] = null;
+			return false;
 		}
 	}
 
@@ -94,21 +110,5 @@ public class RemoteRecordHandler {
 		}
 		applyRecord = null;
 		return record;
-	}
-
-	/**
-	 * 检查Record
-	 * 
-	 * @param record
-	 * @throws KettleException
-	 */
-	private void checkStatus(KettleRecord record) throws KettleException {
-		if (record.getKettleMeta() == null) {
-			throw new KettleException(
-					"record[" + record.getUuid() + "]未定义Meta，无法被Remote[" + client.getHostName() + "]处理");
-		}
-		if (!client.isRunning()) {
-			throw new KettleException("Remote[" + client.getHostName() + "]异常状态,无法处理新的Record!");
-		}
 	}
 }

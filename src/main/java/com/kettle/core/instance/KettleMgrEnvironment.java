@@ -13,27 +13,39 @@ public class KettleMgrEnvironment {
 	/**
 	 * 远端池
 	 */
-	static KettleRemotePool remotePool;
+	private KettleRemotePool remotePool;
 
 	/**
 	 * 任务池
 	 */
-	static KettleRecordPool recordPool;
+	private KettleRecordPool recordPool;
 
 	/**
 	 * Kettle资源库
 	 */
-	static KettleRepositoryClient repositoryClient;
+	private KettleRepositoryClient repositoryClient;
 
 	/**
 	 * 数据库
 	 */
-	static KettleDBClient dbClient;
+	private KettleDBClient dbClient;
 
 	/**
 	 * Record任务最大保持数量
 	 */
-	public static int KETTLE_RECORD_POOL_MAX = NVLInt("KETTLE_RECORD_POOL_MAX",
+	public static Integer KETTLE_RECORD_POOL_MAX = NVLInt("KETTLE_RECORD_POOL_MAX",
+			KettleEnvDefault.KETTLE_RECORD_MAX_PER_REMOTE);
+
+	/**
+	 * Record任务保留最长时间
+	 */
+	public static Integer KETTLE_RECORD_PERSIST_MAX_HOUR = NVLInt("KETTLE_RECORD_PERSIST_MAX_HOUR",
+			KettleEnvDefault.KETTLE_RECORD_PERSIST_MAX_HOUR);
+
+	/**
+	 * Record任务保留最长时间
+	 */
+	public static int KETTLE_RECORD_MAX_PER_REMOTE = NVLInt("KETTLE_RECORD_MAX_PER_REMOTE",
 			KettleEnvDefault.KETTLE_RECORD_MAX_PER_REMOTE);
 
 	/**
@@ -41,7 +53,7 @@ public class KettleMgrEnvironment {
 	 * @param defaultVal
 	 * @return
 	 */
-	static String NVLStr(String key, String defaultVal) {
+	public static String NVLStr(String key, String defaultVal) {
 		return EnvUtil.getSystemProperty(key) == null ? defaultVal : EnvUtil.getSystemProperty(key);
 	}
 
@@ -50,7 +62,7 @@ public class KettleMgrEnvironment {
 	 * @param defaultVal
 	 * @return
 	 */
-	static int NVLInt(String key, Integer defaultVal) {
+	public static Integer NVLInt(String key, Integer defaultVal) {
 		return EnvUtil.getSystemProperty(key) == null ? defaultVal : Integer.valueOf(EnvUtil.getSystemProperty(key));
 	}
 
@@ -59,7 +71,7 @@ public class KettleMgrEnvironment {
 	 * @param defaultVal
 	 * @return
 	 */
-	static long NVLLong(String key, long defaultVal) {
+	public static Long NVLLong(String key, Long defaultVal) {
 		return EnvUtil.getSystemProperty(key) == null ? defaultVal : Long.valueOf(EnvUtil.getSystemProperty(key));
 	}
 
@@ -68,35 +80,51 @@ public class KettleMgrEnvironment {
 	 * @param defaultVal
 	 * @return
 	 */
-	static double NVLDouble(String key, double defaultVal) {
+	public static Double NVLDouble(String key, Double defaultVal) {
 		return EnvUtil.getSystemProperty(key) == null ? defaultVal : Double.valueOf(EnvUtil.getSystemProperty(key));
 	}
 
 	/**
 	 * @return
 	 */
-	public static KettleRemotePool getRemotePool() {
+	public KettleRemotePool getRemotePool() {
 		return remotePool;
 	}
 
 	/**
 	 * @return
 	 */
-	public static KettleRecordPool getRecordPool() {
+	public KettleRecordPool getRecordPool() {
 		return recordPool;
 	}
 
 	/**
 	 * @return
 	 */
-	public static KettleRepositoryClient getRepositoryClient() {
+	public KettleRepositoryClient getRepositoryClient() {
 		return repositoryClient;
 	}
 
 	/**
 	 * @return
 	 */
-	public static KettleDBClient getDbClient() {
+	public KettleDBClient getDbClient() {
 		return dbClient;
+	}
+
+	void setRemotePool(KettleRemotePool remotePool) {
+		this.remotePool = remotePool;
+	}
+
+	void setRecordPool(KettleRecordPool recordPool) {
+		this.recordPool = recordPool;
+	}
+
+	void setRepositoryClient(KettleRepositoryClient repositoryClient) {
+		this.repositoryClient = repositoryClient;
+	}
+
+	void setDbClient(KettleDBClient dbClient) {
+		this.dbClient = dbClient;
 	}
 }
