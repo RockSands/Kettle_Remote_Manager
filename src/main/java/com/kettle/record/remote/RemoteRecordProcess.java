@@ -226,19 +226,16 @@ public class RemoteRecordProcess {
 		private void dealNotSendRecord(KettleRecord job) {
 			if (job.isApply() || job.isRepeat()) {
 				try {
-					if (job.getKettleMeta() == null) {
-						job.setKettleMeta(kettleRemotePool.getRepositoryClient().getJobMeta(job.getJobid()));
-					}
-					String runID = remoteSendJob(job.getKettleMeta());
+					String runID = client.remoteSendJob(job);
 					job.setRunID(runID);
-					job.setHostname(getHostName());
+					job.setHostname(client.getHostName());
 					job.setStatus(KettleVariables.RECORD_STATUS_RUNNING);
 					updateRecords.add(job);
 				} catch (Exception e) {
-					logger.error("Kettle远端[" + getHostName() + "]发送Record[" + job.getUuid() + "]发生异常\n", e);
+					logger.error("Kettle远端[" + client.getHostName() + "]发送Record[" + job.getUuid() + "]发生异常\n", e);
 					job.setStatus(KettleVariables.REMOTE_STATUS_ERROR);
-					job.setErrMsg("Kettle远端[" + getHostName() + "]发送Record[" + job.getUuid() + "]发生异常");
-					job.setHostname(getHostName());
+					job.setErrMsg("Kettle远端[" + client.getHostName() + "]发送Record[" + job.getUuid() + "]发生异常");
+					job.setHostname(client.getHostName());
 					updateRecords.add(job);
 				}
 			}
