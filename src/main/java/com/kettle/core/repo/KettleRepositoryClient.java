@@ -52,13 +52,13 @@ public class KettleRepositoryClient {
 	 * @return
 	 * @throws KettleException
 	 */
-	private synchronized RepositoryDirectoryInterface syncCurrentDirectory() throws KettleException {
+	private synchronized void syncCurrentDirectory() throws KettleException {
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");// 设置日期格式
 		String current = df.format(new Date());
 		if (directory == null || !directory.getPath().contains(current)) {
+			connect();
 			directory = repository.createRepositoryDirectory(repository.findDirectory(""), current);
 		}
-		return directory;
 	}
 
 	public synchronized void connect() {
@@ -97,6 +97,15 @@ public class KettleRepositoryClient {
 	}
 
 	/**
+	 * @return
+	 * @throws KettleException
+	 */
+	public synchronized RepositoryDirectoryInterface getDirectory() throws KettleException {
+		syncCurrentDirectory();
+		return directory;
+	}
+
+	/**
 	 * @param id
 	 * @return
 	 */
@@ -116,7 +125,6 @@ public class KettleRepositoryClient {
 	 * @throws KettleException
 	 */
 	private synchronized void saveTransMeta(TransMeta transMeta) throws KettleException {
-		transMeta.setRepositoryDirectory(directory);
 		repository.save(transMeta, "1", Calendar.getInstance(), null, true);
 	}
 
@@ -129,7 +137,6 @@ public class KettleRepositoryClient {
 	 * @throws KettleException
 	 */
 	private synchronized void saveJobMeta(JobMeta jobMeta) throws KettleException {
-		jobMeta.setRepositoryDirectory(directory);
 		repository.save(jobMeta, "1", Calendar.getInstance(), null, true);
 	}
 
@@ -225,7 +232,6 @@ public class KettleRepositoryClient {
 	 */
 	public synchronized void saveJobEntireDefine(KettleJobEntireDefine jobEntire) throws KettleException {
 		connect();
-		syncCurrentDirectory();
 		saveJobMeta(jobEntire.getMainJob());
 		for (TransMeta transMeta : jobEntire.getDependentTrans()) {
 			saveTransMeta(transMeta);
