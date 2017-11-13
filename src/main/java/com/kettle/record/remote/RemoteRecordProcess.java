@@ -222,7 +222,7 @@ public class RemoteRecordProcess {
 	 * 
 	 * @param uuid
 	 * @return
-	 * @throws KettleException 
+	 * @throws KettleException
 	 */
 	public KettleRecord queryJob(String uuid) throws KettleException {
 		KettleRecord record = dbClient.queryRecord(uuid);

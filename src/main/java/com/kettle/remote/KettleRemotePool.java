@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kettle.core.KettleVariables;
-import com.kettle.core.repo.KettleRepositoryClient;
+import com.kettle.core.instance.KettleMgrInstance;
 
 /**
  * Kettle远程池,仅维护远端的状态
@@ -53,16 +53,18 @@ public class KettleRemotePool {
 	 * @param repositoryClient
 	 * @throws Exception
 	 */
-	public KettleRemotePool(KettleRepositoryClient repositoryClient) throws Exception {
+	public KettleRemotePool() throws Exception {
 		this.remoteclients = new HashMap<String, KettleRemoteClient>();
-		for (SlaveServer server : repositoryClient.getRepository().getSlaveServers()) {
+		for (SlaveServer server : KettleMgrInstance.kettleMgrEnvironment.getRepositoryClient().getRepository()
+				.getSlaveServers()) {
 			server.getLogChannel().setLogLevel(LogLevel.ERROR);
-			addRemoteClient(new KettleRemoteClient(repositoryClient, server));
+			addRemoteClient(
+					new KettleRemoteClient(KettleMgrInstance.kettleMgrEnvironment.getRepositoryClient(), server));
 			hostNames.add(server.getHostname());
 		}
 		logger.info("Kettle远程池已经加载Client" + remoteclients.keySet());
-		// 没20分钟同步一次状态
-		threadPool.scheduleAtFixedRate(new RemoteDeamon(), 10, 20 * 60, TimeUnit.SECONDS);
+		// 每30秒同步一次状态
+		threadPool.scheduleAtFixedRate(new RemoteDeamon(), 10, 30, TimeUnit.SECONDS);
 	}
 
 	/**

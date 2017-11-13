@@ -24,6 +24,7 @@ import com.kettle.core.bean.KettleRecord;
 import com.kettle.core.bean.KettleResult;
 import com.kettle.core.db.KettleDBClient;
 import com.kettle.core.repo.KettleRepositoryClient;
+import com.kettle.record.KettleRecordPool;
 import com.kettle.record.remote.RemoteRecordProcess;
 import com.kettle.remote.KettleRemotePool;
 
@@ -104,9 +105,8 @@ public class KettleMgrInstance {
 					EnvUtil.getSystemProperty("KETTLE_FILE_REPOSITORY_META_DESCRIPTION"),
 					EnvUtil.getSystemProperty("KETTLE_FILE_REPOSITORY_META_PATH"));
 			repository.init(dbrepositoryMeta);
-			repository.connect(EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_USER"),
-					EnvUtil.getSystemProperty("KETTLE_DATABASE_REPOSITORY_PASSWD"));
 			kettleMgrEnvironment.setRepositoryClient(new KettleRepositoryClient(repository));
+			kettleMgrEnvironment.getRepositoryClient().connect();
 			// 数据库
 			DatabaseMeta databaseMeta = new DatabaseMeta(EnvUtil.getSystemProperty("KETTLE_RECORD_DB_NAME"),
 					EnvUtil.getSystemProperty("KETTLE_RECORD_DB_TYPE"),
@@ -117,8 +117,13 @@ public class KettleMgrInstance {
 					EnvUtil.getSystemProperty("KETTLE_RECORD_DB_USER"),
 					EnvUtil.getSystemProperty("KETTLE_RECORD_DB_PASSWD"));
 			kettleMgrEnvironment.setDbClient(new KettleDBClient(databaseMeta));
-			KettleRemotePool remotePool = new KettleRemotePool(kettleMgrEnvironment.getRepositoryClient());
+			// 远程池
+			KettleRemotePool remotePool = new KettleRemotePool();
 			kettleMgrEnvironment.setRemotePool(remotePool);
+			// 任务池
+			KettleRecordPool recordPool = new KettleRecordPool();
+			kettleMgrEnvironment.setRecordPool(recordPool);
+			// 核心任务
 			mainProcess = new RemoteRecordProcess();
 		} catch (Exception ex) {
 			throw new RuntimeException("KettleMgrInstance初始化失败", ex);

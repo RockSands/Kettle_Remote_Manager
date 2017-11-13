@@ -15,10 +15,71 @@ import org.pentaho.di.trans.steps.selectvalues.SelectValuesMeta;
 import org.pentaho.di.trans.steps.tableinput.TableInputMeta;
 import org.pentaho.di.trans.steps.tableoutput.TableOutputMeta;
 
+import com.kettle.core.instance.metas.KettleSQLSMeta;
 import com.kettle.core.instance.metas.KettleTableMeta;
 
 public class TableDataMigrationBuilder {
-	public static TransMeta createTableDataMigration(KettleTableMeta source, KettleTableMeta target) throws KettleException {
+
+	/**
+	 * 源
+	 */
+	private KettleTableMeta source = null;
+
+	/**
+	 * 目标
+	 */
+	private KettleTableMeta target = null;
+
+	/**
+	 * 成功的操作
+	 */
+	private KettleSQLSMeta successOption;
+
+	/**
+	 * 错误的操作
+	 */
+	private KettleSQLSMeta errorOption;
+
+	/**
+	 * 源
+	 * 
+	 * @param source
+	 * @return
+	 */
+	public TableDataMigrationBuilder source(KettleTableMeta source) {
+		this.source = source;
+		return this;
+	}
+
+	/**
+	 * 目标
+	 * 
+	 * @param target
+	 * @return
+	 */
+	public TableDataMigrationBuilder successOption(KettleSQLSMeta successOption) {
+		this.successOption = successOption;
+		return this;
+	}
+
+	/**
+	 * 目标
+	 * 
+	 * @param target
+	 * @return
+	 */
+	public TableDataMigrationBuilder errorOption(KettleSQLSMeta errorOption) {
+		this.errorOption = errorOption;
+		return this;
+	}
+
+	/**
+	 * 创建Trans
+	 * 
+	 * @return
+	 * @throws KettleException
+	 */
+	private TransMeta createTrans() throws KettleException {
 		final String uuid = UUID.randomUUID().toString().replace("-", "");
 		TransMeta transMeta = null;
 		transMeta = new TransMeta();
