@@ -61,7 +61,7 @@ public class KettleRepositoryClient {
 		return directory;
 	}
 
-	private synchronized void connect() {
+	public synchronized void connect() {
 		if (!repository.isConnected()) {
 			try {
 				repository.connect(EnvUtil.getSystemProperty("KETTLE_REPOSITORY_USER"),
@@ -75,8 +75,7 @@ public class KettleRepositoryClient {
 	/**
 	 * 关闭连接
 	 */
-	@SuppressWarnings("unused")
-	private synchronized void disconnect() {
+	public synchronized void disconnect() {
 		if (repository.isConnected()) {
 			repository.disconnect();
 		}

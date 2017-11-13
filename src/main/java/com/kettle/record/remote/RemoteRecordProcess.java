@@ -46,7 +46,7 @@ public class RemoteRecordProcess {
 	/**
 	 * 任务池
 	 */
-	private final KettleRecordPool kettleRecordPool;
+	private final KettleRecordPool recordPool;
 
 	/**
 	 * 资源链接
@@ -71,11 +71,12 @@ public class RemoteRecordProcess {
 		KettleRemotePool remotePool = KettleMgrInstance.kettleMgrEnvironment.getRemotePool();
 		dbClient = KettleMgrInstance.kettleMgrEnvironment.getDbClient();
 		repositoryClient = KettleMgrInstance.kettleMgrEnvironment.getRepositoryClient();
-		kettleRecordPool = KettleMgrInstance.kettleMgrEnvironment.getRecordPool();
+		recordPool = KettleMgrInstance.kettleMgrEnvironment.getRecordPool();
 		threadPool = Executors.newScheduledThreadPool(remotePool.getRemoteclients().size());
 		for (KettleRemoteClient remoteClient : remotePool.getRemoteclients()) {
 			handlers.add(new RemoteRecordHandler(remoteClient));
 		}
+		start();
 	}
 
 	/**
@@ -162,7 +163,7 @@ public class RemoteRecordProcess {
 		try {
 			dbClient.saveDependentsRelation(jobEntire);
 			dbClient.insertRecord(record);
-			kettleRecordPool.addSchedulerRecord(record);
+			recordPool.addSchedulerRecord(record);
 		} catch (Exception ex) {
 			logger.error("Job[" + jobEntire.getMainJob().getName() + "]注册轮询任务操作时发生异常!", ex);
 			dbClient.deleteRecordNE(jobEntire.getUuid());
@@ -180,7 +181,7 @@ public class RemoteRecordProcess {
 	 * @return
 	 * @throws KettleException
 	 */
-	public KettleRecord ExcuteJob(String uuid) throws KettleException {
+	public KettleRecord excuteJob(String uuid) throws KettleException {
 		KettleRecord record = dbClient.queryRecord(uuid);
 		if (record == null) {
 			throw new KettleException("Job[" + uuid + "]未找到,请先注册!");
@@ -198,7 +199,7 @@ public class RemoteRecordProcess {
 		if (record.getKettleMeta() == null) {
 			throw new KettleException("Job[" + uuid + "]数据异常,未找到Kettle元数据!");
 		}
-		kettleRecordPool.addRecord(record);
+		recordPool.addRecord(record);
 		return record;
 	}
 
@@ -212,8 +213,36 @@ public class RemoteRecordProcess {
 		if (record == null) {
 			throw new KettleException("Kettle不存在UUID为[" + uuid + "]的记录!");
 		}
-		kettleRecordPool.modifySchedulerRecord(uuid, newCron);
+		recordPool.modifySchedulerRecord(uuid, newCron);
 		record.setCronExpression(newCron);
+	}
+
+	/**
+	 * 查询Job
+	 * 
+	 * @param uuid
+	 * @return
+	 * @throws KettleException 
+	 */
+	public KettleRecord queryJob(String uuid) throws KettleException {
+		KettleRecord record = dbClient.queryRecord(uuid);
+		return record;
+	}
+
+	/**
+	 * 删除工作
+	 * 
+	 * @param uuid
+	 * @throws KettleException
+	 */
+	public void deleteJob(String uuid) throws KettleException {
+		KettleRecord record = dbClient.queryRecord(uuid);
+		if (record != null) {
+			recordPool.deleteRecord(uuid);
+		}
+		dbClient.deleteRecordNE(uuid);
+		List<KettleRecordRelation> relations = dbClient.deleteDependentsRelationNE(uuid);
+		repositoryClient.deleteJobEntireDefineNE(relations);
 	}
 
 	/**
@@ -221,16 +250,14 @@ public class RemoteRecordProcess {
 	 * 
 	 * @param remotePool
 	 */
-	public void start() {
-		synchronized (hasStart) {
-			if (hasStart == null || !hasStart.booleanValue()) {
-				for (int index = 0; index < KettleMgrEnvironment.KETTLE_RECORD_MAX_PER_REMOTE; index++) {
-					threadPool.scheduleAtFixedRate(handlers.get(index), 2 * index, 20, TimeUnit.SECONDS);
-				}
-				logger.info("Kettle远程任务关系系统的线程启动完成,个数:" + handlers.size());
-			} else {
-				logger.info("Kettle远程任务关系系统的线程已经启动,无法再次启动!");
+	private void start() {
+		if (hasStart == null || !hasStart.booleanValue()) {
+			for (int index = 0; index < KettleMgrEnvironment.KETTLE_RECORD_MAX_PER_REMOTE; index++) {
+				threadPool.scheduleAtFixedRate(handlers.get(index), 2 * index, 20, TimeUnit.SECONDS);
 			}
+			logger.info("Kettle远程任务关系系统的线程启动完成,个数:" + handlers.size());
+		} else {
+			logger.info("Kettle远程任务关系系统的线程已经启动,无法再次启动!");
 		}
 	}
 }
