@@ -67,7 +67,7 @@ public class RemoteRecordProcess {
 	 * 
 	 */
 	public RemoteRecordProcess() {
-		this.handlers = new LinkedList<RemoteRecordHandler>();
+		handlers = new LinkedList<RemoteRecordHandler>();
 		KettleRemotePool remotePool = KettleMgrInstance.kettleMgrEnvironment.getRemotePool();
 		dbClient = KettleMgrInstance.kettleMgrEnvironment.getDbClient();
 		repositoryClient = KettleMgrInstance.kettleMgrEnvironment.getRepositoryClient();
@@ -252,7 +252,7 @@ public class RemoteRecordProcess {
 	 */
 	private void start() {
 		if (hasStart == null || !hasStart.booleanValue()) {
-			for (int index = 0; index < KettleMgrEnvironment.KETTLE_RECORD_MAX_PER_REMOTE; index++) {
+			for (int index = 0; index < handlers.size(); index++) {
 				threadPool.scheduleAtFixedRate(handlers.get(index), 2 * index, 20, TimeUnit.SECONDS);
 			}
 			logger.info("Kettle远程任务关系系统的线程启动完成,个数:" + handlers.size());
