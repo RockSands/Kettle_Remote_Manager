@@ -135,12 +135,24 @@ public class KettleRemoteClient {
 	 * @throws KettleException
 	 * @throws Exception
 	 */
+	public void remoteStopJob(KettleRecord job) throws Exception {
+		WebResult result = remoteServer.stopJob(job.getName(), job.getRunID());
+		if (!"OK".equals(result.getResult())) {
+			throw new KettleException(result.getMessage());
+		}
+	}
+
+	/**
+	 * 远程停止任务
+	 * 
+	 * @param jobName
+	 * @param runid
+	 * @throws KettleException
+	 * @throws Exception
+	 */
 	public void remoteStopJobNE(KettleRecord job) {
 		try {
-			WebResult result = remoteServer.stopJob(job.getName(), job.getRunID());
-			if (!"OK".equals(result.getResult())) {
-				logger.debug("Kettle远端[" + this.getHostName() + "]停止Job[" + job.getUuid() + "]失败!");
-			}
+			remoteStopJob(job);
 		} catch (Exception ex) {
 			logger.debug("Kettle远端[" + this.getHostName() + "]停止Job[" + job.getUuid() + "]失败!");
 		}
@@ -171,18 +183,30 @@ public class KettleRemoteClient {
 	}
 
 	/**
-	 * 清理运行的Trans
+	 * 清理运行的JOB
 	 * 
 	 * @param job
-	 *            job
-	 * @throws KettleException
 	 * @throws Exception
 	 */
 	public void remoteRemoveJob(KettleRecord job) throws Exception {
 		WebResult result = remoteServer.removeJob(job.getName(), job.getRunID());
 		if (!"OK".equals(result.getResult())) {
-			logger.debug("Kettle远端[" + this.getHostName() + "]删除Job[" + job.getUuid() + "]失败!");
+			throw new KettleException(result.getMessage());
 		}
+	}
+
+	/**
+	 * 清理运行Job
+	 * 
+	 * @param job
+	 */
+	public void remoteRemoveJobNE(KettleRecord job) {
+		try {
+			remoteRemoveJob(job);
+		} catch (Exception ex) {
+			logger.error("Kettle远端[" + this.getHostName() + "]删除Job[" + job.getUuid() + "]失败!", ex);
+		}
+
 	}
 
 	/**

@@ -45,8 +45,14 @@ public class KettleMgrEnvironment {
 	/**
 	 * Record任务保留最长时间
 	 */
-	public static int KETTLE_RECORD_MAX_PER_REMOTE = NVLInt("KETTLE_RECORD_MAX_PER_REMOTE",
+	public static Integer KETTLE_RECORD_MAX_PER_REMOTE = NVLInt("KETTLE_RECORD_MAX_PER_REMOTE",
 			KettleEnvDefault.KETTLE_RECORD_MAX_PER_REMOTE);
+
+	/**
+	 * Record任务保留最长时间
+	 */
+	public static Integer KETTLE_RECORD_RUNNING_TIMEOUT = NVLInt("KETTLE_RECORD_RUNNING_TIMEOUT",
+			KettleEnvDefault.KETTLE_RECORD_RUNNING_TIMEOUT);
 
 	/**
 	 * @param key
