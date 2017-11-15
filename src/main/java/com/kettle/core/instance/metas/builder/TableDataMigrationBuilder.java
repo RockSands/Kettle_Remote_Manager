@@ -207,7 +207,7 @@ public class TableDataMigrationBuilder {
 		JobEntryTrans trans = new JobEntryTrans(transMeta.getName());
 		trans.setTransObjectId(transMeta.getObjectId());
 		trans.setWaitingToFinish(true);
-		// 当前目录
+		// 当前目录,即job的同级目录
 		trans.setDirectory("${Internal.Entry.Current.Directory}");
 		trans.setTransname(transMeta.getName());
 		JobEntryCopy excuter = new JobEntryCopy(trans);
