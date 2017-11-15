@@ -7,7 +7,7 @@ import java.util.Date;
  * @author Administrator
  *
  */
-public class KettleRecordDepend {
+public class KettleRecordRelation {
 	/**
 	 * 主JobUUID
 	 */

@@ -3,6 +3,7 @@ package com.kettle.core.db;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -21,12 +22,20 @@ import org.pentaho.di.core.row.ValueMeta;
 import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.job.JobMeta;
 import org.pentaho.di.trans.TransMeta;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.kettle.core.KettleVariables;
-import com.kettle.record.KettleRecord;
-import com.kettle.record.KettleRecordDepend;
+import com.kettle.core.bean.KettleJobEntireDefine;
+import com.kettle.core.bean.KettleRecord;
+import com.kettle.record.KettleRecordRelation;
 
 public class KettleDBClient {
+
+	/**
+	 * 日志
+	 */
+	Logger logger = LoggerFactory.getLogger(KettleDBClient.class);
 	/**
 	 * 数据库元数据
 	 */
@@ -305,13 +314,13 @@ public class KettleDBClient {
 	 * @param mainJobID
 	 * @throws KettleException
 	 */
-	public synchronized List<KettleRecordDepend> queryDependents(String mainJobUUID) throws KettleException {
+	public synchronized List<KettleRecordRelation> queryDependents(String mainJobUUID) throws KettleException {
 		String sql = "SELECT " + KettleVariables.R_RECORD_DEPENDENT_MASTER_UUID_ID + ","
 				+ KettleVariables.R_RECORD_DEPENDENT_META_ID + "," + KettleVariables.R_RECORD_DEPENDENT_META_TYPE
 				+ " FROM " + KettleVariables.R_RECORD_DEPENDENT + " WHERE "
 				+ KettleVariables.R_RECORD_DEPENDENT_MASTER_UUID_ID + " = " + mainJobUUID;
 		List<Object[]> result = null;
-		List<KettleRecordDepend> depends = new LinkedList<KettleRecordDepend>();
+		List<KettleRecordRelation> depends = new LinkedList<KettleRecordRelation>();
 		connect();
 		try {
 			result = database.getRows(sql, -1);
@@ -321,9 +330,9 @@ public class KettleDBClient {
 		if (result == null) {
 			return depends;
 		}
-		KettleRecordDepend depend = null;
+		KettleRecordRelation depend = null;
 		for (Object[] row : result) {
-			depend = new KettleRecordDepend();
+			depend = new KettleRecordRelation();
 			depend.setMasterUUID((String) row[0]);
 			depend.setMetaid((String) row[1]);
 			depend.setType((String) row[2]);
@@ -331,6 +340,80 @@ public class KettleDBClient {
 			depends.add(depend);
 		}
 		return depends;
+	}
+
+	/**
+	 * 维护关系
+	 * 
+	 * @param dependentTrans
+	 * @param dependentJobs
+	 * @param mainJob
+	 * @param recordUUID
+	 * @throws KettleException
+	 */
+	public synchronized void saveDependentsRelation(KettleJobEntireDefine jobEntire) throws KettleException {
+		Date now = new Date();
+		RowMetaAndData data = null;
+		connect();
+		try {
+			for (TransMeta meta : jobEntire.getDependentTrans()) {
+				data = new RowMetaAndData();
+				data.addValue(new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_MASTER_UUID_ID,
+						ValueMetaInterface.TYPE_STRING), jobEntire.getUuid());
+				data.addValue(new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_META_ID, ValueMetaInterface.TYPE_STRING),
+						meta.getObjectId().getId());
+				data.addValue(
+						new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_META_TYPE, ValueMetaInterface.TYPE_STRING),
+						KettleVariables.RECORD_TYPE_TRANS);
+				data.addValue(new ValueMeta(KettleVariables.R_RECORD_CREATETIME, ValueMetaInterface.TYPE_DATE), now);
+				insertTableRow(KettleVariables.R_RECORD_DEPENDENT, data);
+			}
+			for (JobMeta meta : jobEntire.getDependentJobs()) {
+				data = new RowMetaAndData();
+				data.addValue(new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_MASTER_UUID_ID,
+						ValueMetaInterface.TYPE_STRING), jobEntire.getUuid());
+				data.addValue(new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_META_ID, ValueMetaInterface.TYPE_STRING),
+						meta.getObjectId().getId());
+				data.addValue(
+						new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_META_TYPE, ValueMetaInterface.TYPE_STRING),
+						KettleVariables.RECORD_TYPE_JOB);
+				data.addValue(new ValueMeta(KettleVariables.R_RECORD_CREATETIME, ValueMetaInterface.TYPE_DATE), now);
+				insertTableRow(KettleVariables.R_RECORD_DEPENDENT, data);
+			}
+			// mainJob
+			data = new RowMetaAndData();
+			data.addValue(
+					new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_MASTER_UUID_ID, ValueMetaInterface.TYPE_STRING),
+					jobEntire.getUuid());
+			data.addValue(new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_META_ID, ValueMetaInterface.TYPE_STRING),
+					jobEntire.getMainJob().getObjectId().getId());
+			data.addValue(new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_META_TYPE, ValueMetaInterface.TYPE_STRING),
+					KettleVariables.RECORD_TYPE_JOB);
+			data.addValue(new ValueMeta(KettleVariables.R_RECORD_CREATETIME, ValueMetaInterface.TYPE_DATE), now);
+			insertTableRow(KettleVariables.R_RECORD_DEPENDENT, data);
+		} finally {
+			disConnect();
+		}
+	}
+
+	/**
+	 * @param uuid
+	 */
+	public List<KettleRecordRelation> deleteDependentsRelationNE(String uuid) {
+		String sql = "DELETE FROM " + KettleVariables.R_RECORD_DEPENDENT + " WHERE "
+				+ KettleVariables.R_RECORD_DEPENDENT_MASTER_UUID_ID + " = ? ";
+		connect();
+		try {
+			List<KettleRecordRelation> depends = this.queryDependents(uuid);
+			deleteTableRow(sql, ValueMetaInterface.TYPE_STRING, uuid);
+			return depends;
+		} catch (KettleException e) {
+			logger.error("数据库删除record[" + uuid + "]的依赖表发生异常!", e);
+			return new ArrayList<KettleRecordRelation>(0);
+		} finally {
+			disConnect();
+		}
+
 	}
 
 	/**
@@ -347,6 +430,20 @@ public class KettleDBClient {
 			deleteTableRow(sql, ValueMetaInterface.TYPE_STRING, uuid);
 		} finally {
 			disConnect();
+		}
+	}
+
+	/**
+	 * 删除JOB
+	 * 
+	 * @param jobID
+	 * @throws KettleException
+	 */
+	public synchronized void deleteRecordNE(String uuid) {
+		try {
+			deleteRecord(uuid);
+		} catch (Exception ex) {
+			logger.error("数据库删除record[" + uuid + "]发生异常!", ex);
 		}
 	}
 
@@ -393,58 +490,6 @@ public class KettleDBClient {
 			kettleJobBeans.add(bean);
 		}
 		return kettleJobBeans;
-	}
-
-	/**
-	 * 维护关系
-	 * 
-	 * @param dependentTrans
-	 * @param dependentJobs
-	 * @param mainJob
-	 * @param recordUUID
-	 * @throws KettleException
-	 */
-	public synchronized void saveDependentsRelation(List<TransMeta> dependentTrans, List<JobMeta> dependentJobs,
-			JobMeta mainJob, String recordUUID) throws KettleException {
-		Date now = new Date();
-		RowMetaAndData data = null;
-		connect();
-		try {
-			if (dependentTrans != null && !dependentTrans.isEmpty()) {
-				for (TransMeta meta : dependentTrans) {
-					data = new RowMetaAndData();
-					data.addValue(new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_MASTER_UUID_ID,
-							ValueMetaInterface.TYPE_STRING), recordUUID);
-					data.addValue(
-							new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_META_ID, ValueMetaInterface.TYPE_STRING),
-							meta.getObjectId().getId());
-					data.addValue(
-							new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_META_TYPE, ValueMetaInterface.TYPE_STRING),
-							KettleVariables.RECORD_TYPE_TRANS);
-					data.addValue(new ValueMeta(KettleVariables.R_RECORD_CREATETIME, ValueMetaInterface.TYPE_DATE),
-							now);
-					insertTableRow(KettleVariables.R_RECORD_DEPENDENT, data);
-				}
-			}
-			if (dependentJobs != null && !dependentJobs.isEmpty()) {
-				for (JobMeta meta : dependentJobs) {
-					data = new RowMetaAndData();
-					data.addValue(new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_MASTER_UUID_ID,
-							ValueMetaInterface.TYPE_STRING), recordUUID);
-					data.addValue(
-							new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_META_ID, ValueMetaInterface.TYPE_STRING),
-							meta.getObjectId().getId());
-					data.addValue(
-							new ValueMeta(KettleVariables.R_RECORD_DEPENDENT_META_TYPE, ValueMetaInterface.TYPE_STRING),
-							KettleVariables.RECORD_TYPE_JOB);
-					data.addValue(new ValueMeta(KettleVariables.R_RECORD_CREATETIME, ValueMetaInterface.TYPE_DATE),
-							now);
-					insertTableRow(KettleVariables.R_RECORD_DEPENDENT, data);
-				}
-			}
-		} finally {
-			disConnect();
-		}
 	}
 
 	/**

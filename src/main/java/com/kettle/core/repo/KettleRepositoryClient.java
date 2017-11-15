@@ -1,15 +1,27 @@
 
 package com.kettle.core.repo;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
 
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.util.EnvUtil;
 import org.pentaho.di.job.JobMeta;
+import org.pentaho.di.repository.LongObjectId;
+import org.pentaho.di.repository.ObjectId;
 import org.pentaho.di.repository.Repository;
 import org.pentaho.di.repository.RepositoryDirectoryInterface;
 import org.pentaho.di.repository.StringObjectId;
+import org.pentaho.di.repository.filerep.KettleFileRepository;
 import org.pentaho.di.trans.TransMeta;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.kettle.core.KettleVariables;
+import com.kettle.core.bean.KettleJobEntireDefine;
+import com.kettle.record.KettleRecordRelation;
 
 /**
  * 数据库工具
@@ -19,6 +31,10 @@ import org.pentaho.di.trans.TransMeta;
  */
 public class KettleRepositoryClient {
 	/**
+	 * 日志
+	 */
+	Logger logger = LoggerFactory.getLogger(KettleRepositoryClient.class);
+	/**
 	 * 资源库
 	 */
 	private final Repository repository;
@@ -26,14 +42,26 @@ public class KettleRepositoryClient {
 	/**
 	 * 资源路径
 	 */
-	private RepositoryDirectoryInterface baseDirectory = null;
+	private RepositoryDirectoryInterface directory = null;
 
 	public KettleRepositoryClient(Repository repository) throws KettleException {
 		this.repository = repository;
-		baseDirectory = repository.findDirectory("/");
 	}
 
-	public synchronized void connect() {
+	/**
+	 * @return
+	 * @throws KettleException
+	 */
+	private synchronized RepositoryDirectoryInterface syncCurrentDirectory() throws KettleException {
+		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");// 设置日期格式
+		String current = df.format(new Date());
+		if (directory == null || !directory.getPath().contains(current)) {
+			directory = repository.createRepositoryDirectory(repository.findDirectory(""), current);
+		}
+		return directory;
+	}
+
+	private synchronized void connect() {
 		if (!repository.isConnected()) {
 			try {
 				repository.connect(EnvUtil.getSystemProperty("KETTLE_REPOSITORY_USER"),
@@ -47,7 +75,8 @@ public class KettleRepositoryClient {
 	/**
 	 * 关闭连接
 	 */
-	public synchronized void disconnect() {
+	@SuppressWarnings("unused")
+	private synchronized void disconnect() {
 		if (repository.isConnected()) {
 			repository.disconnect();
 		}
@@ -56,7 +85,8 @@ public class KettleRepositoryClient {
 	/**
 	 * 重新连接
 	 */
-	public synchronized void reconnect() {
+	@SuppressWarnings("unused")
+	private synchronized void reconnect() {
 		try {
 			if (repository.isConnected()) {
 				repository.disconnect();
@@ -68,6 +98,43 @@ public class KettleRepositoryClient {
 	}
 
 	/**
+	 * @param id
+	 * @return
+	 */
+	private ObjectId toObjectID(String id) {
+		if (KettleFileRepository.class.isInstance(repository)) {// 文件
+			return new StringObjectId(id);
+		} else { // 数据库
+			return new LongObjectId(Long.valueOf(id));
+		}
+	}
+
+	/**
+	 * 向资源库保存TransMeta
+	 *
+	 * @param transMeta
+	 * @param repositoryDirectory
+	 * @throws KettleException
+	 */
+	private synchronized void saveTransMeta(TransMeta transMeta) throws KettleException {
+		transMeta.setRepositoryDirectory(directory);
+		repository.save(transMeta, "1", Calendar.getInstance(), null, true);
+	}
+
+	/**
+	 * 向资源库保存TransMeta
+	 * 
+	 * @param repositoryDirectory
+	 *
+	 * @param transMeta
+	 * @throws KettleException
+	 */
+	private synchronized void saveJobMeta(JobMeta jobMeta) throws KettleException {
+		jobMeta.setRepositoryDirectory(directory);
+		repository.save(jobMeta, "1", Calendar.getInstance(), null, true);
+	}
+
+	/**
 	 * 从资源库获取TransMeta
 	 *
 	 * @param name
@@ -76,7 +143,7 @@ public class KettleRepositoryClient {
 	 */
 	public synchronized TransMeta getTransMeta(String transID) throws KettleException {
 		connect();
-		TransMeta transMeta = repository.loadTransformation(new StringObjectId(transID), null);
+		TransMeta transMeta = repository.loadTransformation(toObjectID(transID), null);
 		return transMeta;
 	}
 
@@ -89,35 +156,8 @@ public class KettleRepositoryClient {
 	 */
 	public synchronized JobMeta getJobMeta(String jobId) throws KettleException {
 		connect();
-		JobMeta jobMeta = repository.loadJob(new StringObjectId(jobId), null);
+		JobMeta jobMeta = repository.loadJob(toObjectID(jobId), null);
 		return jobMeta;
-	}
-
-	/**
-	 * 向资源库保存TransMeta
-	 *
-	 * @param transMeta
-	 * @param repositoryDirectory
-	 * @throws KettleException
-	 */
-	public synchronized void saveTransMeta(TransMeta transMeta) throws KettleException {
-		if (!repository.isConnected()) {
-			connect();
-		}
-		repository.save(transMeta, "1", Calendar.getInstance(), null, true);
-	}
-
-	/**
-	 * 向资源库保存TransMeta
-	 * 
-	 * @param repositoryDirectory
-	 *
-	 * @param transMeta
-	 * @throws KettleException
-	 */
-	public synchronized void saveJobMeta(JobMeta jobMeta) throws KettleException {
-		connect();
-		repository.save(jobMeta, "1", Calendar.getInstance(), null, true);
 	}
 
 	/**
@@ -128,7 +168,22 @@ public class KettleRepositoryClient {
 	 */
 	public synchronized void deleteTransMeta(String transID) throws KettleException {
 		connect();
-		repository.deleteTransformation(new StringObjectId(transID));
+		repository.deleteTransformation(toObjectID(transID));
+	}
+
+	/**
+	 * 资源库删除TransMeta
+	 *
+	 * @param transMeta
+	 * @throws KettleException
+	 */
+	public synchronized void deleteTransMetaNE(String transID) {
+		connect();
+		try {
+			repository.deleteTransformation(toObjectID(transID));
+		} catch (KettleException e) {
+			logger.error("资源池删除Trans[" + transID + "]发生异常");
+		}
 	}
 
 	/**
@@ -139,7 +194,21 @@ public class KettleRepositoryClient {
 	 */
 	public synchronized void deleteJobMeta(String jobID) throws KettleException {
 		connect();
-		repository.deleteJob(new StringObjectId(jobID));
+		repository.deleteJob(toObjectID(jobID));
+	}
+
+	/**
+	 * 资源库删除JobMeta
+	 * 
+	 * @param jobID
+	 * @throws KettleException
+	 */
+	public synchronized void deleteJobMetaNE(String jobID) {
+		try {
+			deleteJobMeta(jobID);
+		} catch (KettleException e) {
+			logger.error("资源池删除JOB[" + jobID + "]发生异常");
+		}
 	}
 
 	/**
@@ -152,26 +221,34 @@ public class KettleRepositoryClient {
 	}
 
 	/**
-	 * 获取基础路径
-	 * 
-	 * @return
+	 * @param jobEntire
+	 * @throws KettleException
 	 */
-	public RepositoryDirectoryInterface getBaseDirectory() {
-		return baseDirectory;
+	public synchronized void saveJobEntireDefine(KettleJobEntireDefine jobEntire) throws KettleException {
+		connect();
+		syncCurrentDirectory();
+		saveJobMeta(jobEntire.getMainJob());
+		for (TransMeta transMeta : jobEntire.getDependentTrans()) {
+			saveTransMeta(transMeta);
+		}
+		for (JobMeta jobMeta : jobEntire.getDependentJobs()) {
+			saveJobMeta(jobMeta);
+		}
 	}
 
 	/**
-	 * 获取基础路径
+	 * 删除
 	 * 
-	 * @return
-	 * @throws KettleException
+	 * @param depends
 	 */
-	public synchronized RepositoryDirectoryInterface createDirectory(String patch) throws KettleException {
-		this.connect();
-		RepositoryDirectoryInterface rei = repository.findDirectory("/" + patch);
-		if (rei == null) {
-			rei = repository.createRepositoryDirectory(this.baseDirectory, patch);
+	public void deleteJobEntireDefineNE(List<KettleRecordRelation> relations) {
+		connect();
+		for (KettleRecordRelation relation : relations) {
+			if (KettleVariables.RECORD_TYPE_TRANS.equals(relation.getType())) {
+				deleteTransMetaNE(relation.getMetaid());
+			} else if (KettleVariables.RECORD_TYPE_JOB.equals(relation.getType())) {
+				deleteJobMetaNE(relation.getMetaid());
+			}
 		}
-		return rei;
 	}
 }

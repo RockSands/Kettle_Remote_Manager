@@ -13,9 +13,9 @@ import org.slf4j.LoggerFactory;
 
 import com.kettle.core.KettleEnvDefault;
 import com.kettle.core.KettleVariables;
+import com.kettle.core.bean.KettleRecord;
 import com.kettle.core.instance.KettleMgrEnvironment;
 import com.kettle.core.repo.KettleRepositoryClient;
-import com.kettle.record.KettleRecord;
 
 /**
  * Kettle远程连接

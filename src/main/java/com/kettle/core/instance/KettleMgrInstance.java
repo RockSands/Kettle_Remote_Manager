@@ -1,12 +1,17 @@
 package com.kettle.core.instance;
 
 import java.io.InputStream;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.pentaho.di.core.KettleEnvironment;
 import org.pentaho.di.core.database.DatabaseMeta;
+import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.util.EnvUtil;
 import org.pentaho.di.repository.RepositoryMeta;
 import org.pentaho.di.repository.filerep.KettleFileRepository;
@@ -14,6 +19,7 @@ import org.pentaho.di.repository.filerep.KettleFileRepositoryMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.kettle.core.bean.KettleRecord;
 import com.kettle.core.db.KettleDBClient;
 import com.kettle.core.repo.KettleRepositoryClient;
 import com.kettle.remote.KettleRemotePool;
@@ -29,6 +35,7 @@ public class KettleMgrInstance {
 	 * 日志
 	 */
 	Logger logger = LoggerFactory.getLogger(KettleMgrInstance.class);
+
 	/**
 	 * 实例
 	 */
@@ -57,14 +64,13 @@ public class KettleMgrInstance {
 
 	private KettleMgrInstance() {
 		init();
-		// if (KettleMgrEnvironment.KETTLE_RECORD_PERSIST_MAX_HOUR != null
-		// && KettleMgrEnvironment.KETTLE_RECORD_PERSIST_MAX_HOUR > 0) {
-		// Calendar now = Calendar.getInstance();
-		// now.setTime(new Date());
-		// int initialDelay = 24 - now.get(Calendar.HOUR_OF_DAY) + 1;
-		// threadPool.scheduleAtFixedRate(new DelAbandonedRecord(),
-		// initialDelay, 24, TimeUnit.HOURS);
-		// }
+		if (KettleMgrEnvironment.KETTLE_RECORD_PERSIST_MAX_HOUR != null
+				&& KettleMgrEnvironment.KETTLE_RECORD_PERSIST_MAX_HOUR > 0) {
+			Calendar now = Calendar.getInstance();
+			now.setTime(new Date());
+			int initialDelay = 24 - now.get(Calendar.HOUR_OF_DAY) + 1;
+			threadPool.scheduleAtFixedRate(new DelAbandonedRecord(), initialDelay, 24, TimeUnit.HOURS);
+		}
 	}
 
 	private void init() {
@@ -425,33 +431,33 @@ public class KettleMgrInstance {
 	// result.setErrMsg(bean.getErrMsg());
 	// return result;
 	// }
-	//
-	// /**
-	// * 查询数据迁移
-	// *
-	// * @param transID
-	// * @return
-	// * @throws KettleException
-	// */
-	// public void deleteJob(String uuid) throws Exception {
-	// kettleRemotePool.deleteJob(uuid);
-	// }
-	//
-	// private class DelAbandonedRecord implements Runnable {
-	// @Override
-	// public void run() {
-	// try {
-	// List<KettleRecord> records = dbClient.allStopRecord();
-	// Long current = System.currentTimeMillis();
-	// for (KettleRecord record : records) {
-	// if ((current - record.getUpdateTime().getTime()) / 1000 / 60 / 60 >
-	// recordPersistMax) {
-	// deleteJob(record.getUuid());
-	// }
-	// }
-	// } catch (Exception e) {
-	// e.printStackTrace();
-	// }
-	// }
-	// }
+
+	/**
+	 * 查询数据迁移
+	 *
+	 * @param transID
+	 * @return
+	 * @throws KettleException
+	 */
+	public void deleteJob(String uuid) throws Exception {
+		kettleMgrEnvironment.getDbClient().deleteJob(uuid);
+	}
+
+	private class DelAbandonedRecord implements Runnable {
+		@Override
+		public void run() {
+			try {
+				List<KettleRecord> records = kettleMgrEnvironment.getDbClient().allStopRecord();
+				Long current = System.currentTimeMillis();
+				for (KettleRecord record : records) {
+					if ((current - record.getUpdateTime().getTime()) / 1000 / 60
+							/ 60 > KettleMgrEnvironment.KETTLE_RECORD_PERSIST_MAX_HOUR) {
+						deleteJob(record.getUuid());
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
 }

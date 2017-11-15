@@ -1,4 +1,4 @@
-package com.kettle.record;
+package com.kettle.core.bean;
 
 import java.util.Date;
 
@@ -6,6 +6,11 @@ import org.pentaho.di.job.JobMeta;
 
 import com.kettle.core.KettleVariables;
 
+/**
+ * Kettle记录
+ * @author Administrator
+ *
+ */
 public class KettleRecord {
 
 	/**
