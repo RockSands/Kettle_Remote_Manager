@@ -92,7 +92,7 @@ public class RemoteMain {
 			System.out.println("------------------------------");
 			for (CreateCTDThread roll : createDataTransfers) {
 				if (roll.getResult() != null) {
-					KettleResult result = KettleMgrInstance.getInstance().queryResult(roll.getResult().getUuid());
+					KettleResult result = KettleMgrInstance.getInstance().queryJob(roll.getResult().getUuid());
 					System.out.println("=DataTransfer[" + result.getUuid() + "]=>" + result.getStatus());
 					if (KettleVariables.RECORD_STATUS_FINISHED.equals(result.getStatus())) {
 						KettleMgrInstance.getInstance().deleteJob(result.getUuid());

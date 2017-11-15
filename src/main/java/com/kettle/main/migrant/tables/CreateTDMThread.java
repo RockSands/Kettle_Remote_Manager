@@ -2,10 +2,12 @@ package com.kettle.main.migrant.tables;
 
 import org.pentaho.di.core.exception.KettleException;
 
+import com.kettle.core.bean.KettleJobEntireDefine;
 import com.kettle.core.bean.KettleResult;
 import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.core.instance.metas.KettleSQLSMeta;
 import com.kettle.core.instance.metas.KettleTableMeta;
+import com.kettle.core.instance.metas.builder.TableDataMigrationBuilder;
 
 public class CreateTDMThread implements Runnable {
 	KettleTableMeta source = null;
@@ -31,7 +33,9 @@ public class CreateTDMThread implements Runnable {
 	public void run() {
 		try {
 			long now = System.currentTimeMillis();
-			result = KettleMgrInstance.getInstance().tableDataMigration(source, target, success, error);
+			TableDataMigrationBuilder builder = new TableDataMigrationBuilder();
+			KettleJobEntireDefine jobEntire = builder.source(source).target(target).success(success).error(error).createJob();
+			result = KettleMgrInstance.getInstance().registeJob(jobEntire);
 			System.out.println("==>registe used: " + (System.currentTimeMillis() - now));
 			KettleMgrInstance.getInstance().excuteJob(result.getUuid());
 			System.out.println("==>apply used: " + (System.currentTimeMillis() - now));

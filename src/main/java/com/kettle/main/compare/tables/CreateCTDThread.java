@@ -25,15 +25,19 @@ public class CreateCTDThread implements Runnable {
 
 	@Override
 	public void run() {
-		try {
-			long now = System.currentTimeMillis();
-			result = KettleMgrInstance.getInstance().registeCompareTablesDatas(base, compare, newOption);
-			System.out.println("==>registe used: " + (System.currentTimeMillis() - now));
-			KettleMgrInstance.getInstance().excuteJob(result.getUuid());
-			System.out.println("==>apply used: " + (System.currentTimeMillis() - now));
-		} catch (KettleException e) {
-			e.printStackTrace();
-		}
+		// try {
+		// long now = System.currentTimeMillis();
+		// result =
+		// KettleMgrInstance.getInstance().registeCompareTablesDatas(base,
+		// compare, newOption);
+		// System.out.println("==>registe used: " + (System.currentTimeMillis()
+		// - now));
+		// KettleMgrInstance.getInstance().excuteJob(result.getUuid());
+		// System.out.println("==>apply used: " + (System.currentTimeMillis() -
+		// now));
+		// } catch (KettleException e) {
+		// e.printStackTrace();
+		// }
 	}
 
 	public void modifyCron(String newCron) throws KettleException {
