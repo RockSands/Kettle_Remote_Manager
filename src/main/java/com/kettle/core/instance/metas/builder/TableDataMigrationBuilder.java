@@ -189,10 +189,12 @@ public class TableDataMigrationBuilder {
 		RepositoryDirectoryInterface directory = repositoryClient.getDirectory();
 		KettleJobEntireDefine kettleJobEntireDefine = new KettleJobEntireDefine();
 		TransMeta transMeta = createTrans();
+		transMeta.setRepository(repositoryClient.getRepository());
 		transMeta.setRepositoryDirectory(directory);
-		kettleJobEntireDefine.getDependentTrans().add(createTrans());
+		kettleJobEntireDefine.getDependentTrans().add(transMeta);
 
 		JobMeta mainJob = new JobMeta();
+		mainJob.setRepository(repositoryClient.getRepository());
 		mainJob.setRepositoryDirectory(directory);
 		mainJob.setName(UUID.randomUUID().toString().replace("-", ""));
 		// 启动
@@ -205,7 +207,9 @@ public class TableDataMigrationBuilder {
 		JobEntryTrans trans = new JobEntryTrans(transMeta.getName());
 		trans.setTransObjectId(transMeta.getObjectId());
 		trans.setWaitingToFinish(true);
-		trans.setDirectory(directory.getPath());
+		// 当前目录
+		trans.setDirectory("${Internal.Entry.Current.Directory}");
+		trans.setTransname(transMeta.getName());
 		JobEntryCopy excuter = new JobEntryCopy(trans);
 		excuter.setLocation(300, 100);
 		excuter.setDrawn(true);
