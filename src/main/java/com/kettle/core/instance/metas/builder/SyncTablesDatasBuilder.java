@@ -59,7 +59,7 @@ public class SyncTablesDatasBuilder {
 		return this;
 	}
 
-	public TransMeta createTrans() throws KettleException {
+	private TransMeta createTrans() throws KettleException {
 		String uuid = UUID.randomUUID().toString().replace("-", "");
 		TransMeta transMeta = null;
 		transMeta = new TransMeta();
