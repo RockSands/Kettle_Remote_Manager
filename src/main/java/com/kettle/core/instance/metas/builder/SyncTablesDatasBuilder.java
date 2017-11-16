@@ -1,4 +1,4 @@
-package com.kettle.core.instance.metas;
+package com.kettle.core.instance.metas.builder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +9,12 @@ import org.pentaho.di.core.NotePadMeta;
 import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.ValueMetaAndData;
+import org.pentaho.di.job.JobHopMeta;
+import org.pentaho.di.job.JobMeta;
+import org.pentaho.di.job.entries.special.JobEntrySpecial;
+import org.pentaho.di.job.entries.trans.JobEntryTrans;
+import org.pentaho.di.job.entry.JobEntryCopy;
+import org.pentaho.di.repository.RepositoryDirectoryInterface;
 import org.pentaho.di.trans.TransHopMeta;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.StepMeta;
@@ -22,9 +28,38 @@ import org.pentaho.di.trans.steps.tableinput.TableInputMeta;
 import org.pentaho.di.trans.steps.tableoutput.TableOutputMeta;
 import org.pentaho.di.trans.steps.update.UpdateMeta;
 
-public class SyncTablesDatas {
+import com.kettle.core.bean.KettleJobEntireDefine;
+import com.kettle.core.instance.KettleMgrInstance;
+import com.kettle.core.instance.metas.KettleTableMeta;
+import com.kettle.core.repo.KettleRepositoryClient;
 
-	public static TransMeta create(KettleTableMeta source, KettleTableMeta target) throws KettleException {
+public class SyncTablesDatasBuilder {
+
+	/**
+	 * 资源链接
+	 */
+	private final KettleRepositoryClient repositoryClient = KettleMgrInstance.kettleMgrEnvironment
+			.getRepositoryClient();
+	/**
+	 * 源
+	 */
+	private KettleTableMeta source;
+	/**
+	 * 目标
+	 */
+	private KettleTableMeta target;
+
+	public SyncTablesDatasBuilder source(KettleTableMeta source) {
+		this.source = source;
+		return this;
+	}
+
+	public SyncTablesDatasBuilder target(KettleTableMeta target) {
+		this.target = target;
+		return this;
+	}
+
+	public TransMeta createTrans() throws KettleException {
 		String uuid = UUID.randomUUID().toString().replace("-", "");
 		TransMeta transMeta = null;
 		transMeta = new TransMeta();
@@ -235,5 +270,42 @@ public class SyncTablesDatas {
 		transMeta.addTransHop(new TransHopMeta(isChange, delete));
 		frm_isChange.getStepIOMeta().getTargetStreams().get(1).setStepMeta(delete);
 		return transMeta;
+	}
+
+	public KettleJobEntireDefine createJob() throws Exception {
+		RepositoryDirectoryInterface directory = repositoryClient.getDirectory();
+		KettleJobEntireDefine kettleJobEntireDefine = new KettleJobEntireDefine();
+		TransMeta transMeta = createTrans();
+		transMeta.setRepository(repositoryClient.getRepository());
+		transMeta.setRepositoryDirectory(directory);
+		kettleJobEntireDefine.getDependentTrans().add(transMeta);
+
+		JobMeta mainJob = new JobMeta();
+		mainJob.setRepository(repositoryClient.getRepository());
+		mainJob.setRepositoryDirectory(directory);
+		mainJob.setName(UUID.randomUUID().toString().replace("-", ""));
+		// 启动
+		JobEntryCopy start = new JobEntryCopy(new JobEntrySpecial("START", true, false));
+		start.setLocation(150, 100);
+		start.setDrawn(true);
+		start.setDescription("START");
+		mainJob.addJobEntry(start);
+		// 主执行
+		JobEntryTrans trans = new JobEntryTrans(transMeta.getName());
+		trans.setTransObjectId(transMeta.getObjectId());
+		trans.setWaitingToFinish(true);
+		// 当前目录,即job的同级目录
+		trans.setDirectory("${Internal.Entry.Current.Directory}");
+		trans.setTransname(transMeta.getName());
+		JobEntryCopy excuter = new JobEntryCopy(trans);
+		excuter.setLocation(300, 100);
+		excuter.setDrawn(true);
+		excuter.setDescription("MAINJOB");
+		mainJob.addJobEntry(excuter);
+		// 连接
+		JobHopMeta hop = new JobHopMeta(start, excuter);
+		mainJob.addJobHop(hop);
+		kettleJobEntireDefine.setMainJob(mainJob);
+		return kettleJobEntireDefine;
 	}
 }

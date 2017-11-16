@@ -2,7 +2,6 @@ package com.kettle.main.sync.tables;
 
 import org.pentaho.di.core.exception.KettleException;
 
-import com.kettle.core.KettleVariables;
 import com.kettle.core.bean.KettleResult;
 import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.core.instance.metas.KettleTableMeta;

@@ -1,4 +1,4 @@
-package com.kettle.core.instance.metas;
+package com.kettle.core.instance.metas.builder;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -8,6 +8,12 @@ import org.pentaho.di.core.Condition;
 import org.pentaho.di.core.NotePadMeta;
 import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.row.ValueMetaAndData;
+import org.pentaho.di.job.JobHopMeta;
+import org.pentaho.di.job.JobMeta;
+import org.pentaho.di.job.entries.special.JobEntrySpecial;
+import org.pentaho.di.job.entries.trans.JobEntryTrans;
+import org.pentaho.di.job.entry.JobEntryCopy;
+import org.pentaho.di.repository.RepositoryDirectoryInterface;
 import org.pentaho.di.trans.TransHopMeta;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.StepMeta;
@@ -19,15 +25,54 @@ import org.pentaho.di.trans.steps.selectvalues.SelectValuesMeta;
 import org.pentaho.di.trans.steps.sql.ExecSQLMeta;
 import org.pentaho.di.trans.steps.tableinput.TableInputMeta;
 
+import com.kettle.core.bean.KettleJobEntireDefine;
+import com.kettle.core.instance.KettleMgrInstance;
+import com.kettle.core.instance.metas.KettleTableMeta;
+import com.kettle.core.repo.KettleRepositoryClient;
+
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 
-public class CompareTablesDatas {
-	public static TransMeta create(KettleTableMeta base, KettleTableMeta compare, KettleTableMeta newOption)
-			throws Exception {
+public class TablesCompareDatasBuilder {
+
+	/**
+	 * 资源链接
+	 */
+	private final KettleRepositoryClient repositoryClient = KettleMgrInstance.kettleMgrEnvironment
+			.getRepositoryClient();
+
+	/**
+	 * 基础
+	 */
+	private KettleTableMeta base;
+	/**
+	 * 对比者
+	 */
+	private KettleTableMeta compare;
+	/**
+	 * 新操作
+	 */
+	private KettleTableMeta newOption;
+
+	public TablesCompareDatasBuilder base(KettleTableMeta base) {
+		this.base = base;
+		return this;
+	}
+
+	public TablesCompareDatasBuilder compare(KettleTableMeta compare) {
+		this.compare = compare;
+		return this;
+	}
+
+	public TablesCompareDatasBuilder newOption(KettleTableMeta newOption) {
+		this.newOption = newOption;
+		return this;
+	}
+
+	public TransMeta createTrans() throws Exception {
 		String uuid = UUID.randomUUID().toString().replace("-", "");
 		Select baseSelect = (Select) CCJSqlParserUtil.parse(base.getSql());
 		Select compareSelect = (Select) CCJSqlParserUtil.parse(compare.getSql());
@@ -47,17 +92,6 @@ public class CompareTablesDatas {
 				"Native", newOption.getHost(), newOption.getDatabase(), newOption.getPort(), newOption.getUser(),
 				newOption.getPasswd());
 		transMeta.addDatabase(newDatabase);
-		/*
-		 * 获取非PK列
-		 */
-		// List<String> valueFields = new ArrayList<String>();
-		// valueFields.addAll(compare.getColumns());
-		// valueFields.removeAll(compare.getPkcolumns());
-		// String[] valueColumns = valueFields.toArray(new String[0]);
-		/*
-		 * 获取PK列
-		 */
-		// String[] pkColumns = compare.getPkcolumns().toArray(new String[0]);
 		/*
 		 * 条件
 		 */
@@ -195,5 +229,42 @@ public class CompareTablesDatas {
 		transMeta.addTransHop(new TransHopMeta(isNew, nothing));
 		frm_new.getStepIOMeta().getTargetStreams().get(1).setStepMeta(nothing);
 		return transMeta;
+	}
+
+	public KettleJobEntireDefine createJob() throws Exception {
+		RepositoryDirectoryInterface directory = repositoryClient.getDirectory();
+		KettleJobEntireDefine kettleJobEntireDefine = new KettleJobEntireDefine();
+		TransMeta transMeta = createTrans();
+		transMeta.setRepository(repositoryClient.getRepository());
+		transMeta.setRepositoryDirectory(directory);
+		kettleJobEntireDefine.getDependentTrans().add(transMeta);
+
+		JobMeta mainJob = new JobMeta();
+		mainJob.setRepository(repositoryClient.getRepository());
+		mainJob.setRepositoryDirectory(directory);
+		mainJob.setName(UUID.randomUUID().toString().replace("-", ""));
+		// 启动
+		JobEntryCopy start = new JobEntryCopy(new JobEntrySpecial("START", true, false));
+		start.setLocation(150, 100);
+		start.setDrawn(true);
+		start.setDescription("START");
+		mainJob.addJobEntry(start);
+		// 主执行
+		JobEntryTrans trans = new JobEntryTrans(transMeta.getName());
+		trans.setTransObjectId(transMeta.getObjectId());
+		trans.setWaitingToFinish(true);
+		// 当前目录,即job的同级目录
+		trans.setDirectory("${Internal.Entry.Current.Directory}");
+		trans.setTransname(transMeta.getName());
+		JobEntryCopy excuter = new JobEntryCopy(trans);
+		excuter.setLocation(300, 100);
+		excuter.setDrawn(true);
+		excuter.setDescription("MAINJOB");
+		mainJob.addJobEntry(excuter);
+		// 连接
+		JobHopMeta hop = new JobHopMeta(start, excuter);
+		mainJob.addJobHop(hop);
+		kettleJobEntireDefine.setMainJob(mainJob);
+		return kettleJobEntireDefine;
 	}
 }
