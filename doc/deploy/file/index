@@ -15,11 +15,11 @@
 		vi /etc/sysconfig/nfs
 		# 文件最后写入
 		
-		RQUOTAD_PORT=30001
-		LOCKD_TCPPORT=30002
-		LOCKD_UDPPORT=30002
-		MOUNTD_PORT=30003
-		STATD_PORT=30004
+RQUOTAD_PORT=30001
+LOCKD_TCPPORT=30002
+LOCKD_UDPPORT=30002
+MOUNTD_PORT=30003
+STATD_PORT=30004
 		
 		wq!
 	3.创建共享目录
@@ -104,6 +104,11 @@
 	10.挂载NFS目录
 		mkdir -p /data/kettleFileRepo
 		mount -t nfs <NFS服务IP>:/data/kettleFileRepo /data/kettleFileRepo
+		
+		# 开机挂载
+		vi /etc/fstab
+		
+		<远端IP>:/data/kettleFileRepo   /data/kettleFileRepo   nfs  defaults 0 0 
 		
 	11.在/data/kettleFileRepo目录中写入master1.ksl文件
 	# 第一台为master1.ksl,第二台为master2.ksl 以此类推.
