@@ -318,7 +318,7 @@ public class KettleDBClient {
 		String sql = "SELECT " + KettleVariables.R_RECORD_DEPENDENT_MASTER_UUID_ID + ","
 				+ KettleVariables.R_RECORD_DEPENDENT_META_ID + "," + KettleVariables.R_RECORD_DEPENDENT_META_TYPE
 				+ " FROM " + KettleVariables.R_RECORD_DEPENDENT + " WHERE "
-				+ KettleVariables.R_RECORD_DEPENDENT_MASTER_UUID_ID + " = " + mainJobUUID;
+				+ KettleVariables.R_RECORD_DEPENDENT_MASTER_UUID_ID + " = '" + mainJobUUID + "'";
 		List<Object[]> result = null;
 		List<KettleRecordRelation> depends = new LinkedList<KettleRecordRelation>();
 		connect();
