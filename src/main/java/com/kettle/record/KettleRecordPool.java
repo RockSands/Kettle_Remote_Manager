@@ -47,12 +47,12 @@ public class KettleRecordPool {
 	/**
 	 * 记录队列
 	 */
-	private final Queue<KettleRecord> recordQueue = new LinkedBlockingQueue<KettleRecord>();
+	private final Queue<String> recordQueue = new LinkedBlockingQueue<String>();
 
 	/**
 	 * 优先记录队列
 	 */
-	private final Queue<KettleRecord> recordPrioritizeQueue = new LinkedBlockingQueue<KettleRecord>();
+	private final Queue<String> recordPrioritizeQueue = new LinkedBlockingQueue<String>();
 
 	/**
 	 * 
@@ -80,7 +80,7 @@ public class KettleRecordPool {
 				check();
 				record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
 				recordCache.put(record.getUuid(), record);
-				return recordQueue.offer(record);
+				return recordQueue.offer(record.getUuid());
 			}
 		}
 		return false;
@@ -137,7 +137,7 @@ public class KettleRecordPool {
 		if (record != null) {
 			if (!isAcceptedRecord(record)) {
 				recordCache.put(record.getUuid(), record);
-				return recordPrioritizeQueue.offer(record);
+				return recordPrioritizeQueue.offer(record.getUuid());
 			}
 		}
 		return false;
@@ -150,20 +150,20 @@ public class KettleRecordPool {
 	 */
 	public synchronized KettleRecord nextRecord() {
 		KettleRecord record = null;
+		String recordUUID = null;
 		if (!recordPrioritizeQueue.isEmpty()) {
-			record = recordPrioritizeQueue.poll();
+			recordUUID = recordPrioritizeQueue.poll();
 		}
-		if (record == null && !recordQueue.isEmpty()) {
-			record = recordQueue.poll();
+		if (recordUUID == null && !recordQueue.isEmpty()) {
+			recordUUID = recordQueue.poll();
 		}
-		if (record != null) {
+		if (recordUUID != null) {
 			// 如果Cache不存在,则直接下一个,该Record已经删除或处理完成
-			if (!recordCache.containsKey(record.getUuid())) {
+			if (!recordCache.containsKey(recordUUID)) {
 				record = nextRecord();
-				return record;
 			} else {
-				deleteRecord(record.getUuid());
-				return record;
+				record = recordCache.get(recordUUID);
+				deleteRecord(recordUUID);
 			}
 		}
 		return record;
