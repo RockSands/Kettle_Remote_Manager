@@ -30,6 +30,11 @@ import com.kettle.core.bean.KettleJobEntireDefine;
 import com.kettle.core.bean.KettleRecord;
 import com.kettle.record.KettleRecordRelation;
 
+/**
+ * Kettle的数据库Client,记录KettleRecord对象
+ * @author Administrator
+ *
+ */
 public class KettleDBClient {
 
 	/**

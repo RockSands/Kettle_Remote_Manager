@@ -28,6 +28,11 @@ import com.kettle.core.instance.metas.KettleSQLSMeta;
 import com.kettle.core.instance.metas.KettleTableMeta;
 import com.kettle.core.repo.KettleRepositoryClient;
 
+/**
+ * Table迁移构建器
+ * @author Administrator
+ *
+ */
 public class TableDataMigrationBuilder {
 
 	/**

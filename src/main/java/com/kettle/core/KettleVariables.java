@@ -1,5 +1,10 @@
 package com.kettle.core;
 
+/**
+ * Kettle的常量
+ * @author Administrator
+ *
+ */
 public class KettleVariables {
 
 	/**

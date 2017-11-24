@@ -6,6 +6,11 @@ import org.apache.commons.beanutils.BeanUtils;
 
 import com.kettle.core.instance.metas.KettleSQLSMeta;
 
+/**
+ * KettleSQL元数据构建器
+ * @author Administrator
+ *
+ */
 public class KettleSQLSMetaBuilder {
 	/**
 	 * 数据库类别

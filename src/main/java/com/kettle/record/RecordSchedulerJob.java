@@ -10,7 +10,7 @@ import com.kettle.core.KettleVariables;
 import com.kettle.core.bean.KettleRecord;
 
 /**
- * 任务
+ * 定时任务
  * 
  * @author Administrator
  *

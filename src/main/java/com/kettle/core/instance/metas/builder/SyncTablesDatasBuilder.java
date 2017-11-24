@@ -33,6 +33,11 @@ import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.core.instance.metas.KettleTableMeta;
 import com.kettle.core.repo.KettleRepositoryClient;
 
+/**
+ * Kettle数据库同步构建器
+ * @author Administrator
+ *
+ */
 public class SyncTablesDatasBuilder {
 
 	/**

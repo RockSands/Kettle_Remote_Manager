@@ -24,7 +24,7 @@ import com.kettle.core.bean.KettleJobEntireDefine;
 import com.kettle.record.KettleRecordRelation;
 
 /**
- * 数据库工具
+ * Kettle资源库
  * 
  * @author Administrator
  *

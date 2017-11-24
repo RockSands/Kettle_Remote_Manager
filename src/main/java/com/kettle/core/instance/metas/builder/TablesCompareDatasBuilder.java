@@ -36,6 +36,11 @@ import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 
+/**
+ * Table比较构建器
+ * @author Administrator
+ *
+ */
 public class TablesCompareDatasBuilder {
 
 	/**

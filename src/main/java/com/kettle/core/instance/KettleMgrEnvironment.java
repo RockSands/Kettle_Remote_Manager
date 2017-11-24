@@ -8,6 +8,11 @@ import com.kettle.core.repo.KettleRepositoryClient;
 import com.kettle.record.KettleRecordPool;
 import com.kettle.remote.KettleRemotePool;
 
+/**
+ * Kettle管理环境
+ * @author Administrator
+ *
+ */
 public class KettleMgrEnvironment {
 
 	/**

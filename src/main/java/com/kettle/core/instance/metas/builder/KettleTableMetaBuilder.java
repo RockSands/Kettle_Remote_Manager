@@ -5,7 +5,7 @@ import org.apache.commons.beanutils.BeanUtils;
 import com.kettle.core.instance.metas.KettleTableMeta;
 
 /**
- * 构建
+ * Kettle Table元数据构建器
  * 
  * @author Administrator
  *

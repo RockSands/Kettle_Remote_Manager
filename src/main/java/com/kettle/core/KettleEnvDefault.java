@@ -1,5 +1,10 @@
 package com.kettle.core;
 
+/**
+ * Kettle环境的默认值
+ * @author Administrator
+ *
+ */
 public class KettleEnvDefault {
 	/**
 	 * 远端并行任务数量

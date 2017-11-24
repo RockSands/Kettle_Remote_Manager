@@ -148,7 +148,7 @@ public class KettleMgrInstance {
 	}
 
 	/**
-	 * 注册
+	 * 注册定时任务
 	 *
 	 * @param jobEntire
 	 * @param cronExpression

@@ -2,6 +2,11 @@ package com.kettle.core.instance.metas;
 
 import java.util.List;
 
+/**
+ * Kettle的SQL元数据定义
+ * @author Administrator
+ *
+ */
 public class KettleSQLSMeta {
 	/**
 	 * 数据库类别

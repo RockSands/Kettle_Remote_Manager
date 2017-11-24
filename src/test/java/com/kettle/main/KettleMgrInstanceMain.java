@@ -2,7 +2,12 @@ package com.kettle.main;
 
 import com.kettle.core.instance.KettleMgrInstance;
 
-public class MainExcute {
+/**
+ * 测试
+ * @author Administrator
+ *
+ */
+public class KettleMgrInstanceMain {
 
 	public static void main(String[] args) {
 		KettleMgrInstance.getInstance();

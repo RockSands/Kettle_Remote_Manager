@@ -1,5 +1,10 @@
 package com.kettle.core.bean;
 
+/**
+ * Kettle的结果,北向
+ * @author Administrator
+ *
+ */
 public class KettleResult {
 	/**
 	 * id
