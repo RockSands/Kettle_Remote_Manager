@@ -32,7 +32,7 @@ public class RemoteRecordHandler implements Runnable {
 	private final KettleRecordPool recordPool;
 
 	/**
-	 * 任务池
+	 * 数据库
 	 */
 	private final KettleDBClient dbClient;
 
