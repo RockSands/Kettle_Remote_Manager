@@ -137,7 +137,7 @@ public class KettleRemoteClient {
 	 */
 	public void remoteStopJob(KettleRecord job) throws Exception {
 		WebResult result = remoteServer.stopJob(job.getName(), job.getRunID());
-		if (!"OK".equals(result.getResult())) {
+		if (!WebResult.STRING_OK.equals(result.getResult())) {
 			throw new KettleException(result.getMessage());
 		}
 	}
@@ -190,7 +190,7 @@ public class KettleRemoteClient {
 	 */
 	public void remoteRemoveJob(KettleRecord job) throws Exception {
 		WebResult result = remoteServer.removeJob(job.getName(), job.getRunID());
-		if (!"OK".equals(result.getResult())) {
+		if (!WebResult.STRING_OK.equals(result.getResult())) {
 			throw new KettleException(result.getMessage());
 		}
 	}
