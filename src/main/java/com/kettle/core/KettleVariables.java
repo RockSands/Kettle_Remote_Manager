@@ -125,11 +125,6 @@ public class KettleVariables {
 	/**
 	 * 记录的运行状态:受理
 	 */
-	public static final String RECORD_STATUS_READY = "READY";
-
-	/**
-	 * 记录的运行状态:受理
-	 */
 	public static final String RECORD_STATUS_APPLY = "APPLY";
 
 	/**

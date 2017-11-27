@@ -1,4 +1,4 @@
-package com.kettle.record.remote;
+package com.kettle.remote.record;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -15,12 +15,18 @@ import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.record.KettleRecordPool;
 import com.kettle.remote.KettleRemoteClient;
 
+/**
+ * Kettle远程任务处理,该处理以Remote为核心
+ * @author Administrator
+ *
+ */
 public class RemoteRecordHandler implements Runnable {
 
 	/**
 	 * 日志
 	 */
 	private static Logger logger = LoggerFactory.getLogger(RemoteRecordHandler.class);
+	
 	/**
 	 * 远端
 	 */

@@ -1,4 +1,4 @@
-package com.kettle.record.remote;
+package com.kettle.remote.record.process;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -24,6 +24,7 @@ import com.kettle.record.KettleRecordPool;
 import com.kettle.record.KettleRecordRelation;
 import com.kettle.remote.KettleRemoteClient;
 import com.kettle.remote.KettleRemotePool;
+import com.kettle.remote.record.RemoteRecordHandler;
 
 public class RemoteRecordProcess {
 
