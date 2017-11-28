@@ -25,6 +25,7 @@ import com.kettle.core.bean.KettleResult;
 import com.kettle.core.db.KettleDBClient;
 import com.kettle.core.repo.KettleRepositoryClient;
 import com.kettle.record.KettleRecordPool;
+import com.kettle.record.service.RecordService;
 import com.kettle.remote.KettleRemotePool;
 import com.kettle.remote.record.process.RemoteRecordProcess;
 
@@ -54,7 +55,7 @@ public class KettleMgrInstance {
 	/**
 	 * 主进程
 	 */
-	private RemoteRecordProcess mainProcess;
+	private RecordService recordService;
 
 	/**
 	 * 定时任务
@@ -124,7 +125,7 @@ public class KettleMgrInstance {
 			KettleRecordPool recordPool = new KettleRecordPool();
 			kettleMgrEnvironment.setRecordPool(recordPool);
 			// 核心任务
-			mainProcess = new RemoteRecordProcess();
+			recordService = new RemoteRecordProcess();
 		} catch (Exception ex) {
 			throw new RuntimeException("KettleMgrInstance初始化失败", ex);
 		}
@@ -139,7 +140,7 @@ public class KettleMgrInstance {
 	 */
 	public KettleResult registeJob(KettleJobEntireDefine jobEntire) throws KettleException {
 		logger.info("Kettle注册Job[" + jobEntire.getMainJob().getName() + "]");
-		KettleRecord record = mainProcess.registeJob(jobEntire);
+		KettleRecord record = recordService.registeJob(jobEntire);
 		KettleResult result = new KettleResult();
 		result.setUuid(record.getUuid());
 		result.setStatus(record.getStatus());
@@ -158,7 +159,7 @@ public class KettleMgrInstance {
 	public KettleResult applyScheduleJob(KettleJobEntireDefine jobEntire, String cronExpression)
 			throws KettleException {
 		logger.info("Kettle注册Repeat_Job[" + jobEntire.getMainJob().getName() + "]");
-		KettleRecord record = mainProcess.applyScheduleJob(jobEntire, cronExpression);
+		KettleRecord record = recordService.applyScheduleJob(jobEntire, cronExpression);
 		KettleResult result = new KettleResult();
 		result.setUuid(record.getUuid());
 		result.setStatus(record.getStatus());
@@ -175,7 +176,7 @@ public class KettleMgrInstance {
 	public void modifySchedule(String uuid, String newCron) throws KettleException {
 		logger.info("Kettle修改Repeat_Job[" + uuid + "]的Cron表达式[" + newCron + "]");
 		try {
-			mainProcess.modifyRecordSchedule(uuid, newCron);
+			recordService.modifyRecordSchedule(uuid, newCron);
 		} catch (Exception e) {
 			logger.error("Kettle环境更新定时任务[" + uuid + "]失败!", e);
 			throw new KettleException("Kettle环境更新定时任务[" + uuid + "]失败!", e);
@@ -192,7 +193,7 @@ public class KettleMgrInstance {
 	 */
 	public KettleResult excuteJob(String uuid) throws KettleException {
 		logger.info("Kettle开始执行Job[" + uuid + "]");
-		KettleRecord record = mainProcess.excuteJob(uuid);
+		KettleRecord record = recordService.excuteJob(uuid);
 		KettleResult result = new KettleResult();
 		result.setUuid(record.getUuid());
 		result.setStatus(record.getStatus());
@@ -209,7 +210,7 @@ public class KettleMgrInstance {
 	 */
 	public KettleResult queryJob(String uuid) throws KettleException {
 		logger.info("Kettle开始查询Job[" + uuid + "]");
-		KettleRecord record = mainProcess.queryJob(uuid);
+		KettleRecord record = recordService.queryJob(uuid);
 		KettleResult result = new KettleResult();
 		result.setUuid(record.getUuid());
 		result.setStatus(record.getStatus());
@@ -225,7 +226,7 @@ public class KettleMgrInstance {
 	 */
 	public void deleteJob(String uuid) throws KettleException {
 		logger.info("Kettle开始查询Job[" + uuid + "]");
-		mainProcess.deleteJob(uuid);
+		recordService.deleteJob(uuid);
 	}
 
 	private class DelAbandonedRecord implements Runnable {

@@ -2,6 +2,8 @@ package com.kettle.record.operation;
 
 import org.pentaho.di.core.exception.KettleException;
 
+import com.kettle.core.bean.KettleRecord;
+
 /**
  * Record的操作定义
  * 
@@ -9,6 +11,26 @@ import org.pentaho.di.core.exception.KettleException;
  *
  */
 public interface IRecordOperator {
+	/**
+	 * 加载Record
+	 * @param record
+	 * @return
+	 */
+	public boolean attachRecord(KettleRecord record);
+	
+	/**
+	 * 卸载Record
+	 * @param record
+	 * @return
+	 */
+	public KettleRecord getRecord();
+	
+	/**
+	 * 是否空闲
+	 * @return
+	 */
+	public boolean isFree();
+	
 	/**
 	 * 申请
 	 */

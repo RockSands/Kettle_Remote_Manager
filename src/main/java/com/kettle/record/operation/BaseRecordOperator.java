@@ -11,22 +11,14 @@ public abstract class BaseRecordOperator implements IRecordOperator {
 	 */
 	protected KettleRecord record;
 
-	/**
-	 * 获取任务
-	 * 
-	 * @return
-	 */
-	protected KettleRecord getRecord() {
-		return record;
+	@Override
+	public boolean isFree() {
+		return record == null;
 	}
-
-	/**
-	 * 设置任务
-	 * 
-	 * @param record
-	 */
-	public void setRecord(KettleRecord record) {
-		this.record = record;
+	
+	@Override
+	public KettleRecord getRecord() {
+		return record;
 	}
 
 	/**

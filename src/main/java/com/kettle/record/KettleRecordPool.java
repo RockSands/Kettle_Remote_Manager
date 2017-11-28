@@ -170,7 +170,7 @@ public class KettleRecordPool {
 	}
 
 	/**
-	 * 删除
+	 * 删除,所有record必须调用改方法才能从缓存中删除Record
 	 * 
 	 * @param jobID
 	 */

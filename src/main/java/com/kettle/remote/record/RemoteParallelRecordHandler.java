@@ -5,18 +5,26 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kettle.core.KettleVariables;
-import com.kettle.core.bean.KettleRecord;
 import com.kettle.core.db.KettleDBClient;
 import com.kettle.core.instance.KettleMgrEnvironment;
 import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.record.operation.BaseRecordOperator;
 import com.kettle.remote.KettleRemoteClient;
 
-public class RemoteRecordOperator extends BaseRecordOperator {
+/**
+ * 远程处理任务
+ * 
+ * @author Administrator
+ *
+ */
+public class RemoteParallelRecordHandler extends BaseRecordOperator implements Runnable {
 
-	private static Logger logger = LoggerFactory.getLogger(RemoteRecordOperator.class);
+	private static Logger logger = LoggerFactory.getLogger(RemoteParallelRecordHandler.class);
+
+	private final String name;
+
 	/**
-	 * 远端
+	 * 远程连接
 	 */
 	private final KettleRemoteClient remoteClient;
 
@@ -28,20 +36,15 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 	/**
 	 * @param remoteClient
 	 */
-	public RemoteRecordOperator(KettleRemoteClient remoteClient) {
+	public RemoteParallelRecordHandler(String name, KettleRemoteClient remoteClient) {
+		this.name = name;
 		this.remoteClient = remoteClient;
 		dbClient = KettleMgrInstance.kettleMgrEnvironment.getDbClient();
 	}
 
-	@Override
-	public boolean attachRecord(KettleRecord record) {
-		if (remoteClient.isRunning()) {
-			this.record = record;
-		}
-		return false;
-	}
-
 	/**
+	 * 处理任务
+	 * 
 	 * @param record
 	 * @throws KettleException
 	 */
@@ -110,7 +113,8 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 	 */
 	private void dealErrorRemoteRecord() {
 		record.setStatus(KettleVariables.RECORD_STATUS_ERROR);
-		record.setErrMsg("Remote[" + remoteClient.getHostName() + "]状态异常,Record[" + record.getUuid() + "]");
+		record.setErrMsg(
+				"Remote[" + remoteClient.getHostName() + " - " + name + "]状态异常,Record[" + record.getUuid() + "]");
 	}
 
 	/**
@@ -136,5 +140,18 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 		if (record.isFinished()) {
 			remoteClient.remoteRemoveJobNE(record);
 		}
+	}
+
+	@Override
+	public void run() {
+		logger.debug("Kettle远端[" + remoteClient.getHostName() + "]定时任务轮询启动!");
+		try {
+			if (record != null) {
+				dealRecord();
+			}
+		} catch (Exception ex) {
+			logger.error("Kettle远端[" + remoteClient.getHostName() + "]定时任务发生异常成!", ex);
+		}
+		logger.debug("Kettle远端[" + remoteClient.getHostName() + "]定时任务轮询完成!");
 	}
 }
