@@ -37,6 +37,7 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 	public boolean attachRecord(KettleRecord record) {
 		if (remoteClient.isRunning()) {
 			this.record = record;
+			return true;
 		}
 		return false;
 	}
@@ -51,6 +52,7 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 			super.dealRecord();
 		} else {
 			dealErrorRemoteRecord();
+			super.dealRecord();
 		}
 	}
 
@@ -136,5 +138,13 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 		if (record.isFinished()) {
 			remoteClient.remoteRemoveJobNE(record);
 		}
+	}
+
+	/**
+	 * 返回Client
+	 * @return
+	 */
+	public KettleRemoteClient getRemoteClient() {
+		return remoteClient;
 	}
 }

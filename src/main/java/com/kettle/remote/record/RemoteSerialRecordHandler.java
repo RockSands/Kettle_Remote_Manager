@@ -3,14 +3,9 @@ package com.kettle.remote.record;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import org.pentaho.di.core.exception.KettleException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.kettle.core.KettleVariables;
-import com.kettle.core.bean.KettleRecord;
-import com.kettle.core.db.KettleDBClient;
-import com.kettle.core.instance.KettleMgrEnvironment;
 import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.record.KettleRecordPool;
 import com.kettle.remote.KettleRemoteClient;
@@ -39,11 +34,6 @@ public class RemoteSerialRecordHandler implements Runnable {
 	private final KettleRecordPool recordPool;
 
 	/**
-	 * 数据库
-	 */
-	private final KettleDBClient dbClient;
-
-	/**
 	 * 处理的任务
 	 */
 	private final RemoteRecordOperator[] remoteRecordOperators;
@@ -54,8 +44,10 @@ public class RemoteSerialRecordHandler implements Runnable {
 	public RemoteSerialRecordHandler(KettleRemoteClient remoteClient) {
 		this.remoteClient = remoteClient;
 		this.remoteRecordOperators = new RemoteRecordOperator[remoteClient.maxRecord];
+		for (int i = 0; i < remoteClient.maxRecord; i++) {
+			remoteRecordOperators[i] = new RemoteRecordOperator(remoteClient);
+		}
 		recordPool = KettleMgrInstance.kettleMgrEnvironment.getRecordPool();
-		dbClient = KettleMgrInstance.kettleMgrEnvironment.getDbClient();
 	}
 
 	/**
@@ -81,17 +73,19 @@ public class RemoteSerialRecordHandler implements Runnable {
 		try {
 			sortRecords();
 			for (RemoteRecordOperator recordOperator : remoteRecordOperators) {
-				if (recordOperator.getRecord() == null && !recordOperator.attachRecord(recordPool.nextRecord())) {
-					break;
+				if (recordOperator.isFree()) {
+					recordOperator.attachRecord(recordPool.nextRecord());
 				}
-				if (recordOperator.getRecord() == null) {
-
+				if (recordOperator.isFree()) {//如果未加载成功
+					continue;
+				} else {
+					recordOperator.dealRecord();
 				}
-				recordOperator.dealRecord();
 			}
 		} catch (Exception ex) {
 			logger.error("Kettle远端[" + remoteClient.getHostName() + "]定时任务发生异常成!", ex);
 		}
 		logger.debug("Kettle远端[" + remoteClient.getHostName() + "]定时任务轮询完成!");
 	}
+
 }

@@ -27,7 +27,7 @@ import com.kettle.core.repo.KettleRepositoryClient;
 import com.kettle.record.KettleRecordPool;
 import com.kettle.record.service.RecordService;
 import com.kettle.remote.KettleRemotePool;
-import com.kettle.remote.record.process.RemoteRecordProcess;
+import com.kettle.remote.record.service.RemoteRecordProcess;
 
 /**
  * Kettle数据迁移管理者
