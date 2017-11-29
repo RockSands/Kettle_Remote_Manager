@@ -32,6 +32,7 @@ import com.kettle.record.KettleRecordRelation;
 
 /**
  * Kettle的数据库Client,记录KettleRecord对象
+ * 
  * @author Administrator
  *
  */
@@ -69,7 +70,7 @@ public class KettleDBClient {
 	 */
 	private synchronized void disConnect() {
 		try {
-			database.commit();
+			database.commit(true);
 		} catch (KettleDatabaseException e) {
 			e.printStackTrace();
 			throw new RuntimeException("Kettle的数据库提交失败!");
@@ -404,12 +405,19 @@ public class KettleDBClient {
 	/**
 	 * @param uuid
 	 */
-	public List<KettleRecordRelation> deleteDependentsRelationNE(String uuid) {
+	public synchronized List<KettleRecordRelation> deleteDependentsRelationNE(String uuid) {
+		List<KettleRecordRelation> depends = null;
+		try {
+			depends = queryDependents(uuid);
+		} catch (KettleException e) {
+			logger.error("数据库删除record[" + uuid + "]的依赖表发生异常!", e);
+			return new ArrayList<KettleRecordRelation>(0);
+		}
+		// 删除语句
 		String sql = "DELETE FROM " + KettleVariables.R_RECORD_DEPENDENT + " WHERE "
 				+ KettleVariables.R_RECORD_DEPENDENT_MASTER_UUID_ID + " = ? ";
 		connect();
 		try {
-			List<KettleRecordRelation> depends = this.queryDependents(uuid);
 			deleteTableRow(sql, ValueMetaInterface.TYPE_STRING, uuid);
 			return depends;
 		} catch (KettleException e) {
@@ -418,7 +426,6 @@ public class KettleDBClient {
 		} finally {
 			disConnect();
 		}
-
 	}
 
 	/**
