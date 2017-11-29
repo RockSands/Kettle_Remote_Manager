@@ -58,6 +58,8 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 	@Override
 	public void dealApply() throws KettleException {
 		remoteClient.remoteSendJob(record);
+		record.setStatus(KettleVariables.RECORD_STATUS_RUNNING);
+		dbClient.updateRecord(record);
 	}
 
 	@Override
@@ -141,6 +143,7 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 
 	/**
 	 * 返回Client
+	 * 
 	 * @return
 	 */
 	public KettleRemoteClient getRemoteClient() {

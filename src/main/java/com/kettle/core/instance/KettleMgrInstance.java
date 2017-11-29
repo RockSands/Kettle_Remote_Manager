@@ -24,10 +24,10 @@ import com.kettle.core.bean.KettleRecord;
 import com.kettle.core.bean.KettleResult;
 import com.kettle.core.db.KettleDBClient;
 import com.kettle.core.repo.KettleRepositoryClient;
-import com.kettle.record.KettleRecordPool;
+import com.kettle.record.pool.KettleRecordPool;
 import com.kettle.record.service.RecordService;
 import com.kettle.remote.KettleRemotePool;
-import com.kettle.remote.record.service.RemoteRecordProcess;
+import com.kettle.remote.record.service.RemoteParallelRecordService;
 
 /**
  * Kettle数据迁移管理者
@@ -118,14 +118,14 @@ public class KettleMgrInstance {
 					EnvUtil.getSystemProperty("KETTLE_RECORD_DB_USER"),
 					EnvUtil.getSystemProperty("KETTLE_RECORD_DB_PASSWD"));
 			kettleMgrEnvironment.setDbClient(new KettleDBClient(databaseMeta));
-			// 远程池
-			KettleRemotePool remotePool = new KettleRemotePool();
-			kettleMgrEnvironment.setRemotePool(remotePool);
 			// 任务池
 			KettleRecordPool recordPool = new KettleRecordPool();
 			kettleMgrEnvironment.setRecordPool(recordPool);
-			// 核心任务
-			recordService = new RemoteRecordProcess();
+			// 远程池
+			KettleRemotePool remotePool = new KettleRemotePool();
+			kettleMgrEnvironment.setRemotePool(remotePool);
+			// 服务
+			recordService = new RemoteParallelRecordService();
 		} catch (Exception ex) {
 			throw new RuntimeException("KettleMgrInstance初始化失败", ex);
 		}

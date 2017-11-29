@@ -149,7 +149,7 @@ STATD_PORT=30004
 	13.编辑Kettle启动文件
 		vi pwd/carte-config-master-8080.xml 
 		
-		将上文的如下文字去掉注释
+		将如下文字去掉注释
 		<!--
 		  <repository>
 		    <name>KettleFileRepo</name>
@@ -183,6 +183,9 @@ STATD_PORT=30004
 		C:\Windows\System32
 		右键cmd --> 管理员权限运行
 		mount <NFS服务IP>:/data/kettleFileRepo z:
+		
+		样例:
+			mount 192.168.80.138:/data/kettleFileRepo z:
 		
 	5.修改repositories.xml
 		<?xml version="1.0" encoding="UTF-8"?>

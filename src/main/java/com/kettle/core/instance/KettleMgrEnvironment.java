@@ -5,11 +5,12 @@ import org.pentaho.di.core.util.EnvUtil;
 import com.kettle.core.KettleEnvDefault;
 import com.kettle.core.db.KettleDBClient;
 import com.kettle.core.repo.KettleRepositoryClient;
-import com.kettle.record.KettleRecordPool;
+import com.kettle.record.pool.KettleRecordPool;
 import com.kettle.remote.KettleRemotePool;
 
 /**
  * Kettle管理环境
+ * 
  * @author Administrator
  *
  */

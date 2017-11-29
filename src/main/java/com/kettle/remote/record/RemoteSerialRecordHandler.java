@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import com.kettle.core.bean.KettleRecord;
 import com.kettle.core.instance.KettleMgrInstance;
-import com.kettle.record.KettleRecordPool;
+import com.kettle.record.pool.KettleRecordPool;
 import com.kettle.remote.KettleRemoteClient;
 
 /**
@@ -86,7 +86,7 @@ public class RemoteSerialRecordHandler implements Runnable {
 				} else {
 					// 进行处理
 					recordOperator.dealRecord();
-					if (recordOperator.isError() || recordOperator.isFinished()) {
+					if (recordOperator.isFinished()) {
 						KettleRecord record = recordOperator.detachRecord();
 						recordPool.deleteRecord(record.getUuid());
 						logger.debug(

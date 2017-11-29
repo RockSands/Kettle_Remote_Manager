@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import com.kettle.core.bean.KettleRecord;
 import com.kettle.core.instance.KettleMgrInstance;
-import com.kettle.record.KettleRecordPool;
+import com.kettle.record.pool.KettleRecordPool;
 import com.kettle.remote.KettleRemoteClient;
 
 /**
@@ -19,7 +19,7 @@ public class RemoteParallelRecordHandler implements Runnable {
 	private static Logger logger = LoggerFactory.getLogger(RemoteParallelRecordHandler.class);
 
 	/**
-	 * 
+	 * 进程号
 	 */
 	private final int processNO;
 
@@ -34,6 +34,11 @@ public class RemoteParallelRecordHandler implements Runnable {
 	private final RemoteRecordOperator remoteRecordOperator;
 
 	/**
+	 * 是否运行中
+	 */
+	private boolean isRunning = false;
+
+	/**
 	 * @param remoteClient
 	 */
 	public RemoteParallelRecordHandler(int processNO, KettleRemoteClient remoteClient) {
@@ -42,28 +47,44 @@ public class RemoteParallelRecordHandler implements Runnable {
 		remoteRecordOperator = new RemoteRecordOperator(remoteClient);
 	}
 
+	public boolean isRunning() {
+		return isRunning;
+	}
+
+	@SuppressWarnings("deprecation")
 	@Override
 	public void run() {
-		logger.debug(
-				"Kettle远端进程[" + remoteRecordOperator.getRemoteClient().getHostName() + "-" + processNO + "]定时任务轮询启动!");
+		isRunning = true;
+		logger.debug("Kettle远端进程[" + remoteRecordOperator.getRemoteClient().getHostName() + "-" + processNO + "]进程唤醒!");
 		try {
-			if (!remoteRecordOperator.isAttached()) { // 加载下一个
-				// 加载任务
-				KettleRecord recordTMP = recordPool.nextRecord();
-				if (recordTMP != null && !remoteRecordOperator.attachRecord(recordTMP)) {
-					recordPool.addPrioritizeRecord(recordTMP);
-				}
-			}
+			// 如果已经加载,直接进行任务处理
 			if (remoteRecordOperator.isAttached()) {
 				// 进行处理
 				remoteRecordOperator.dealRecord();
-				if (remoteRecordOperator.isError() || remoteRecordOperator.isFinished()) {
+				if (remoteRecordOperator.isFinished()) {
 					KettleRecord record = remoteRecordOperator.detachRecord();
 					recordPool.deleteRecord(record.getUuid());
 					logger.debug("Kettle远端[" + remoteRecordOperator.getRemoteClient().getHostName() + "]已经处理完成Record["
 							+ record.getUuid() + "]!");
 				}
 			}
+			// 尝试自动加载任务
+			if (!remoteRecordOperator.isAttached()) {
+				// 自动加载任务
+				KettleRecord recordTMP = recordPool.nextRecord();
+				if (recordTMP != null && remoteRecordOperator.attachRecord(recordTMP)) {
+					remoteRecordOperator.dealRecord();
+				} else if (recordTMP != null) {
+					recordPool.addPrioritizeRecord(recordTMP);
+				}
+			}
+			// 如果加载失败,直接关闭此线程
+			if (!remoteRecordOperator.isAttached()) {
+				// 停止进程
+				Thread.currentThread().stop();
+				isRunning = false;
+			}
+
 		} catch (Exception ex) {
 			logger.error("Kettle远端[" + remoteRecordOperator.getRemoteClient().getHostName() + "-" + processNO
 					+ "]定时任务发生异常成!", ex);

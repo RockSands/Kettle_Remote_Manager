@@ -23,7 +23,7 @@ public abstract class BaseRecordOperator implements IRecordOperator {
 
 	@Override
 	public synchronized boolean attachRecord(KettleRecord record) {
-		if (record == null){
+		if (record == null) {
 			return false;
 		}
 		if (this.record != null) {
@@ -35,7 +35,9 @@ public abstract class BaseRecordOperator implements IRecordOperator {
 
 	@Override
 	public KettleRecord detachRecord() {
-		return record;
+		KettleRecord kettleRecord = record;
+		record = null;
+		return kettleRecord;
 	}
 
 	@Override
@@ -56,30 +58,6 @@ public abstract class BaseRecordOperator implements IRecordOperator {
 	}
 
 	/**
-	 * 是否受理状态
-	 * 
-	 * @return
-	 */
-	public boolean isApply() {
-		if (!isAttached()) {
-			return false;
-		}
-		return KettleVariables.RECORD_STATUS_APPLY.equals(record.getStatus());
-	}
-
-	/**
-	 * 是否异常状态
-	 * 
-	 * @return
-	 */
-	public boolean isError() {
-		if (!isAttached()) {
-			return false;
-		}
-		return KettleVariables.RECORD_STATUS_ERROR.equals(record.getStatus());
-	}
-
-	/**
 	 * 是否完成中
 	 * 
 	 * @return
@@ -88,7 +66,8 @@ public abstract class BaseRecordOperator implements IRecordOperator {
 		if (!isAttached()) {
 			return false;
 		}
-		return KettleVariables.RECORD_STATUS_FINISHED.equals(record.getStatus());
+		return KettleVariables.RECORD_STATUS_FINISHED.equals(record.getStatus())
+				|| KettleVariables.RECORD_STATUS_ERROR.equals(record.getStatus());
 	}
 
 	/**

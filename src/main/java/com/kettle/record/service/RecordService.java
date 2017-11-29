@@ -13,11 +13,11 @@ import org.slf4j.LoggerFactory;
 import com.kettle.core.KettleVariables;
 import com.kettle.core.bean.KettleJobEntireDefine;
 import com.kettle.core.bean.KettleRecord;
+import com.kettle.core.bean.KettleRecordRelation;
 import com.kettle.core.db.KettleDBClient;
 import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.core.repo.KettleRepositoryClient;
-import com.kettle.record.KettleRecordPool;
-import com.kettle.record.KettleRecordRelation;
+import com.kettle.record.pool.KettleRecordPool;
 
 public class RecordService {
 

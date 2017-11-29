@@ -1,4 +1,4 @@
-package com.kettle.record;
+package com.kettle.core.bean;
 
 import java.util.Date;
 

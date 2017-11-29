@@ -27,9 +27,9 @@ public class RemoteMain {
 	public static void main(String[] args) throws Exception {
 		System.out.println("------------------------------");
 		KettleMgrInstance.getInstance();
-		List<String> flags = Arrays.asList("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
-				"P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
-		// List<String> flags = Arrays.asList("A");
+//		List<String> flags = Arrays.asList("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
+//				"P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
+		 List<String> flags = Arrays.asList("A");
 		/*
 		 * Source的TableName无效
 		 */
@@ -82,28 +82,10 @@ public class RemoteMain {
 		ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(flags.size());
 		Random random = new Random();
 		for (int i = 0; i < flags.size(); i++) {
-			// CreateSTDThread cdt = new CreateSTDThread(sources.get(i),
-			// targets.get(i), "0 */1 * * * ?");
 			System.out.println("===>" + random.nextInt(10));
 			CreateSTDThread cdt = new CreateSTDThread(sources.get(i), targets.get(i), null);
 			threadPool.scheduleWithFixedDelay(cdt, 2, random.nextInt(9) + 1, TimeUnit.SECONDS);
-			// if (i % 10 == 0) {
-			// Thread.sleep(20000);
-			// }
 			createDataTransfers.add(cdt);
 		}
-		// do {
-		// Thread.sleep(10000);
-		// System.out.println("------------------------------");
-		// for (CreateSTDThread createDataTransfer : createDataTransfers) {
-		// if (createDataTransfer.getResult() != null) {
-		// KettleResult result = KettleMgrInstance.getInstance()
-		// .queryResult(createDataTransfer.getResult().getId());
-		// System.out.println("=DataTransfer[" + result.getId() + "]=>" +
-		// result.getStatus());
-		// }
-		// }
-		// System.out.println("------------------------------");
-		// } while (true);
 	}
 }

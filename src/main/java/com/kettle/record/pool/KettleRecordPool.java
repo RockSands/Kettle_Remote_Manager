@@ -1,6 +1,9 @@
-package com.kettle.record;
+package com.kettle.record.pool;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -55,6 +58,11 @@ public class KettleRecordPool {
 	private final Queue<String> recordPrioritizeQueue = new LinkedBlockingQueue<String>();
 
 	/**
+	 * 监听者
+	 */
+	private List<KettleRecordPoolMonitor> poolMonitors = new LinkedList<KettleRecordPoolMonitor>();
+
+	/**
 	 * 
 	 * @throws Exception
 	 */
@@ -65,6 +73,29 @@ public class KettleRecordPool {
 		SchedulerFactory schedulerfactory = new StdSchedulerFactory();
 		scheduler = schedulerfactory.getScheduler();
 		scheduler.start();
+	}
+
+	/**
+	 * @param poolMonitor
+	 */
+	public void registePoolMonitor(KettleRecordPoolMonitor poolMonitor) {
+		poolMonitors.add(poolMonitor);
+	}
+
+	/**
+	 * @param poolMonitor
+	 */
+	public void registePoolMonitor(Collection<KettleRecordPoolMonitor> poolMonitors) {
+		poolMonitors.addAll(poolMonitors);
+	}
+
+	/**
+	 * 
+	 */
+	private void notifyPoolMonitors() {
+		for (KettleRecordPoolMonitor poolMonitor : poolMonitors) {
+			poolMonitor.addRecordNotify();
+		}
 	}
 
 	/**
@@ -80,7 +111,33 @@ public class KettleRecordPool {
 				check();
 				record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
 				recordCache.put(record.getUuid(), record);
-				return recordQueue.offer(record.getUuid());
+				if (recordQueue.offer(record.getUuid())) {
+					notifyPoolMonitors();
+					return true;
+				} else {
+					recordCache.remove(record.getUuid());
+					return false;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * 添加的转换任务-优先
+	 * 
+	 * @param record
+	 * @return 是否添加成功
+	 */
+	public synchronized boolean addPrioritizeRecord(KettleRecord record) {
+		if (record != null) {
+			if (!isAcceptedRecord(record)) {
+				recordCache.put(record.getUuid(), record);
+				boolean result = recordPrioritizeQueue.offer(record.getUuid());
+				if (result) {
+					notifyPoolMonitors();
+				}
+				return result;
 			}
 		}
 		return false;
@@ -125,22 +182,6 @@ public class KettleRecordPool {
 		Trigger newTrigger = TriggerBuilder.newTrigger().withIdentity(String.valueOf(uuid)).startNow()
 				.withSchedule(CronScheduleBuilder.cronSchedule(newCron)).build();
 		scheduler.rescheduleJob(triggerKey, newTrigger);
-	}
-
-	/**
-	 * 添加的转换任务-优先
-	 * 
-	 * @param record
-	 * @return 是否添加成功
-	 */
-	public synchronized boolean addPrioritizeRecord(KettleRecord record) {
-		if (record != null) {
-			if (!isAcceptedRecord(record)) {
-				recordCache.put(record.getUuid(), record);
-				return recordPrioritizeQueue.offer(record.getUuid());
-			}
-		}
-		return false;
 	}
 
 	/**
