@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kettle.core.KettleVariables;
-import com.kettle.core.bean.KettleRecord;
+import com.kettle.record.KettleRecord;
 
 /**
  * 定时任务

@@ -20,10 +20,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kettle.core.bean.KettleJobEntireDefine;
-import com.kettle.core.bean.KettleRecord;
 import com.kettle.core.bean.KettleResult;
 import com.kettle.core.db.KettleDBClient;
 import com.kettle.core.repo.KettleRepositoryClient;
+import com.kettle.record.KettleRecord;
 import com.kettle.record.pool.KettleRecordPool;
 import com.kettle.record.service.RecordService;
 import com.kettle.remote.KettleRemotePool;

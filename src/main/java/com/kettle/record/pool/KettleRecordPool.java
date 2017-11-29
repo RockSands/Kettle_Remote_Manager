@@ -23,7 +23,7 @@ import org.quartz.TriggerKey;
 import org.quartz.impl.StdSchedulerFactory;
 
 import com.kettle.core.KettleVariables;
-import com.kettle.core.bean.KettleRecord;
+import com.kettle.record.KettleRecord;
 
 /**
  * Kettle任务池

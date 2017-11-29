@@ -27,8 +27,8 @@ import org.slf4j.LoggerFactory;
 
 import com.kettle.core.KettleVariables;
 import com.kettle.core.bean.KettleJobEntireDefine;
-import com.kettle.core.bean.KettleRecord;
-import com.kettle.core.bean.KettleRecordRelation;
+import com.kettle.record.KettleRecord;
+import com.kettle.record.KettleRecordRelation;
 
 /**
  * Kettle的数据库Client,记录KettleRecord对象

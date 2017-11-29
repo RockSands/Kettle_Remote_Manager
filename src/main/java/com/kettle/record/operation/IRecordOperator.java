@@ -2,7 +2,7 @@ package com.kettle.record.operation;
 
 import org.pentaho.di.core.exception.KettleException;
 
-import com.kettle.core.bean.KettleRecord;
+import com.kettle.record.KettleRecord;
 
 /**
  * Record的操作定义

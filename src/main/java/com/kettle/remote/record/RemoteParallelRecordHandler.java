@@ -3,8 +3,8 @@ package com.kettle.remote.record;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.kettle.core.bean.KettleRecord;
 import com.kettle.core.instance.KettleMgrInstance;
+import com.kettle.record.KettleRecord;
 import com.kettle.record.pool.KettleRecordPool;
 import com.kettle.remote.KettleRemoteClient;
 

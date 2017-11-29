@@ -5,10 +5,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kettle.core.KettleVariables;
-import com.kettle.core.bean.KettleRecord;
 import com.kettle.core.db.KettleDBClient;
 import com.kettle.core.instance.KettleMgrEnvironment;
 import com.kettle.core.instance.KettleMgrInstance;
+import com.kettle.record.KettleRecord;
 import com.kettle.record.operation.BaseRecordOperator;
 import com.kettle.remote.KettleRemoteClient;
 

@@ -3,7 +3,7 @@ package com.kettle.record.operation;
 import org.pentaho.di.core.exception.KettleException;
 
 import com.kettle.core.KettleVariables;
-import com.kettle.core.bean.KettleRecord;
+import com.kettle.record.KettleRecord;
 
 public abstract class BaseRecordOperator implements IRecordOperator {
 
