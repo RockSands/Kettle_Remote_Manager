@@ -137,7 +137,7 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 	 */
 	private void cleanRecord() {
 		if (record.isFinished()) {
-			remoteClient.remoteRemoveJobNE(record);
+			//remoteClient.remoteRemoveJobNE(record);
 		}
 	}
 

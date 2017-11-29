@@ -29,26 +29,26 @@ public class CreateSTDThread implements Runnable {
 	@Override
 	public void run() {
 		try {
-			if (kjed == null) {
+
+			if (result != null) {
+				result = KettleMgrInstance.getInstance().queryJob(result.getUuid());
+				// System.out.println("==>[" + result.getUuid() + "]状态: " + result.getStatus());
+			}
+			if (result == null) {
 				SyncTablesDatasBuilder builder = new SyncTablesDatasBuilder();
 				builder.source(source);
 				builder.target(target);
 				kjed = builder.createJob();
-			}
-			if (result != null) {
-				result = KettleMgrInstance.getInstance().queryJob(result.getUuid());
-				System.out.println("==>[" + result.getUuid() + "]状态: " + result.getStatus());
-			}
-			if (result == null) {
 				long now = System.currentTimeMillis();
 				result = KettleMgrInstance.getInstance().registeJob(kjed);
 				System.out.println("==>registe used: " + (System.currentTimeMillis() - now));
+				now = System.currentTimeMillis();
 				KettleMgrInstance.getInstance().excuteJob(result.getUuid());
 				System.out.println("==>apply used: " + (System.currentTimeMillis() - now));
 			}
 			if (KettleVariables.RECORD_STATUS_ERROR.equals(result.getStatus())
 					|| KettleVariables.RECORD_STATUS_FINISHED.equals(result.getStatus())) {
-				KettleMgrInstance.getInstance().deleteJob(result.getUuid());
+				//KettleMgrInstance.getInstance().deleteJob(result.getUuid());
 				result = null;
 			}
 		} catch (KettleException e) {

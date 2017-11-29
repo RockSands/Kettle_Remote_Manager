@@ -62,20 +62,19 @@ public class RemoteParallelRecordHandler implements Runnable {
 				// 进行处理
 				remoteRecordOperator.dealRecord();
 				if (remoteRecordOperator.isFinished()) {
-					KettleRecord record = remoteRecordOperator.detachRecord();
-					recordPool.deleteRecord(record.getUuid());
-					logger.debug("Kettle远端[" + remoteRecordOperator.getRemoteClient().getHostName() + "]已经处理完成Record["
-							+ record.getUuid() + "]!");
+					remoteRecordOperator.detachRecord();
 				}
 			}
 			// 尝试自动加载任务
 			if (!remoteRecordOperator.isAttached()) {
 				// 自动加载任务
 				KettleRecord recordTMP = recordPool.nextRecord();
-				if (recordTMP != null && remoteRecordOperator.attachRecord(recordTMP)) {
-					remoteRecordOperator.dealRecord();
-				} else if (recordTMP != null) {
-					recordPool.addPrioritizeRecord(recordTMP);
+				if (recordTMP != null) {
+					if (remoteRecordOperator.attachRecord(recordTMP)) {
+						remoteRecordOperator.dealRecord();
+					} else {
+						recordPool.addPrioritizeRecord(recordTMP);
+					}
 				}
 			}
 			// 如果加载失败,直接关闭此线程

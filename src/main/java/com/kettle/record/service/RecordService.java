@@ -167,8 +167,10 @@ public class RecordService {
 		if (record.getKettleMeta() == null) {
 			throw new KettleException("Job[" + uuid + "]数据异常,未找到Kettle元数据!");
 		}
-		recordPool.addRecord(record);
-		return record;
+		if (recordPool.addRecord(record)) {
+			return record;
+		}
+		throw new KettleException("Job[" + uuid + "]申请执行失败,被任务池拒绝加!");
 	}
 
 	/**
