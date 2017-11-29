@@ -3,12 +3,13 @@ package com.kettle.remote.record;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.kettle.core.bean.KettleRecord;
 import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.record.KettleRecordPool;
 import com.kettle.remote.KettleRemoteClient;
 
 /**
- * 远程处理任务
+ * 远程处理任务,并发单元
  * 
  * @author Administrator
  *
@@ -17,6 +18,9 @@ public class RemoteParallelRecordHandler implements Runnable {
 
 	private static Logger logger = LoggerFactory.getLogger(RemoteParallelRecordHandler.class);
 
+	/**
+	 * 
+	 */
 	private final int processNO;
 
 	/**
@@ -43,11 +47,22 @@ public class RemoteParallelRecordHandler implements Runnable {
 		logger.debug(
 				"Kettle远端进程[" + remoteRecordOperator.getRemoteClient().getHostName() + "-" + processNO + "]定时任务轮询启动!");
 		try {
-			if (remoteRecordOperator.isFree()) {
-				remoteRecordOperator.attachRecord(recordPool.nextRecord());
+			if (!remoteRecordOperator.isAttached()) { // 加载下一个
+				// 加载任务
+				KettleRecord recordTMP = recordPool.nextRecord();
+				if (recordTMP != null && !remoteRecordOperator.attachRecord(recordTMP)) {
+					recordPool.addPrioritizeRecord(recordTMP);
+				}
 			}
-			if (!remoteRecordOperator.isFree()) {// 如果未加载成功
+			if (remoteRecordOperator.isAttached()) {
+				// 进行处理
 				remoteRecordOperator.dealRecord();
+				if (remoteRecordOperator.isError() || remoteRecordOperator.isFinished()) {
+					KettleRecord record = remoteRecordOperator.detachRecord();
+					recordPool.deleteRecord(record.getUuid());
+					logger.debug("Kettle远端[" + remoteRecordOperator.getRemoteClient().getHostName() + "]已经处理完成Record["
+							+ record.getUuid() + "]!");
+				}
 			}
 		} catch (Exception ex) {
 			logger.error("Kettle远端[" + remoteRecordOperator.getRemoteClient().getHostName() + "-" + processNO

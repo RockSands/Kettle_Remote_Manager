@@ -36,8 +36,7 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 	@Override
 	public boolean attachRecord(KettleRecord record) {
 		if (remoteClient.isRunning()) {
-			this.record = record;
-			return true;
+			return super.attachRecord(record);
 		}
 		return false;
 	}
@@ -108,7 +107,7 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 	}
 
 	/**
-	 *
+	 * 处理远端无法连接的记录
 	 */
 	private void dealErrorRemoteRecord() {
 		record.setStatus(KettleVariables.RECORD_STATUS_ERROR);

@@ -13,24 +13,35 @@ import com.kettle.core.bean.KettleRecord;
 public interface IRecordOperator {
 	/**
 	 * 加载Record
+	 * 
 	 * @param record
 	 * @return
 	 */
 	public boolean attachRecord(KettleRecord record);
-	
+
 	/**
 	 * 卸载Record
+	 * 
+	 * @param record
+	 * @return
+	 */
+	public KettleRecord detachRecord();
+
+	/**
+	 * 卸载Record
+	 * 
 	 * @param record
 	 * @return
 	 */
 	public KettleRecord getRecord();
-	
+
 	/**
 	 * 是否空闲
+	 * 
 	 * @return
 	 */
-	public boolean isFree();
-	
+	public boolean isAttached();
+
 	/**
 	 * 申请
 	 */

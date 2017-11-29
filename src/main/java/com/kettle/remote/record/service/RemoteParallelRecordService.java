@@ -38,7 +38,7 @@ public class RemoteParallelRecordService extends RecordService {
 	/**
 	 * 远程执行则
 	 */
-	private List<RemoteParallelRecordHandler> operators;
+	private List<RemoteParallelRecordHandler> handlers;
 
 	/**
 	 * 定时任务
@@ -55,12 +55,14 @@ public class RemoteParallelRecordService extends RecordService {
 	 */
 	public RemoteParallelRecordService() {
 		KettleRemotePool remotePool = KettleMgrInstance.kettleMgrEnvironment.getRemotePool();
-		threadPool = Executors.newScheduledThreadPool(remotePool.getRemoteclients().size() * 10);
+		int threadCount = 0;
 		for (KettleRemoteClient remoteClient : remotePool.getRemoteclients()) {
-			for (int i = 0; i < 10; i++) {
-				operators.add(new RemoteParallelRecordHandler(remoteClient));
+			for (int i = 0, size = remoteClient.maxRecord; i < size; i++) {
+				handlers.add(new RemoteParallelRecordHandler(i, remoteClient));
+				threadCount++;
 			}
 		}
+		threadPool = Executors.newScheduledThreadPool(threadCount);
 		start();
 	}
 
