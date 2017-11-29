@@ -27,9 +27,9 @@ public class RemoteMain {
 	public static void main(String[] args) throws Exception {
 		System.out.println("------------------------------");
 		KettleMgrInstance.getInstance();
-//		List<String> flags = Arrays.asList("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
-//				"P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
-		 List<String> flags = Arrays.asList("A");
+		List<String> flags = Arrays.asList("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
+				"P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
+		// List<String> flags = Arrays.asList("A");
 		/*
 		 * Source的TableName无效
 		 */
@@ -82,7 +82,6 @@ public class RemoteMain {
 		ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(flags.size());
 		Random random = new Random();
 		for (int i = 0; i < flags.size(); i++) {
-			System.out.println("===>" + random.nextInt(10));
 			CreateSTDThread cdt = new CreateSTDThread(sources.get(i), targets.get(i), null);
 			threadPool.scheduleWithFixedDelay(cdt, 2, random.nextInt(9) + 1, TimeUnit.SECONDS);
 			createDataTransfers.add(cdt);
