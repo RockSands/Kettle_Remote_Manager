@@ -246,7 +246,7 @@ public class KettleRepositoryClient {
 	 * 
 	 * @param depends
 	 */
-	public void deleteJobEntireDefineNE(List<KettleRecordRelation> relations) {
+	public synchronized void deleteJobEntireDefineNE(List<KettleRecordRelation> relations) {
 		connect();
 		for (KettleRecordRelation relation : relations) {
 			if (KettleVariables.RECORD_TYPE_TRANS.equals(relation.getType())) {
