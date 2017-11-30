@@ -48,11 +48,6 @@ public interface IRecordOperator {
 	public void dealApply() throws KettleException;
 
 	/**
-	 * 重复
-	 */
-	public void dealRepeat() throws KettleException;
-
-	/**
 	 * 注册
 	 */
 	public void dealRegiste() throws KettleException;

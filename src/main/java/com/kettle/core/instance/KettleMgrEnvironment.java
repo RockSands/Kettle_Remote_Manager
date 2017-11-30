@@ -40,7 +40,7 @@ public class KettleMgrEnvironment {
 	 * Record任务最大保持数量
 	 */
 	public static Integer KETTLE_RECORD_POOL_MAX = NVLInt("KETTLE_RECORD_POOL_MAX",
-			KettleEnvDefault.KETTLE_RECORD_MAX_PER_REMOTE);
+			KettleEnvDefault.KETTLE_RECORD_POOL_MAX);
 
 	/**
 	 * Record任务保留最长时间

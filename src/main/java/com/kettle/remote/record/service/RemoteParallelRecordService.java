@@ -30,12 +30,12 @@ public class RemoteParallelRecordService extends RecordService implements Kettle
 	/**
 	 * 远程执行则
 	 */
-	private List<RemoteParallelRecordHandler> handlers = new ArrayList<RemoteParallelRecordHandler>();
+	private final List<RemoteParallelRecordHandler> handlers = new ArrayList<RemoteParallelRecordHandler>();
 
 	/**
 	 * 定时任务
 	 */
-	private ScheduledExecutorService threadPool;
+	protected final ScheduledExecutorService threadPool;
 
 	/**
 	 * 处理单元标记

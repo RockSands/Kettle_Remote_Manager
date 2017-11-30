@@ -9,7 +9,6 @@ import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.pentaho.di.core.exception.KettleException;
-import org.pentaho.di.core.util.EnvUtil;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.JobBuilder;
 import org.quartz.JobDataMap;
@@ -23,6 +22,7 @@ import org.quartz.TriggerKey;
 import org.quartz.impl.StdSchedulerFactory;
 
 import com.kettle.core.KettleVariables;
+import com.kettle.core.instance.KettleMgrEnvironment;
 import com.kettle.record.KettleRecord;
 
 /**
@@ -36,11 +36,6 @@ public class KettleRecordPool {
 	 * Repeat任务调度工厂
 	 */
 	private static Scheduler scheduler = null;
-
-	/**
-	 * 最大任务数
-	 */
-	private int recordMax = 1000;
 
 	/**
 	 * 存储Record的Map
@@ -67,9 +62,6 @@ public class KettleRecordPool {
 	 * @throws Exception
 	 */
 	public KettleRecordPool() throws Exception {
-		if (EnvUtil.getSystemProperty("KETTLE_RECORD_POOL_MAX") != null) {
-			recordMax = Integer.valueOf(EnvUtil.getSystemProperty("KETTLE_RECORD_POOL_MAX"));
-		}
 		SchedulerFactory schedulerfactory = new StdSchedulerFactory();
 		scheduler = schedulerfactory.getScheduler();
 		scheduler.start();
@@ -131,7 +123,13 @@ public class KettleRecordPool {
 	 */
 	public synchronized boolean addPrioritizeRecord(KettleRecord record) {
 		if (record != null) {
-			if (!isAcceptedRecord(record)) {
+			if (record.getCronExpression() != null && !recordPrioritizeQueue.contains(record.getUuid())) {// 定时任务
+				boolean result = recordPrioritizeQueue.offer(record.getUuid());
+				if (result) {
+					notifyPoolMonitors();
+				}
+				return result;
+			} else if (!isAcceptedRecord(record)) {// 一般任务
 				recordCache.put(record.getUuid(), record);
 				boolean result = recordPrioritizeQueue.offer(record.getUuid());
 				if (result) {
@@ -245,7 +243,8 @@ public class KettleRecordPool {
 	 * @throws KettleException
 	 */
 	private void check() throws KettleException {
-		if (size() > recordMax) {
+		if (KettleMgrEnvironment.KETTLE_RECORD_POOL_MAX != null
+				&& size() > KettleMgrEnvironment.KETTLE_RECORD_POOL_MAX) {
 			throw new KettleException("KettleRecordPool的任务数量已满,无法接受任务!");
 		}
 	}

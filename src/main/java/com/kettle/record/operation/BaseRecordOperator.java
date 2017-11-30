@@ -81,8 +81,6 @@ public abstract class BaseRecordOperator implements IRecordOperator {
 			dealApply();
 		} else if (record.isRegiste()) {
 			dealRegiste();
-		} else if (record.isRepeat()) {
-			dealRepeat();
 		} else if (record.isRunning()) {
 			dealRunning();
 		} else if (record.isFinished()) {

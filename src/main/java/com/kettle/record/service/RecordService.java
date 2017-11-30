@@ -21,6 +21,7 @@ import com.kettle.record.pool.KettleRecordPool;
 
 /**
  * Record的服务
+ * 
  * @author Administrator
  *
  */
@@ -39,12 +40,12 @@ public abstract class RecordService {
 	/**
 	 * 数据库
 	 */
-	private final KettleDBClient dbClient;
+	protected final KettleDBClient dbClient;
 
 	/**
 	 * 任务池
 	 */
-	private final KettleRecordPool recordPool;
+	protected final KettleRecordPool recordPool;
 
 	public RecordService() {
 		recordPool = KettleMgrInstance.kettleMgrEnvironment.getRecordPool();
@@ -218,6 +219,20 @@ public abstract class RecordService {
 		dbClient.deleteRecordNE(uuid);
 		List<KettleRecordRelation> relations = dbClient.deleteDependentsRelationNE(uuid);
 		repositoryClient.deleteJobEntireDefineNE(relations);
+	}
+
+	/**
+	 * 加载旧有记录
+	 */
+	protected void attachOldRecord() {
+		try {
+			for (KettleRecord record : dbClient.allHandleRecord()) {
+				record.setKettleMeta(repositoryClient.getJobMeta(record.getJobid()));
+				recordPool.addPrioritizeRecord(record);
+			}
+		} catch (Exception ex) {
+			logger.error("加载遗留Record失败!", ex);
+		}
 	}
 
 }

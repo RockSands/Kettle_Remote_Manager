@@ -201,15 +201,6 @@ public class KettleRecord {
 	}
 
 	/**
-	 * 是否重新运行
-	 * 
-	 * @return
-	 */
-	public boolean isRepeat() {
-		return KettleVariables.RECORD_STATUS_REPEAT.equals(this.getStatus());
-	}
-
-	/**
 	 * 是否注册
 	 * 
 	 * @return

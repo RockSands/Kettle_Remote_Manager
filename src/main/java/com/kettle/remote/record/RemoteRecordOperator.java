@@ -66,11 +66,6 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 	}
 
 	@Override
-	public void dealRepeat() throws KettleException {
-		dealApply();
-	}
-
-	@Override
 	public void dealRegiste() throws KettleException {
 		throw new KettleException("Record[" + record.getUuid() + "] 状态为[Registe],无法远程执行!");
 	}

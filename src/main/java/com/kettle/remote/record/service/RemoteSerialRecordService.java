@@ -29,12 +29,12 @@ public class RemoteSerialRecordService extends RecordService {
 	/**
 	 * 远程池
 	 */
-	private List<RemoteSerialRecordHandler> handlers;
+	private final List<RemoteSerialRecordHandler> handlers = new LinkedList<RemoteSerialRecordHandler>();;
 
 	/**
 	 * 定时任务
 	 */
-	private ScheduledExecutorService threadPool;
+	private final ScheduledExecutorService threadPool;
 
 	/**
 	 * 运行中
@@ -45,7 +45,6 @@ public class RemoteSerialRecordService extends RecordService {
 	 * 
 	 */
 	public RemoteSerialRecordService() {
-		handlers = new LinkedList<RemoteSerialRecordHandler>();
 		KettleRemotePool remotePool = KettleMgrInstance.kettleMgrEnvironment.getRemotePool();
 		threadPool = Executors.newScheduledThreadPool(remotePool.getRemoteclients().size());
 		for (KettleRemoteClient remoteClient : remotePool.getRemoteclients()) {
@@ -62,7 +61,7 @@ public class RemoteSerialRecordService extends RecordService {
 	private void start() {
 		if (hasStart == null || !hasStart.booleanValue()) {
 			for (int index = 0; index < handlers.size(); index++) {
-				threadPool.scheduleAtFixedRate(handlers.get(index), 2 * index, 20, TimeUnit.SECONDS);
+				threadPool.scheduleAtFixedRate(handlers.get(index), 2 * index, 10, TimeUnit.SECONDS);
 			}
 			logger.info("Kettle远程任务关系系统的线程启动完成,个数:" + handlers.size());
 		} else {
