@@ -15,6 +15,10 @@ import com.kettle.remote.KettleRemoteClient;
 import com.kettle.remote.KettleRemotePool;
 import com.kettle.remote.record.RemoteSerialRecordHandler;
 
+/**
+ * @author Administrator
+ *
+ */
 public class RemoteSerialRecordService extends RecordService {
 
 	/**

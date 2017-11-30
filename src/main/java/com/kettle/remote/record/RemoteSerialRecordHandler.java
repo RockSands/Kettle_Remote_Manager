@@ -12,7 +12,7 @@ import com.kettle.record.pool.KettleRecordPool;
 import com.kettle.remote.KettleRemoteClient;
 
 /**
- * Kettle远程任务处理,串行单元
+ * Kettle远程串行行服务,模型比较保守
  * 
  * @author Administrator
  *

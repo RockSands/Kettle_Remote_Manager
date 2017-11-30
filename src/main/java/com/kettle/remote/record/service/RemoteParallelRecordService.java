@@ -16,6 +16,12 @@ import com.kettle.remote.KettleRemoteClient;
 import com.kettle.remote.KettleRemotePool;
 import com.kettle.remote.record.RemoteParallelRecordHandler;
 
+/**
+ * Kettle远程并行服务,模型比较主动
+ * 
+ * @author Administrator
+ *
+ */
 public class RemoteParallelRecordService extends RecordService implements KettleRecordPoolMonitor {
 	/**
 	 * 日志
@@ -46,7 +52,7 @@ public class RemoteParallelRecordService extends RecordService implements Kettle
 				handlers.add(new RemoteParallelRecordHandler(i, remoteClient));
 			}
 		}
-		threadPool = Executors.newScheduledThreadPool(handlers.size() / 2);
+		threadPool = Executors.newScheduledThreadPool(handlers.size());
 		KettleMgrInstance.kettleMgrEnvironment.getRecordPool().registePoolMonitor(this);
 	}
 
@@ -58,7 +64,7 @@ public class RemoteParallelRecordService extends RecordService implements Kettle
 				handlerIndex = 0;
 			}
 			if (!handlers.get(handlerIndex).isRunning()) {
-				threadPool.scheduleAtFixedRate(handlers.get(handlerIndex), 0, 20, TimeUnit.SECONDS);
+				threadPool.scheduleAtFixedRate(handlers.get(handlerIndex), 0, 10, TimeUnit.SECONDS);
 				break;
 			}
 		}
