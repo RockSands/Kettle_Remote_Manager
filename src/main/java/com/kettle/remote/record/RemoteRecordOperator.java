@@ -14,6 +14,9 @@ import com.kettle.remote.KettleRemoteClient;
 
 public class RemoteRecordOperator extends BaseRecordOperator {
 
+	/**
+	 * 日志
+	 */
 	private static Logger logger = LoggerFactory.getLogger(RemoteRecordOperator.class);
 	/**
 	 * 远端
@@ -69,14 +72,13 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 
 	@Override
 	public void dealRegiste() throws KettleException {
-		throw new KettleException("Record[" + record.getUuid() + "] 状态为[Registed],无法远程执行!");
+		throw new KettleException("Record[" + record.getUuid() + "] 状态为[Registe],无法远程执行!");
 	}
 
 	@Override
 	public void dealError() throws KettleException {
 		try {
 			dbClient.updateRecord(record);
-			cleanRecord();
 		} catch (Exception e) {
 			throw new KettleException("Record[" + record.getUuid() + "] 状态为[Error],数据库发生异常!", e);
 		}
@@ -86,7 +88,7 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 	public void dealFinished() throws KettleException {
 		try {
 			dbClient.updateRecord(record);
-			cleanRecord();
+			remoteClient.remoteRemoveJobNE(record);
 		} catch (Exception e) {
 			throw new KettleException("Record[" + record.getUuid() + "] 状态为[Finished],数据库发生异常!", e);
 		}
@@ -129,15 +131,6 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 				record.setStatus(KettleVariables.RECORD_STATUS_ERROR);
 				record.setErrMsg("Record[" + record.getUuid() + "]执行超时,异常状态!");
 			}
-		}
-	}
-
-	/**
-	 * @param 清理任务
-	 */
-	private void cleanRecord() {
-		if (record.isFinished()) {
-			//remoteClient.remoteRemoveJobNE(record);
 		}
 	}
 

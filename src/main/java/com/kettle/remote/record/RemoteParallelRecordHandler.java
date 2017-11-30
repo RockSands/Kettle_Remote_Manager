@@ -16,6 +16,9 @@ import com.kettle.remote.KettleRemoteClient;
  */
 public class RemoteParallelRecordHandler implements Runnable {
 
+	/**
+	 * 日志
+	 */
 	private static Logger logger = LoggerFactory.getLogger(RemoteParallelRecordHandler.class);
 
 	/**
@@ -77,7 +80,7 @@ public class RemoteParallelRecordHandler implements Runnable {
 					}
 				}
 			}
-			// 如果加载失败,直接关闭此线程
+			// 如果加载不到Record,直接关闭此线程
 			if (!remoteRecordOperator.isAttached()) {
 				// 停止进程
 				Thread.currentThread().stop();

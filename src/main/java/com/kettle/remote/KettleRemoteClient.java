@@ -66,7 +66,9 @@ public class KettleRemoteClient {
 	private String fetchRemoteStatus() {
 		try {
 			SlaveServerStatus status = remoteServer.getStatus();
-			logger.debug("Kettle远端[" + getHostName() + "]状态:" + status.getStatusDescription());
+			if (!KettleVariables.REMOTE_STATUS_RUNNING.equals(remoteStatus)) {
+				logger.error("Kettle远端[" + getHostName() + "]异常状态:" + status.getStatusDescription());
+			}
 			return status.getStatusDescription();
 		} catch (Exception e) {
 			logger.error("Kettle远端[" + getHostName() + "]查看状态发生异常\n", e);
@@ -167,7 +169,7 @@ public class KettleRemoteClient {
 	 */
 	public void remoteJobStatus(KettleRecord job) throws Exception {
 		SlaveServerJobStatus jobStatus = remoteServer.getJobStatus(job.getName(), job.getRunID(), 0);
-		logger.debug("Kettle Remote[" + remoteServer.getHostname() + "]转换[" + job.getUuid() + "]状态为:"
+		logger.debug("Kettle Remote[" + remoteServer.getHostname() + "]同步Job[" + job.getUuid() + "]状态为:"
 				+ jobStatus.getStatusDescription());
 		if (jobStatus == null || jobStatus.getStatusDescription() == null) {
 			job.setStatus(KettleVariables.RECORD_STATUS_ERROR);
