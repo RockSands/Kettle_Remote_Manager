@@ -19,7 +19,12 @@ import com.kettle.record.KettleRecord;
 import com.kettle.record.KettleRecordRelation;
 import com.kettle.record.pool.KettleRecordPool;
 
-public class RecordService {
+/**
+ * Record的服务
+ * @author Administrator
+ *
+ */
+public abstract class RecordService {
 
 	/**
 	 * 日志

@@ -3,9 +3,8 @@ package com.kettle.core.instance.metas;
 import java.util.List;
 
 /**
- * 以Mysql为例jdbc:mysql://10.23.13.94:3306/dsjypt,用户:root 密码:123456 type = MySQL
- * host = 10.23.13.94 port = 3306 db = dsjypt user = root passwd = 123456
  * 
+ * Kettle的Table描述
  * @author Administrator
  *
  */

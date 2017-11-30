@@ -3,7 +3,7 @@ package com.kettle.record;
 import java.util.Date;
 
 /**
- * 依赖
+ * Kettle记录依赖
  * @author Administrator
  *
  */

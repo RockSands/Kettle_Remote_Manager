@@ -27,7 +27,7 @@ public class KettleRemotePool {
 	/**
 	 * 日志
 	 */
-	Logger logger = LoggerFactory.getLogger(KettleRemotePool.class);
+	private static Logger logger = LoggerFactory.getLogger(KettleRemotePool.class);
 
 	/**
 	 * 远程连接

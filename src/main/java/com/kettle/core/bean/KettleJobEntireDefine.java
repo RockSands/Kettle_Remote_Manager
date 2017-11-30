@@ -13,19 +13,19 @@ import org.pentaho.di.trans.TransMeta;
  */
 public class KettleJobEntireDefine {
 	/**
-	 * 
+	 * uuid
 	 */
 	private String uuid;
 	/**
-	 * 
+	 * 依赖的Trans
 	 */
 	private List<TransMeta> dependentTrans;
 	/**
-	 * 
+	 * 依赖的Job
 	 */
 	private List<JobMeta> dependentJobs;
 	/**
-	 * 
+	 * 核心Job
 	 */
 	private JobMeta mainJob;
 	

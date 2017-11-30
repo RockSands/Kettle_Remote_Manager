@@ -36,10 +36,14 @@ import com.kettle.remote.record.service.RemoteParallelRecordService;
  *
  */
 public class KettleMgrInstance {
+
+	static {
+		getInstance();
+	}
 	/**
 	 * 日志
 	 */
-	Logger logger = LoggerFactory.getLogger(KettleMgrInstance.class);
+	private static Logger logger = LoggerFactory.getLogger(KettleMgrInstance.class);
 
 	/**
 	 * 实例
@@ -61,10 +65,6 @@ public class KettleMgrInstance {
 	 * 定时任务
 	 */
 	private ScheduledExecutorService threadPool = Executors.newSingleThreadScheduledExecutor();
-
-	static {
-		getInstance();
-	}
 
 	public static KettleMgrInstance getInstance() {
 		if (instance == null) {

@@ -33,7 +33,7 @@ public class KettleRepositoryClient {
 	/**
 	 * 日志
 	 */
-	Logger logger = LoggerFactory.getLogger(KettleRepositoryClient.class);
+	private static Logger logger = LoggerFactory.getLogger(KettleRepositoryClient.class);
 	/**
 	 * 资源库
 	 */
