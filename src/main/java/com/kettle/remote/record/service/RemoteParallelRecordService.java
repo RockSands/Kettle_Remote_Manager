@@ -1,18 +1,13 @@
 package com.kettle.remote.record.service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.record.KettleRecord;
-import com.kettle.record.pool.KettleRecordPoolMonitor;
 import com.kettle.record.service.RecordService;
 import com.kettle.remote.KettleRemoteClient;
 import com.kettle.remote.record.RemoteParallelRecordHandler;
@@ -23,75 +18,42 @@ import com.kettle.remote.record.RemoteParallelRecordHandler;
  * @author Administrator
  *
  */
-public class RemoteParallelRecordService extends RecordService implements KettleRecordPoolMonitor {
-	/**
-	 * 日志
-	 */
-	private static Logger logger = LoggerFactory.getLogger(RemoteParallelRecordService.class);
+public class RemoteParallelRecordService extends RecordService {
 	/**
 	 * 远程执行则
 	 */
 	private final List<RemoteParallelRecordHandler> handlers = new ArrayList<RemoteParallelRecordHandler>();
 
 	/**
-	 * 定时任务
-	 */
-	protected final ScheduledExecutorService threadPool;
-
-	/**
-	 * 处理单元标记
-	 */
-	private int handlerIndex = 0;
-
-	/**
 	 * 构造器
 	 */
 	public RemoteParallelRecordService() {
+		List<KettleRecord> oldRecords = super.getOldRecords();
+		Map<String, List<KettleRecord>> oldRecordMap = new HashMap<String, List<KettleRecord>>();
+		KettleRecord recordIndex = null;
+		// 分类,并将apply状态的留在oldRecords中
+		for (Iterator<KettleRecord> it = oldRecords.iterator(); it.hasNext();) {
+			recordIndex = it.next();
+			if (recordIndex == null) {
+				it.remove();
+				continue;
+			}
+			if (recordIndex.isRunning() && recordIndex.getHostname() != null) {
+				if (!oldRecordMap.containsKey(recordIndex.getHostname())) {
+					oldRecordMap.put(recordIndex.getHostname(), new LinkedList<KettleRecord>());
+				}
+				oldRecordMap.get(recordIndex.getHostname()).add(recordIndex);
+				it.remove();
+			}
+		}
 		for (KettleRemoteClient remoteClient : remotePool.getRemoteclients()) {
 			for (int i = 0, size = remoteClient.maxRecord; i < size; i++) {
-				handlers.add(new RemoteParallelRecordHandler(i, remoteClient));
+				handlers.add(
+						new RemoteParallelRecordHandler(remoteClient, oldRecordMap.get(remoteClient.getHostName())));
 			}
 		}
-		threadPool = Executors.newScheduledThreadPool(handlers.size());
-		KettleMgrInstance.kettleMgrEnvironment.getRecordPool().registePoolMonitor(this);
-		// 遗留任务处理
-		List<KettleRecord> oldRecords = super.getOldRecords();
-		KettleRecord index;
-		for (Iterator<KettleRecord> it = oldRecords.iterator(); it.hasNext();) {
-			index = it.next();
-			if (index.isApply()) {
-				super.recordPool.addPrioritizeRecord(index);
-			}
-		}
-	}
-
-	@Override
-	public synchronized void addRecordNotify() {
-		logger.debug("RecordPool增加一条记录,尝试启动空闲处理单元!");
-		RemoteParallelRecordHandler handler = null;
-		for (int i = 0, size = handlers.size(); i < size; i++, handlerIndex++) {
-			if (handlerIndex >= size) {
-				handlerIndex = 0;
-			}
-			handler = handlers.get(handlerIndex);
-			if (handler.isRunning()) {
-				threadPool.scheduleAtFixedRate(handlers.get(handlerIndex), 0, 10, TimeUnit.SECONDS);
-				break;
-			}
-		}
-	}
-	
-	private synchronized void addOldRecords(List<KettleRecord> oldRecords) {
-		RemoteParallelRecordHandler handler = null;
-		for (int i = 0, size = handlers.size(); i < size; i++, handlerIndex++) {
-			if (handlerIndex >= size) {
-				handlerIndex = 0;
-			}
-			handler = handlers.get(handlerIndex);
-			if (handler.isRunning()) {
-				threadPool.scheduleAtFixedRate(handlers.get(handlerIndex), 0, 10, TimeUnit.SECONDS);
-				break;
-			}
+		for (KettleRecord record : oldRecords) {
+			super.recordPool.addPrioritizeRecord(record);
 		}
 	}
 }

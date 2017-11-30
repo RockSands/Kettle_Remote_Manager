@@ -96,7 +96,7 @@ public class KettleRecordPool {
 				addSchedulerRecord(record);
 			}
 		} catch (Exception ex) {
-			logger.error("加载数据库调度Record发生异常!",ex);
+			logger.error("加载数据库调度Record发生异常!", ex);
 		}
 	}
 
@@ -163,7 +163,6 @@ public class KettleRecordPool {
 				if (result) {
 					notifyPoolMonitors();
 					record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
-					record.setHostname(null);
 					dbClient.updateRecordNE(record);
 				}
 				return result;
@@ -173,7 +172,6 @@ public class KettleRecordPool {
 				if (result) {
 					notifyPoolMonitors();
 					record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
-					record.setHostname(null);
 					dbClient.updateRecordNE(record);
 				}
 				return result;

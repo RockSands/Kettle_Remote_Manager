@@ -6,7 +6,6 @@ import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.kettle.core.KettleVariables;
 import com.kettle.record.KettleRecord;
 
 /**
@@ -24,8 +23,7 @@ public class RecordSchedulerJob implements Job {
 	@Override
 	public void execute(JobExecutionContext context) throws JobExecutionException {
 		KettleRecord record = (KettleRecord) context.getJobDetail().getJobDataMap().get("RECORD");
-		if (record.isApply() || record.isFinished() || record.isError()) {
-			record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
+		if (record.isRegiste() || record.isApply() || record.isFinished() || record.isError()) {
 			record.setHostname(null);
 			KettleRecordPool pool = (KettleRecordPool) context.getJobDetail().getJobDataMap().get("RECORDPOOL");
 			pool.addPrioritizeRecord(record);

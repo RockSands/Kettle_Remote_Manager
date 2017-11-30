@@ -50,12 +50,12 @@ public class RemoteSerialRecordHandler implements Runnable {
 	/**
 	 * @param client
 	 */
-	public RemoteSerialRecordHandler(KettleRemoteClient remoteClient, List<KettleRecord> kettleRecords) {
+	public RemoteSerialRecordHandler(KettleRemoteClient remoteClient, List<KettleRecord> oldRecords) {
 		this.remoteClient = remoteClient;
 		this.remoteRecordOperator = new RemoteRecordOperator(remoteClient);
 		recordPool = KettleMgrInstance.kettleMgrEnvironment.getRecordPool();
-		if (kettleRecords != null && !kettleRecords.isEmpty()) {
-			kettleRecords.addAll(kettleRecords);
+		if (oldRecords != null && !oldRecords.isEmpty()) {
+			this.kettleRecords.addAll(oldRecords);
 		}
 	}
 
@@ -65,6 +65,9 @@ public class RemoteSerialRecordHandler implements Runnable {
 	 * @return
 	 */
 	private synchronized void fetchRecord() {
+		if (!remoteClient.isRunning()) {
+			return;
+		}
 		KettleRecord tmp = null;
 		while (kettleRecords.size() < KettleMgrEnvironment.KETTLE_RECORD_MAX_PER_REMOTE) {
 			tmp = recordPool.nextRecord();

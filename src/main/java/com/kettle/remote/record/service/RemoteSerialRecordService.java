@@ -33,7 +33,7 @@ public class RemoteSerialRecordService extends RecordService {
 	private final List<RemoteSerialRecordHandler> handlers = new LinkedList<RemoteSerialRecordHandler>();;
 
 	/**
-	 * 定时任务
+	 * 线程池
 	 */
 	private final ScheduledExecutorService threadPool;
 
