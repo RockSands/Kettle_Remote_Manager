@@ -29,7 +29,6 @@ public class CreateSTDThread implements Runnable {
 	@Override
 	public void run() {
 		try {
-
 			if (result != null) {
 				result = KettleMgrInstance.getInstance().queryJob(result.getUuid());
 				// System.out.println("==>[" + result.getUuid() + "]状态: " + result.getStatus());
@@ -50,7 +49,7 @@ public class CreateSTDThread implements Runnable {
 			if (KettleVariables.RECORD_STATUS_ERROR.equals(result.getStatus())
 					|| KettleVariables.RECORD_STATUS_FINISHED.equals(result.getStatus())) {
 				//KettleMgrInstance.getInstance().deleteJob(result.getUuid());
-				//result = null;
+				result = null;
 			}
 		} catch (KettleException e) {
 			e.printStackTrace();

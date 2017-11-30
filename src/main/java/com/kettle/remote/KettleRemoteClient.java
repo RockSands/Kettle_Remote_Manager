@@ -109,6 +109,9 @@ public class KettleRemoteClient {
 		jobExecutionConfiguration.setExecutingLocally(false);
 		jobExecutionConfiguration.setRepository(repositoryClient.getRepository());
 		String runID = null;
+		if (job.getKettleMeta() == null) {
+			job.setKettleMeta(repositoryClient.getJobMeta(job.getJobid()));
+		}
 		runID = Job.sendToSlaveServer(job.getKettleMeta(), jobExecutionConfiguration, repositoryClient.getRepository(),
 				repositoryClient.getRepository().getMetaStore());
 		return runID;

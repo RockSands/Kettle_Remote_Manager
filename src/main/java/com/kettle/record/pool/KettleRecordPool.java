@@ -91,12 +91,12 @@ public class KettleRecordPool {
 	 */
 	private void addAllDBSchedulerRecord() {
 		try {
-			List<KettleRecord> records = dbClient.allHandleRecord();
+			List<KettleRecord> records = dbClient.allSchedulerRecord();
 			for (KettleRecord record : records) {
 				addSchedulerRecord(record);
 			}
 		} catch (Exception ex) {
-			logger.error("加载数据库调度Record发生异常!");
+			logger.error("加载数据库调度Record发生异常!",ex);
 		}
 	}
 

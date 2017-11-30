@@ -36,10 +36,6 @@ import com.kettle.remote.record.service.RemoteSerialRecordService;
  *
  */
 public class KettleMgrInstance {
-
-	static {
-		getInstance();
-	}
 	/**
 	 * 日志
 	 */
@@ -66,7 +62,7 @@ public class KettleMgrInstance {
 	 */
 	private ScheduledExecutorService threadPool = Executors.newSingleThreadScheduledExecutor();
 
-	public static KettleMgrInstance getInstance() {
+	public synchronized static KettleMgrInstance getInstance() {
 		if (instance == null) {
 			instance = new KettleMgrInstance();
 		}

@@ -54,7 +54,7 @@ public class RemoteSerialRecordHandler implements Runnable {
 		this.remoteClient = remoteClient;
 		this.remoteRecordOperator = new RemoteRecordOperator(remoteClient);
 		recordPool = KettleMgrInstance.kettleMgrEnvironment.getRecordPool();
-		if (kettleRecords != null) {
+		if (kettleRecords != null && !kettleRecords.isEmpty()) {
 			kettleRecords.addAll(kettleRecords);
 		}
 	}

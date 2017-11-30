@@ -50,10 +50,12 @@ public class RemoteSerialRecordService extends RecordService {
 		List<KettleRecord> oldRecords = super.getOldRecords();
 		Map<String, List<KettleRecord>> oldRecordMap = new HashMap<String, List<KettleRecord>>();
 		for (KettleRecord record : oldRecords) {
+			if (record == null) {
+				continue;
+			}
 			if (record.isApply()) {
 				super.recordPool.addPrioritizeRecord(record);
-			}
-			if (record.getHostname() != null) {
+			} else if (record.getHostname() != null) {
 				if (!oldRecordMap.containsKey(record.getHostname())) {
 					oldRecordMap.put(record.getHostname(), new LinkedList<KettleRecord>());
 				}
