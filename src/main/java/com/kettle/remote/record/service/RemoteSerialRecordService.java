@@ -51,6 +51,7 @@ public class RemoteSerialRecordService extends RecordService {
 			handlers.add(new RemoteSerialRecordHandler(remoteClient));
 		}
 		start();
+		super.attachOldRecord();
 	}
 
 	/**

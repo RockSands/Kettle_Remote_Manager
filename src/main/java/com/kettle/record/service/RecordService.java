@@ -35,7 +35,7 @@ public abstract class RecordService {
 	/**
 	 * Kettle资源库
 	 */
-	private final KettleRepositoryClient repositoryClient;
+	protected final KettleRepositoryClient repositoryClient;
 
 	/**
 	 * 数据库
@@ -222,17 +222,22 @@ public abstract class RecordService {
 	}
 
 	/**
-	 * 加载旧有记录
+	 * 加载遗留Record
 	 */
 	protected void attachOldRecord() {
 		try {
 			for (KettleRecord record : dbClient.allHandleRecord()) {
-				record.setKettleMeta(repositoryClient.getJobMeta(record.getJobid()));
-				recordPool.addPrioritizeRecord(record);
+				if (record.isApply()) {
+					record.setKettleMeta(repositoryClient.getJobMeta(record.getJobid()));
+					recordPool.addPrioritizeRecord(record);
+				} else {
+					record.setStatus(KettleVariables.RECORD_STATUS_ERROR);
+					record.setErrMsg("系统重启,已经无法追踪任务状态!");
+					this.dbClient.updateRecord(record);
+				}
 			}
 		} catch (Exception ex) {
-			logger.error("加载遗留Record失败!", ex);
+			logger.error("加载遗留Record发生异常!");
 		}
 	}
-
 }

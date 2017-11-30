@@ -82,6 +82,7 @@ public class KettleRecordPool {
 	}
 
 	/**
+	 * @param record
 	 * 
 	 */
 	private void notifyPoolMonitors() {
@@ -199,6 +200,7 @@ public class KettleRecordPool {
 		if (recordUUID != null) {
 			// 如果Cache不存在,则直接下一个,该Record已经删除或处理完成
 			if (!recordCache.containsKey(recordUUID)) {
+				deleteRecord(recordUUID);
 				record = nextRecord();
 			} else {
 				record = recordCache.get(recordUUID);
@@ -209,7 +211,7 @@ public class KettleRecordPool {
 	}
 
 	/**
-	 * 删除,所有record必须调用改方法才能从缓存中删除Record
+	 * 删除,执行删除,从缓存中删除
 	 * 
 	 * @param jobID
 	 */

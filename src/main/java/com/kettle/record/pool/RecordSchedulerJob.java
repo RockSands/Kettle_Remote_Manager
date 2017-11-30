@@ -26,6 +26,7 @@ public class RecordSchedulerJob implements Job {
 		KettleRecord record = (KettleRecord) context.getJobDetail().getJobDataMap().get("RECORD");
 		if (record.isApply() || record.isFinished() || record.isError()) {
 			record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
+			record.setHostname(null);
 			KettleRecordPool pool = (KettleRecordPool) context.getJobDetail().getJobDataMap().get("RECORDPOOL");
 			pool.addPrioritizeRecord(record);
 			logger.debug("Kettle向任务队列添加定时任务[" + record.getName() + "],任务池任务个数:" + pool.size());

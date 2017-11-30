@@ -54,16 +54,19 @@ public class RemoteParallelRecordService extends RecordService implements Kettle
 		}
 		threadPool = Executors.newScheduledThreadPool(handlers.size());
 		KettleMgrInstance.kettleMgrEnvironment.getRecordPool().registePoolMonitor(this);
+		super.attachOldRecord();
 	}
 
 	@Override
 	public synchronized void addRecordNotify() {
 		logger.debug("RecordPool增加一条记录,尝试启动空闲处理单元!");
+		RemoteParallelRecordHandler handler = null;
 		for (int i = 0, size = handlers.size(); i < size; i++, handlerIndex++) {
 			if (handlerIndex >= size) {
 				handlerIndex = 0;
 			}
-			if (!handlers.get(handlerIndex).isRunning()) {
+			handler = handlers.get(handlerIndex);
+			if (handler.isRunning()) {
 				threadPool.scheduleAtFixedRate(handlers.get(handlerIndex), 0, 10, TimeUnit.SECONDS);
 				break;
 			}

@@ -54,6 +54,16 @@ public class RemoteParallelRecordHandler implements Runnable {
 		return isRunning;
 	}
 
+	/**
+	 * 匹配
+	 * 
+	 * @param hostName
+	 * @return
+	 */
+	public boolean match(String hostName) {
+		return hostName == null || remoteRecordOperator.getRemoteClient().getHostName().equals(hostName);
+	}
+
 	@SuppressWarnings("deprecation")
 	@Override
 	public void run() {

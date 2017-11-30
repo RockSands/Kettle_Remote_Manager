@@ -70,36 +70,36 @@ public class RemoteSerialRecordHandler implements Runnable {
 
 	@Override
 	public void run() {
-		logger.debug("Kettle远端[" + remoteClient.getHostName() + "]定时任务轮询启动!");
 		try {
 			sortRemoteRecordOperators();
 			KettleRecord recordTMP = null;
-			for (RemoteRecordOperator recordOperator : remoteRecordOperators) {
-				if (!recordOperator.isAttached()) { // 加载下一个
+			for (RemoteRecordOperator remoteRecordOperator : remoteRecordOperators) {
+				// 如果已经加载,直接进行任务处理
+				if (remoteRecordOperator.isAttached()) {
+					// 进行处理
+					remoteRecordOperator.dealRecord();
+					if (remoteRecordOperator.isFinished()) {
+						remoteRecordOperator.detachRecord();
+					}
+				} else {
 					recordTMP = recordPool.nextRecord();
-					if (recordTMP != null && recordOperator.attachRecord(recordTMP)) {
-						recordPool.addPrioritizeRecord(recordTMP);
+					if (recordTMP == null) {
+						break;
 					}
 				}
-				if (!recordOperator.isAttached()) {// 如果扔未加载成功,表明没有任务,直接完成
-					continue;
-				} else {
-					// 进行处理
-					recordOperator.dealRecord();
-					if (recordOperator.isFinished()) {
-						KettleRecord record = recordOperator.detachRecord();
-						recordPool.deleteRecord(record.getUuid());
-						logger.debug(
-								"Kettle远端[" + remoteClient.getHostName() + "]已经处理完成Record[" + record.getUuid() + "]!");
+				// 尝试自动加载任务
+				if (!remoteRecordOperator.isAttached()) {
+					// 自动加载任务
+					if (remoteRecordOperator.attachRecord(recordTMP)) {
+						remoteRecordOperator.dealRecord();
 					} else {
-						continue;
+						recordPool.addPrioritizeRecord(recordTMP);
 					}
 				}
 			}
 		} catch (Exception ex) {
 			logger.error("Kettle远端[" + remoteClient.getHostName() + "]定时任务发生异常成!", ex);
 		}
-		logger.debug("Kettle远端[" + remoteClient.getHostName() + "]定时任务轮询完成!");
 	}
 
 }

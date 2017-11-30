@@ -62,6 +62,7 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 	public void dealApply() throws KettleException {
 		remoteClient.remoteSendJob(record);
 		record.setStatus(KettleVariables.RECORD_STATUS_RUNNING);
+		record.setHostname(remoteClient.getHostName());
 		dbClient.updateRecord(record);
 	}
 

@@ -124,5 +124,4 @@ public class KettleRemotePool {
 	public String getPoolStatus() {
 		return poolStatus;
 	}
-
 }

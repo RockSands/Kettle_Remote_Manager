@@ -49,8 +49,8 @@ public class CreateSTDThread implements Runnable {
 			}
 			if (KettleVariables.RECORD_STATUS_ERROR.equals(result.getStatus())
 					|| KettleVariables.RECORD_STATUS_FINISHED.equals(result.getStatus())) {
-				KettleMgrInstance.getInstance().deleteJob(result.getUuid());
-				result = null;
+				//KettleMgrInstance.getInstance().deleteJob(result.getUuid());
+				//result = null;
 			}
 		} catch (KettleException e) {
 			e.printStackTrace();
