@@ -1,5 +1,8 @@
 package com.kettle.remote.record;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +45,11 @@ public class RemoteParallelRecordHandler implements Runnable {
 	private boolean isRunning = false;
 
 	/**
+	 * 保存遗留的任务
+	 */
+	private List<KettleRecord> oldKettleRecords = new LinkedList<KettleRecord>();
+
+	/**
 	 * @param remoteClient
 	 */
 	public RemoteParallelRecordHandler(int processNO, KettleRemoteClient remoteClient) {
@@ -55,13 +63,38 @@ public class RemoteParallelRecordHandler implements Runnable {
 	}
 
 	/**
-	 * 匹配
+	 * 保存遗留数据
+	 */
+	public void addOldKettleRecord(KettleRecord kettleRecord) {
+		oldKettleRecords.add(kettleRecord);
+	}
+
+	/**
+	 * 获取下一个记录
 	 * 
-	 * @param hostName
 	 * @return
 	 */
-	public boolean match(String hostName) {
-		return hostName == null || remoteRecordOperator.getRemoteClient().getHostName().equals(hostName);
+	private synchronized KettleRecord getNextRecord() {
+		if (oldKettleRecords.isEmpty()) {
+			return recordPool.nextRecord();
+		} else {
+			return oldKettleRecords.remove(0);
+		}
+	}
+
+	/**
+	 * 回退Record
+	 * 
+	 * @return
+	 */
+	private synchronized void callBackRecord(KettleRecord record) {
+		if (record != null) {
+			if (record.getHostname() != null) {
+				oldKettleRecords.add(record);
+			} else {
+				recordPool.addPrioritizeRecord(record);
+			}
+		}
 	}
 
 	@SuppressWarnings("deprecation")
@@ -70,6 +103,7 @@ public class RemoteParallelRecordHandler implements Runnable {
 		isRunning = true;
 		logger.debug("Kettle远端进程[" + remoteRecordOperator.getRemoteClient().getHostName() + "-" + processNO + "]进程唤醒!");
 		try {
+			KettleRecord recordTMP = null;
 			// 如果已经加载,直接进行任务处理
 			if (remoteRecordOperator.isAttached()) {
 				// 进行处理
@@ -77,26 +111,23 @@ public class RemoteParallelRecordHandler implements Runnable {
 				if (remoteRecordOperator.isFinished()) {
 					remoteRecordOperator.detachRecord();
 				}
+			} else {
+				recordTMP = getNextRecord();
+				if (recordTMP == null) {
+					// 停止进程
+					Thread.currentThread().stop();
+					isRunning = false;
+				}
 			}
 			// 尝试自动加载任务
 			if (!remoteRecordOperator.isAttached()) {
 				// 自动加载任务
-				KettleRecord recordTMP = recordPool.nextRecord();
-				if (recordTMP != null) {
-					if (remoteRecordOperator.attachRecord(recordTMP)) {
-						remoteRecordOperator.dealRecord();
-					} else {
-						recordPool.addPrioritizeRecord(recordTMP);
-					}
+				if (remoteRecordOperator.attachRecord(recordTMP)) {
+					remoteRecordOperator.dealRecord();
+				} else {
+					callBackRecord(recordTMP);
 				}
 			}
-			// 如果加载不到Record,直接关闭此线程
-			if (!remoteRecordOperator.isAttached()) {
-				// 停止进程
-				Thread.currentThread().stop();
-				isRunning = false;
-			}
-
 		} catch (Exception ex) {
 			logger.error("Kettle远端[" + remoteRecordOperator.getRemoteClient().getHostName() + "-" + processNO
 					+ "]定时任务发生异常成!", ex);

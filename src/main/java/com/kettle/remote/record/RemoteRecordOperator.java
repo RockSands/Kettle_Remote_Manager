@@ -58,12 +58,29 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 		}
 	}
 
+	private void updateRecord() throws KettleException {
+		try {
+			dbClient.updateRecord(record);
+		} catch (Exception ex) {
+			throw new KettleException("remote[" + remoteClient.getHostName() + "]持久化更新Job[" + record.getUuid() + "]失败!",
+					ex);
+		}
+	}
+
 	@Override
 	public void dealApply() throws KettleException {
-		remoteClient.remoteSendJob(record);
-		record.setStatus(KettleVariables.RECORD_STATUS_RUNNING);
+		String runID = null;
+		try {
+			runID = remoteClient.remoteSendJob(record);
+			record.setRunID(runID);
+			record.setStatus(KettleVariables.RECORD_STATUS_RUNNING);
+		} catch (Exception ex) {
+			record.setStatus(KettleVariables.RECORD_STATUS_ERROR);
+			record.setErrMsg("remote[" + remoteClient.getHostName() + "]发送Job[" + record.getUuid() + "]发生异常");
+			logger.error("remote[" + remoteClient.getHostName() + "]发送Job[" + record.getUuid() + "]发生异常!", ex);
+		}
 		record.setHostname(remoteClient.getHostName());
-		dbClient.updateRecord(record);
+		updateRecord();
 	}
 
 	@Override
@@ -95,14 +112,15 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 		try {
 			remoteClient.remoteJobStatus(record);
 			checkJobRunOvertime();
-			if (!record.isRunning()) {
-				// 重新处理
-				super.dealRecord();
-			}
 		} catch (Exception e) {
 			record.setStatus(KettleVariables.RECORD_STATUS_ERROR);
 			record.setErrMsg("Record[" + record.getUuid() + "] 在Remote[" + remoteClient.getHostName() + "]中同步状态发生异常!");
 			logger.error("Record[" + record.getUuid() + "] 在Remote[" + remoteClient.getHostName() + "]中同步状态发生异常!", e);
+		} finally {
+			if (!record.isRunning()) {
+				// 重新处理
+				super.dealRecord();
+			}
 		}
 	}
 

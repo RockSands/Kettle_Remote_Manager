@@ -1,7 +1,9 @@
 package com.kettle.remote.record.service;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -9,10 +11,9 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.kettle.core.instance.KettleMgrInstance;
+import com.kettle.record.KettleRecord;
 import com.kettle.record.service.RecordService;
 import com.kettle.remote.KettleRemoteClient;
-import com.kettle.remote.KettleRemotePool;
 import com.kettle.remote.record.RemoteSerialRecordHandler;
 
 /**
@@ -45,13 +46,26 @@ public class RemoteSerialRecordService extends RecordService {
 	 * 
 	 */
 	public RemoteSerialRecordService() {
-		KettleRemotePool remotePool = KettleMgrInstance.kettleMgrEnvironment.getRemotePool();
 		threadPool = Executors.newScheduledThreadPool(remotePool.getRemoteclients().size());
+		List<KettleRecord> oldRecords = super.getOldRecords();
+		Map<String, List<KettleRecord>> oldRecordMap = new HashMap<String, List<KettleRecord>>();
+		for (KettleRecord record : oldRecords) {
+			if (record.isApply()) {
+				super.recordPool.addPrioritizeRecord(record);
+			}
+			if (record.getHostname() != null) {
+				if (!oldRecordMap.containsKey(record.getHostname())) {
+					oldRecordMap.put(record.getHostname(), new LinkedList<KettleRecord>());
+				}
+				oldRecordMap.get(record.getHostname()).add(record);
+			}
+		}
+		RemoteSerialRecordHandler recordHandler = null;
 		for (KettleRemoteClient remoteClient : remotePool.getRemoteclients()) {
-			handlers.add(new RemoteSerialRecordHandler(remoteClient));
+			recordHandler = new RemoteSerialRecordHandler(remoteClient, oldRecordMap.get(remoteClient.getHostName()));
+			handlers.add(recordHandler);
 		}
 		start();
-		super.attachOldRecord();
 	}
 
 	/**

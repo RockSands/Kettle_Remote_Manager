@@ -315,6 +315,19 @@ public class KettleDBClient {
 	}
 
 	/**
+	 * 更新Record
+	 * 
+	 * @param record
+	 */
+	public synchronized void updateRecordNE(KettleRecord record) {
+		try {
+			updateRecord(record);
+		} catch (Exception ex) {
+			logger.error("数据库更新record[" + record.getUuid() + "]发生异常!", ex);
+		}
+	}
+
+	/**
 	 * 持查询依赖
 	 * 
 	 * @param mainJobID
@@ -466,15 +479,58 @@ public class KettleDBClient {
 	 * @return
 	 * @throws KettleException
 	 */
+	public synchronized List<KettleRecord> allSchedulerRecord() throws KettleException {
+		String sql = "SELECT " + KettleVariables.R_JOB_RECORD_UUID + "," + KettleVariables.R_JOB_RECORD_ID_JOB + ","
+				+ KettleVariables.R_JOB_RECORD_NAME_JOB + "," + KettleVariables.R_RECORD_ID_RUN + ","
+				+ KettleVariables.R_RECORD_STATUS + "," + KettleVariables.R_RECORD_HOSTNAME + ","
+				+ KettleVariables.R_RECORD_CREATETIME + "," + KettleVariables.R_RECORD_UPDATETIME + ","
+				+ KettleVariables.R_RECORD_ERRORMSG + "," + KettleVariables.R_RECORD_CRON_EXPRESSION + " FROM "
+				+ KettleVariables.R_JOB_RECORD + " WHERE " + KettleVariables.R_RECORD_CRON_EXPRESSION + " IS NOT NULL";
+		List<Object[]> result = null;
+		connect();
+		try {
+			result = database.getRows(sql, -1);
+		} finally {
+			disConnect();
+		}
+		List<KettleRecord> kettleJobBeans = new LinkedList<KettleRecord>();
+		if (result == null || result.isEmpty()) {
+			return kettleJobBeans;
+		}
+		KettleRecord bean = null;
+		for (Object[] record : result) {
+			bean = new KettleRecord();
+			bean.setUuid((String) record[0]);
+			bean.setJobid((String) record[1]);
+			bean.setName((String) record[2]);
+			bean.setRunID((String) record[3]);
+			bean.setStatus((String) record[4]);
+			bean.setHostname(record[5] == null ? null : (String) record[5]);
+			bean.setCreateTime((Date) record[6]);
+			bean.setUpdateTime((Date) record[7]);
+			bean.setErrMsg(record[8] == null ? null : (String) record[8]);
+			bean.setCronExpression(record[9] == null ? null : (String) record[9]);
+			kettleJobBeans.add(bean);
+		}
+		return kettleJobBeans;
+	}
+
+	/**
+	 * 获取所有需处理Job任务
+	 * 
+	 * @param hostname
+	 * @return
+	 * @throws KettleException
+	 */
 	public synchronized List<KettleRecord> allHandleRecord() throws KettleException {
 		String sql = "SELECT " + KettleVariables.R_JOB_RECORD_UUID + "," + KettleVariables.R_JOB_RECORD_ID_JOB + ","
 				+ KettleVariables.R_JOB_RECORD_NAME_JOB + "," + KettleVariables.R_RECORD_ID_RUN + ","
 				+ KettleVariables.R_RECORD_STATUS + "," + KettleVariables.R_RECORD_HOSTNAME + ","
 				+ KettleVariables.R_RECORD_CREATETIME + "," + KettleVariables.R_RECORD_UPDATETIME + ","
 				+ KettleVariables.R_RECORD_ERRORMSG + "," + KettleVariables.R_RECORD_CRON_EXPRESSION + " FROM "
-				+ KettleVariables.R_JOB_RECORD + " WHERE (" + KettleVariables.R_RECORD_CRON_EXPRESSION
-				+ " IS NOT NULL OR " + KettleVariables.R_RECORD_STATUS + " in ('"
-				+ KettleVariables.RECORD_STATUS_RUNNING + "', '" + KettleVariables.RECORD_STATUS_APPLY + "'))";
+				+ KettleVariables.R_JOB_RECORD + " WHERE " + KettleVariables.R_RECORD_CRON_EXPRESSION + " IS NULL AND "
+				+ KettleVariables.R_RECORD_STATUS + " in ('" + KettleVariables.RECORD_STATUS_RUNNING + "', '"
+				+ KettleVariables.RECORD_STATUS_APPLY + "')";
 		List<Object[]> result = null;
 		connect();
 		try {

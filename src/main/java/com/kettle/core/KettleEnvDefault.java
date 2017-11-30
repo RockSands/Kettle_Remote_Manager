@@ -9,7 +9,7 @@ public class KettleEnvDefault {
 	/**
 	 * 远端并行任务数量
 	 */
-	public static final Integer KETTLE_RECORD_MAX_PER_REMOTE = 6;
+	public static final int KETTLE_RECORD_MAX_PER_REMOTE = 6;
 
 	/**
 	 * 任务池最大数量,null或小于1标识不判断

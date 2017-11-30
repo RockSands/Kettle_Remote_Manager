@@ -1,6 +1,7 @@
 package com.kettle.remote.record.service;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -10,10 +11,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kettle.core.instance.KettleMgrInstance;
+import com.kettle.record.KettleRecord;
 import com.kettle.record.pool.KettleRecordPoolMonitor;
 import com.kettle.record.service.RecordService;
 import com.kettle.remote.KettleRemoteClient;
-import com.kettle.remote.KettleRemotePool;
 import com.kettle.remote.record.RemoteParallelRecordHandler;
 
 /**
@@ -46,7 +47,6 @@ public class RemoteParallelRecordService extends RecordService implements Kettle
 	 * 构造器
 	 */
 	public RemoteParallelRecordService() {
-		KettleRemotePool remotePool = KettleMgrInstance.kettleMgrEnvironment.getRemotePool();
 		for (KettleRemoteClient remoteClient : remotePool.getRemoteclients()) {
 			for (int i = 0, size = remoteClient.maxRecord; i < size; i++) {
 				handlers.add(new RemoteParallelRecordHandler(i, remoteClient));
@@ -54,12 +54,34 @@ public class RemoteParallelRecordService extends RecordService implements Kettle
 		}
 		threadPool = Executors.newScheduledThreadPool(handlers.size());
 		KettleMgrInstance.kettleMgrEnvironment.getRecordPool().registePoolMonitor(this);
-		super.attachOldRecord();
+		// 遗留任务处理
+		List<KettleRecord> oldRecords = super.getOldRecords();
+		KettleRecord index;
+		for (Iterator<KettleRecord> it = oldRecords.iterator(); it.hasNext();) {
+			index = it.next();
+			if (index.isApply()) {
+				super.recordPool.addPrioritizeRecord(index);
+			}
+		}
 	}
 
 	@Override
 	public synchronized void addRecordNotify() {
 		logger.debug("RecordPool增加一条记录,尝试启动空闲处理单元!");
+		RemoteParallelRecordHandler handler = null;
+		for (int i = 0, size = handlers.size(); i < size; i++, handlerIndex++) {
+			if (handlerIndex >= size) {
+				handlerIndex = 0;
+			}
+			handler = handlers.get(handlerIndex);
+			if (handler.isRunning()) {
+				threadPool.scheduleAtFixedRate(handlers.get(handlerIndex), 0, 10, TimeUnit.SECONDS);
+				break;
+			}
+		}
+	}
+	
+	private synchronized void addOldRecords(List<KettleRecord> oldRecords) {
 		RemoteParallelRecordHandler handler = null;
 		for (int i = 0, size = handlers.size(); i < size; i++, handlerIndex++) {
 			if (handlerIndex >= size) {

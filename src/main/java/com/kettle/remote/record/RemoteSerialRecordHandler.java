@@ -1,11 +1,14 @@
 package com.kettle.remote.record;
 
-import java.util.Arrays;
-import java.util.Comparator;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.kettle.core.KettleVariables;
+import com.kettle.core.instance.KettleMgrEnvironment;
 import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.record.KettleRecord;
 import com.kettle.record.pool.KettleRecordPool;
@@ -37,68 +40,75 @@ public class RemoteSerialRecordHandler implements Runnable {
 	/**
 	 * 处理的任务
 	 */
-	private final RemoteRecordOperator[] remoteRecordOperators;
+	private final RemoteRecordOperator remoteRecordOperator;
+
+	/**
+	 * 保存遗留的任务
+	 */
+	private List<KettleRecord> kettleRecords = new LinkedList<KettleRecord>();
 
 	/**
 	 * @param client
 	 */
-	public RemoteSerialRecordHandler(KettleRemoteClient remoteClient) {
+	public RemoteSerialRecordHandler(KettleRemoteClient remoteClient, List<KettleRecord> kettleRecords) {
 		this.remoteClient = remoteClient;
-		this.remoteRecordOperators = new RemoteRecordOperator[remoteClient.maxRecord];
-		for (int i = 0; i < remoteClient.maxRecord; i++) {
-			remoteRecordOperators[i] = new RemoteRecordOperator(remoteClient);
-		}
+		this.remoteRecordOperator = new RemoteRecordOperator(remoteClient);
 		recordPool = KettleMgrInstance.kettleMgrEnvironment.getRecordPool();
+		if (kettleRecords != null) {
+			kettleRecords.addAll(kettleRecords);
+		}
 	}
 
 	/**
-	 * 排序,将Null放到最后
+	 * 获取记录
+	 * 
+	 * @return
 	 */
-	private void sortRemoteRecordOperators() {
-		Arrays.sort(remoteRecordOperators, new Comparator<RemoteRecordOperator>() {
-			public int compare(RemoteRecordOperator o1, RemoteRecordOperator o2) {
-				if (o1.getRecord() == null) {
-					return 1;
-				}
-				if (o2.getRecord() == null) {
-					return -1;
-				}
-				return 0;
+	private synchronized void fetchRecord() {
+		KettleRecord tmp = null;
+		while (kettleRecords.size() < KettleMgrEnvironment.KETTLE_RECORD_MAX_PER_REMOTE) {
+			tmp = recordPool.nextRecord();
+			if (tmp == null) {
+				break;
+			} else {
+				kettleRecords.add(tmp);
 			}
-		});
+		}
+	}
+
+	/**
+	 * 获取记录
+	 * 
+	 * @return
+	 */
+	private synchronized void dealRecords() {
+		KettleRecord indexRecord;
+		for (Iterator<KettleRecord> it = kettleRecords.iterator(); it.hasNext();) {
+			indexRecord = it.next();
+			try {
+				remoteRecordOperator.attachRecord(indexRecord);
+				remoteRecordOperator.dealRecord();
+			} catch (Exception ex) {
+				logger.error("Kettle远端[" + remoteClient.getHostName() + "]处理record[" + indexRecord.getUuid() + "]发生异常!",
+						ex);
+				indexRecord.setStatus(KettleVariables.RECORD_STATUS_ERROR);
+			} finally {
+				remoteRecordOperator.detachRecord();
+			}
+			if (indexRecord.isError() || indexRecord.isFinished()) {
+				it.remove();
+			}
+		}
 	}
 
 	@Override
 	public void run() {
+		logger.debug("Kettle远端进程[" + remoteClient.getHostName() + "]守护进程唤醒!");
 		try {
-			sortRemoteRecordOperators();
-			KettleRecord recordTMP = null;
-			for (RemoteRecordOperator remoteRecordOperator : remoteRecordOperators) {
-				// 如果已经加载,直接进行任务处理
-				if (remoteRecordOperator.isAttached()) {
-					// 进行处理
-					remoteRecordOperator.dealRecord();
-					if (remoteRecordOperator.isFinished()) {
-						remoteRecordOperator.detachRecord();
-					}
-				} else {
-					recordTMP = recordPool.nextRecord();
-					if (recordTMP == null) {
-						break;
-					}
-				}
-				// 尝试自动加载任务
-				if (!remoteRecordOperator.isAttached()) {
-					// 自动加载任务
-					if (remoteRecordOperator.attachRecord(recordTMP)) {
-						remoteRecordOperator.dealRecord();
-					} else {
-						recordPool.addPrioritizeRecord(recordTMP);
-					}
-				}
-			}
+			fetchRecord();
+			dealRecords();
 		} catch (Exception ex) {
-			logger.error("Kettle远端[" + remoteClient.getHostName() + "]定时任务发生异常成!", ex);
+			logger.error("Kettle远端[" + remoteClient.getHostName() + "]守护进程结束!", ex);
 		}
 	}
 

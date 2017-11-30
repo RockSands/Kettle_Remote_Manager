@@ -1,5 +1,6 @@
 package com.kettle.record.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,6 +19,7 @@ import com.kettle.core.repo.KettleRepositoryClient;
 import com.kettle.record.KettleRecord;
 import com.kettle.record.KettleRecordRelation;
 import com.kettle.record.pool.KettleRecordPool;
+import com.kettle.remote.KettleRemotePool;
 
 /**
  * Record的服务
@@ -47,10 +49,16 @@ public abstract class RecordService {
 	 */
 	protected final KettleRecordPool recordPool;
 
+	/**
+	 * 远程池
+	 */
+	protected final KettleRemotePool remotePool;
+
 	public RecordService() {
 		recordPool = KettleMgrInstance.kettleMgrEnvironment.getRecordPool();
 		dbClient = KettleMgrInstance.kettleMgrEnvironment.getDbClient();
 		repositoryClient = KettleMgrInstance.kettleMgrEnvironment.getRepositoryClient();
+		remotePool = KettleMgrInstance.kettleMgrEnvironment.getRemotePool();
 	}
 
 	/**
@@ -222,22 +230,16 @@ public abstract class RecordService {
 	}
 
 	/**
-	 * 加载遗留Record
+	 * 获取遗留Record
+	 * 
+	 * @return
 	 */
-	protected void attachOldRecord() {
+	protected List<KettleRecord> getOldRecords() {
 		try {
-			for (KettleRecord record : dbClient.allHandleRecord()) {
-				if (record.isApply()) {
-					record.setKettleMeta(repositoryClient.getJobMeta(record.getJobid()));
-					recordPool.addPrioritizeRecord(record);
-				} else {
-					record.setStatus(KettleVariables.RECORD_STATUS_ERROR);
-					record.setErrMsg("系统重启,已经无法追踪任务状态!");
-					this.dbClient.updateRecord(record);
-				}
-			}
+			return dbClient.allHandleRecord();
 		} catch (Exception ex) {
 			logger.error("加载遗留Record发生异常!");
+			return new ArrayList<KettleRecord>(0);
 		}
 	}
 }

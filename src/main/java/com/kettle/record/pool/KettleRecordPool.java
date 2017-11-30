@@ -20,9 +20,13 @@ import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.TriggerKey;
 import org.quartz.impl.StdSchedulerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.kettle.core.KettleVariables;
+import com.kettle.core.db.KettleDBClient;
 import com.kettle.core.instance.KettleMgrEnvironment;
+import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.record.KettleRecord;
 
 /**
@@ -32,6 +36,12 @@ import com.kettle.record.KettleRecord;
  *
  */
 public class KettleRecordPool {
+
+	/**
+	 * 日志
+	 */
+	private static Logger logger = LoggerFactory.getLogger(KettleRecordPool.class);
+
 	/**
 	 * Repeat任务调度工厂
 	 */
@@ -58,13 +68,36 @@ public class KettleRecordPool {
 	private List<KettleRecordPoolMonitor> poolMonitors = new LinkedList<KettleRecordPoolMonitor>();
 
 	/**
+	 * 数据库
+	 */
+	private final KettleDBClient dbClient;
+
+	/**
 	 * 
 	 * @throws Exception
 	 */
 	public KettleRecordPool() throws Exception {
+		dbClient = KettleMgrInstance.kettleMgrEnvironment.getDbClient();
 		SchedulerFactory schedulerfactory = new StdSchedulerFactory();
 		scheduler = schedulerfactory.getScheduler();
 		scheduler.start();
+		addAllDBSchedulerRecord();
+	}
+
+	/**
+	 * 加载数据库定义Record
+	 * 
+	 * @return
+	 */
+	private void addAllDBSchedulerRecord() {
+		try {
+			List<KettleRecord> records = dbClient.allHandleRecord();
+			for (KettleRecord record : records) {
+				addSchedulerRecord(record);
+			}
+		} catch (Exception ex) {
+			logger.error("加载数据库调度Record发生异常!");
+		}
 	}
 
 	/**
@@ -103,6 +136,7 @@ public class KettleRecordPool {
 			if (!isAcceptedRecord(record)) {
 				check();
 				record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
+				dbClient.updateRecord(record);
 				recordCache.put(record.getUuid(), record);
 				if (recordQueue.offer(record.getUuid())) {
 					notifyPoolMonitors();
@@ -128,6 +162,9 @@ public class KettleRecordPool {
 				boolean result = recordPrioritizeQueue.offer(record.getUuid());
 				if (result) {
 					notifyPoolMonitors();
+					record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
+					record.setHostname(null);
+					dbClient.updateRecordNE(record);
 				}
 				return result;
 			} else if (!isAcceptedRecord(record)) {// 一般任务
@@ -135,6 +172,9 @@ public class KettleRecordPool {
 				boolean result = recordPrioritizeQueue.offer(record.getUuid());
 				if (result) {
 					notifyPoolMonitors();
+					record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
+					record.setHostname(null);
+					dbClient.updateRecordNE(record);
 				}
 				return result;
 			}

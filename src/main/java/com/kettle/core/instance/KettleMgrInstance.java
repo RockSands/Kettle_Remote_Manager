@@ -139,7 +139,7 @@ public class KettleMgrInstance {
 	 * @throws KettleException.
 	 */
 	public KettleResult registeJob(KettleJobEntireDefine jobEntire) throws KettleException {
-		logger.info("Kettle注册Job[" + jobEntire.getMainJob().getName() + "]");
+		//logger.info("Kettle注册Job[" + jobEntire.getMainJob().getName() + "]");
 		KettleRecord record = recordService.registeJob(jobEntire);
 		KettleResult result = new KettleResult();
 		result.setUuid(record.getUuid());
@@ -158,7 +158,7 @@ public class KettleMgrInstance {
 	 */
 	public KettleResult applyScheduleJob(KettleJobEntireDefine jobEntire, String cronExpression)
 			throws KettleException {
-		logger.info("Kettle注册Repeat_Job[" + jobEntire.getMainJob().getName() + "]");
+		//logger.info("Kettle注册Repeat_Job[" + jobEntire.getMainJob().getName() + "]");
 		KettleRecord record = recordService.applyScheduleJob(jobEntire, cronExpression);
 		KettleResult result = new KettleResult();
 		result.setUuid(record.getUuid());
@@ -174,7 +174,7 @@ public class KettleMgrInstance {
 	 * @throws KettleException
 	 */
 	public void modifySchedule(String uuid, String newCron) throws KettleException {
-		logger.info("Kettle修改Repeat_Job[" + uuid + "]的Cron表达式[" + newCron + "]");
+		//logger.info("Kettle修改Repeat_Job[" + uuid + "]的Cron表达式[" + newCron + "]");
 		try {
 			recordService.modifyRecordSchedule(uuid, newCron);
 		} catch (Exception e) {
@@ -192,7 +192,7 @@ public class KettleMgrInstance {
 	 * @throws KettleException
 	 */
 	public KettleResult excuteJob(String uuid) throws KettleException {
-		logger.info("Kettle开始执行Job[" + uuid + "]");
+		//logger.info("Kettle开始执行Job[" + uuid + "]");
 		KettleRecord record = recordService.excuteJob(uuid);
 		KettleResult result = new KettleResult();
 		result.setUuid(record.getUuid());
@@ -209,7 +209,7 @@ public class KettleMgrInstance {
 	 * @throws KettleException
 	 */
 	public KettleResult queryJob(String uuid) throws KettleException {
-		logger.info("Kettle开始查询Job[" + uuid + "]");
+		//logger.info("Kettle开始查询Job[" + uuid + "]");
 		KettleRecord record = recordService.queryJob(uuid);
 		KettleResult result = new KettleResult();
 		result.setUuid(record.getUuid());
@@ -225,7 +225,7 @@ public class KettleMgrInstance {
 	 * @throws KettleException
 	 */
 	public void deleteJob(String uuid) throws KettleException {
-		logger.info("Kettle开始查询Job[" + uuid + "]");
+		//logger.info("Kettle开始删除Job[" + uuid + "]");
 		recordService.deleteJob(uuid);
 	}
 
