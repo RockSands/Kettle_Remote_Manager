@@ -45,16 +45,27 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 	}
 
 	/**
+	 * 强制加载,无视远端状态
+	 * 
+	 * @param record
+	 * @return
+	 */
+	public boolean attachRecordForce(KettleRecord record) {
+		return super.attachRecord(record);
+	}
+
+	/**
 	 * @param record
 	 * @throws KettleException
 	 */
 	@Override
 	public void dealRecord() throws KettleException {
-		if (remoteClient.isRunning()) {
-			super.dealRecord();
-		} else {
-			dealErrorRemoteRecord();
-			super.dealRecord();
+		if (isAttached()) {
+			if (remoteClient.isRunning()) {
+				super.dealRecord();
+			} else if (!record.isApply()) {
+				dealErrorRemoteRecord();
+			}
 		}
 	}
 
@@ -126,10 +137,13 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 
 	/**
 	 * 处理远端无法连接的记录
+	 * 
+	 * @throws KettleException
 	 */
-	private void dealErrorRemoteRecord() {
+	private void dealErrorRemoteRecord() throws KettleException {
 		record.setStatus(KettleVariables.RECORD_STATUS_ERROR);
 		record.setErrMsg("Remote[" + remoteClient.getHostName() + "]状态异常,Record[" + record.getUuid() + "]");
+		updateRecord();
 	}
 
 	/**

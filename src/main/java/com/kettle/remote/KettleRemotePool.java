@@ -64,7 +64,7 @@ public class KettleRemotePool {
 		}
 		logger.info("Kettle远程池已经加载Client" + remoteclients.keySet());
 		// 每30秒同步一次状态
-		threadPool.scheduleAtFixedRate(new RemoteDeamon(), 10, 30, TimeUnit.SECONDS);
+		threadPool.scheduleAtFixedRate(new RemoteDeamon(), 10, 10, TimeUnit.SECONDS);
 	}
 
 	/**

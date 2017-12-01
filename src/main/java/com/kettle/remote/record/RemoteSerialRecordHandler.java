@@ -65,16 +65,48 @@ public class RemoteSerialRecordHandler implements Runnable {
 	 * @return
 	 */
 	private synchronized void fetchRecord() {
+		KettleRecord recordTMP = null;
 		if (!remoteClient.isRunning()) {
+			dealRemoteErrorRecords();
+		} else {
+			while (kettleRecords.size() < KettleMgrEnvironment.KETTLE_RECORD_MAX_PER_REMOTE) {
+				recordTMP = recordPool.nextRecord();
+				if (recordTMP == null) {
+					break;
+				} else {
+					kettleRecords.add(recordTMP);
+				}
+			}
+		}
+	}
+
+	/**
+	 * 远程错误是对Record的处理
+	 */
+	private void dealRemoteErrorRecords() {
+		KettleRecord recordTMP = null;
+		if (kettleRecords.isEmpty()) {
 			return;
 		}
-		KettleRecord tmp = null;
-		while (kettleRecords.size() < KettleMgrEnvironment.KETTLE_RECORD_MAX_PER_REMOTE) {
-			tmp = recordPool.nextRecord();
-			if (tmp == null) {
-				break;
-			} else {
-				kettleRecords.add(tmp);
+		for (Iterator<KettleRecord> it = kettleRecords.iterator(); it.hasNext();) {
+			recordTMP = it.next();
+			if (recordTMP != null && recordTMP.isApply()) {
+				recordPool.addPrioritizeRecord(recordTMP);
+				it.remove();
+			}
+			if (recordTMP.isRunning()
+					&& (System.currentTimeMillis() - recordTMP.getUpdateTime().getTime()) / 1000 > 5) {
+				try {
+					recordTMP.setStatus(KettleVariables.RECORD_STATUS_ERROR);
+					recordTMP.setErrMsg("Remote[" + remoteClient.getHostName() + "]长时间无法连接!");
+					remoteRecordOperator.attachRecordForce(recordTMP);
+					remoteRecordOperator.dealRecord();
+					remoteRecordOperator.detachRecord();
+				} catch (Exception ex) {
+					logger.error("Remote[" + remoteClient.getHostName() + "]无法连接,对运行的的Record[" + recordTMP.getUuid()
+							+ "]处理发生异常!", ex);
+				}
+				it.remove();
 			}
 		}
 	}
@@ -88,13 +120,15 @@ public class RemoteSerialRecordHandler implements Runnable {
 		KettleRecord indexRecord;
 		for (Iterator<KettleRecord> it = kettleRecords.iterator(); it.hasNext();) {
 			indexRecord = it.next();
+			if (indexRecord == null) {
+				continue;
+			}
 			try {
 				remoteRecordOperator.attachRecord(indexRecord);
 				remoteRecordOperator.dealRecord();
 			} catch (Exception ex) {
 				logger.error("Kettle远端[" + remoteClient.getHostName() + "]处理record[" + indexRecord.getUuid() + "]发生异常!",
 						ex);
-				indexRecord.setStatus(KettleVariables.RECORD_STATUS_ERROR);
 			} finally {
 				remoteRecordOperator.detachRecord();
 			}
