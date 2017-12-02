@@ -13,7 +13,6 @@ import com.kettle.core.instance.KettleMgrEnvironment;
 import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.record.KettleRecord;
 import com.kettle.record.pool.KettleRecordPool;
-import com.kettle.record.pool.KettleRecordPoolMonitor;
 import com.kettle.remote.KettleRemoteClient;
 
 /**
@@ -22,7 +21,7 @@ import com.kettle.remote.KettleRemoteClient;
  * @author Administrator
  *
  */
-public class RemoteParallelRecordHandler implements KettleRecordPoolMonitor {
+public class RemoteParallelRecordHandler {
 
 	/**
 	 * 日志
@@ -40,9 +39,9 @@ public class RemoteParallelRecordHandler implements KettleRecordPoolMonitor {
 	private final KettleRecordPool recordPool;
 
 	/**
-	 * records
+	 * records,存放改Remote处理的Record,即Record的Hostname属性为该remote
 	 */
-	private List<KettleRecord> kettleRecords = new LinkedList<KettleRecord>();
+	private List<KettleRecord> thisRemoteRecords = new LinkedList<KettleRecord>();
 
 	/**
 	 * 线程池
@@ -58,25 +57,28 @@ public class RemoteParallelRecordHandler implements KettleRecordPoolMonitor {
 	 * @param remoteClient
 	 */
 	public RemoteParallelRecordHandler(KettleRemoteClient remoteClient, List<KettleRecord> oldRecords) {
-		threadPool = Executors.newScheduledThreadPool(KettleMgrEnvironment.KETTLE_RECORD_MAX_PER_REMOTE / 2);
-		RecordOperatorThread[] remoteRecordThreads = new RecordOperatorThread[KettleMgrEnvironment.KETTLE_RECORD_MAX_PER_REMOTE];
+		threadPool = Executors.newScheduledThreadPool(KettleMgrEnvironment.KETTLE_RECORD_MAX_PER_REMOTE);
+		remoteRecordThreads = new RecordOperatorThread[KettleMgrEnvironment.KETTLE_RECORD_MAX_PER_REMOTE];
 		for (int i = 0; i < remoteRecordThreads.length; i++) {
 			remoteRecordThreads[i] = new RecordOperatorThread();
+			remoteRecordThreads[i].remoteRecordOperator = new RemoteRecordOperator(remoteClient);
 		}
 		this.remoteClient = remoteClient;
 		recordPool = KettleMgrInstance.kettleMgrEnvironment.getRecordPool();
 		if (oldRecords != null && !oldRecords.isEmpty()) {
-			kettleRecords.addAll(oldRecords);
+			thisRemoteRecords.addAll(oldRecords);
 		}
-		recordPool.registePoolMonitor(this);
+		tryAwaken();
 	}
 
-	@Override
-	public void addRecordNotify() {
+	/**
+	 * 尝试唤醒
+	 */
+	public void tryAwaken() {
 		if (!remoteClient.isRunning()) {
 			return;
 		}
-		if (kettleRecords.isEmpty()) {
+		if (thisRemoteRecords.isEmpty()) {
 			attackRecords();
 		}
 	}
@@ -94,36 +96,12 @@ public class RemoteParallelRecordHandler implements KettleRecordPoolMonitor {
 				if (recordTMP == null) {
 					return;
 				}
-				operatorThread.remoteRecordOperator.attachRecord(recordTMP);
-				if (!remoteClient.isRunning()) {// 远端无法连接
-					kettleRecords.add(recordTMP);
-					operatorThread.remoteRecordOperator.detachRecord();
-					// 进行等待
-					threadPool.schedule(new Runnable() {
-						long startTime = System.currentTimeMillis();
-
-						@SuppressWarnings("deprecation")
-						@Override
-						public void run() {
-							if (!remoteClient.isRunning()) {
-								for (KettleRecord index : kettleRecords) {
-									if (index.isApply()) {
-										recordPool.addPrioritizeRecord(index);
-									}
-								}
-								if ((System.currentTimeMillis() - startTime) / 1000 / 60 > 60l) {// 一个小时后停止监听
-									Thread.currentThread().stop();
-								}
-							} else {
-								addRecordNotify();
-							}
-						}
-					}, 30, TimeUnit.SECONDS);
-					return;
-				} else {// 启动
-					logger.debug(
-							"remote[" + remoteClient.getHostName() + "]唤醒一个处理进程处理Record[" + recordTMP.getUuid() + "]");
-					threadPool.scheduleAtFixedRate(operatorThread, 2, 10, TimeUnit.SECONDS);
+				if (operatorThread.remoteRecordOperator.attachRecord(recordTMP)) {
+					logger.info("remote[" + remoteClient.getHostName() + "]开始处理Record[" + recordTMP.getUuid() + "]!");
+					operatorThread.isRunning = true;
+					threadPool.scheduleAtFixedRate(operatorThread, 1, 5, TimeUnit.SECONDS);
+				} else {
+					callBackRecord(recordTMP);
 					break;
 				}
 			}
@@ -136,10 +114,26 @@ public class RemoteParallelRecordHandler implements KettleRecordPoolMonitor {
 	 * @return
 	 */
 	private synchronized KettleRecord getNextRecord() {
-		if (kettleRecords.isEmpty()) {
+		if (thisRemoteRecords.isEmpty()) {
 			return recordPool.nextRecord();
 		}
-		return kettleRecords.remove(0);
+		return thisRemoteRecords.remove(0);
+	}
+
+	/**
+	 * 获取下一个任务
+	 * 
+	 * @return
+	 */
+	private synchronized void callBackRecord(KettleRecord record) {
+		if (record == null) {
+			return;
+		}
+		if (record.getHostname() != null) {
+			thisRemoteRecords.add(record);
+		} else {
+			recordPool.addPrioritizeRecord(record);
+		}
 	}
 
 	/**
@@ -150,7 +144,7 @@ public class RemoteParallelRecordHandler implements KettleRecordPoolMonitor {
 
 		private boolean isRunning = false;
 
-		private final RemoteRecordOperator remoteRecordOperator = new RemoteRecordOperator(remoteClient);
+		private RemoteRecordOperator remoteRecordOperator;
 
 		@SuppressWarnings("deprecation")
 		@Override
@@ -161,10 +155,20 @@ public class RemoteParallelRecordHandler implements KettleRecordPoolMonitor {
 				if (remoteRecordOperator.isFinished()) {
 					remoteRecordOperator.detachRecord();
 					KettleRecord recordTMP = getNextRecord();
-					remoteRecordOperator.attachRecord(recordTMP);
-					if (!remoteRecordOperator.isRunning()) {
+					if (recordTMP == null) { // 如果没有后续任务,直接停止进程
 						isRunning = false;
 						Thread.currentThread().stop();
+						return;
+					}
+					if (remoteRecordOperator.attachRecord(recordTMP)) {
+						logger.info(
+								"remote[" + remoteClient.getHostName() + "]开始处理下一个Record[" + recordTMP.getUuid() + "]!");
+						remoteRecordOperator.dealRecord();
+					} else {
+						callBackRecord(recordTMP);
+						isRunning = false;
+						Thread.currentThread().stop();
+						return;
 					}
 				}
 			} catch (Exception e) {

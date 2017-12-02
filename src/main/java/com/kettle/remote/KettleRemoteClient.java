@@ -50,6 +50,12 @@ public class KettleRemoteClient {
 	 */
 	public final int maxRecord;
 
+	/**
+	 * 构造器
+	 * @param repositoryClient
+	 * @param remoteServer
+	 * @throws KettleException
+	 */
 	public KettleRemoteClient(KettleRepositoryClient repositoryClient, final SlaveServer remoteServer)
 			throws KettleException {
 		this.repositoryClient = repositoryClient;
@@ -127,7 +133,7 @@ public class KettleRemoteClient {
 	 */
 	public void remoteStartJob(KettleRecord job) throws Exception {
 		WebResult result = remoteServer.startJob(job.getName(), job.getRunID());
-		if (!"OK".equals(result.getResult())) {
+		if (!WebResult.STRING_OK.equals(result.getResult())) {
 			throw new KettleException("Kettle远端[" + this.getHostName() + "]启动Job[" + job.getUuid() + "]失败!");
 		}
 	}

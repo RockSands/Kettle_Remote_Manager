@@ -15,7 +15,7 @@ public class MyTest {
 					public void run() {
 						System.out.println("====!=====");
 						Thread.currentThread().stop();
-						return;
+						System.out.println("====4444=====");
 					}
 				}, 1, 2, TimeUnit.SECONDS);
 				Thread.sleep(6000);

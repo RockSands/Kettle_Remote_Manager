@@ -6,8 +6,14 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.kettle.record.KettleRecord;
+import com.kettle.record.pool.KettleRecordPoolMonitor;
 import com.kettle.record.service.RecordService;
 import com.kettle.remote.KettleRemoteClient;
 import com.kettle.remote.record.RemoteParallelRecordHandler;
@@ -18,11 +24,21 @@ import com.kettle.remote.record.RemoteParallelRecordHandler;
  * @author Administrator
  *
  */
-public class RemoteParallelRecordService extends RecordService {
+public class RemoteParallelRecordService extends RecordService implements KettleRecordPoolMonitor {
+
+	/**
+	 * 日志
+	 */
+	private static Logger logger = LoggerFactory.getLogger(RemoteParallelRecordService.class);
 	/**
 	 * 远程执行则
 	 */
 	private final List<RemoteParallelRecordHandler> handlers = new ArrayList<RemoteParallelRecordHandler>();
+
+	/**
+	 * 线程池
+	 */
+	private final ExecutorService threadPool = Executors.newSingleThreadExecutor();
 
 	/**
 	 * 构造器
@@ -47,13 +63,27 @@ public class RemoteParallelRecordService extends RecordService {
 			}
 		}
 		for (KettleRemoteClient remoteClient : remotePool.getRemoteclients()) {
-			for (int i = 0, size = remoteClient.maxRecord; i < size; i++) {
-				handlers.add(
-						new RemoteParallelRecordHandler(remoteClient, oldRecordMap.get(remoteClient.getHostName())));
-			}
+			handlers.add(new RemoteParallelRecordHandler(remoteClient, oldRecordMap.get(remoteClient.getHostName())));
 		}
 		for (KettleRecord record : oldRecords) {
 			super.recordPool.addPrioritizeRecord(record);
+		}
+		recordPool.registePoolMonitor(this);
+	}
+
+	@Override
+	public void addRecordNotify() {
+		for (final RemoteParallelRecordHandler handler : handlers) {
+			threadPool.execute(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						handler.tryAwaken();
+					} catch (Exception ex) {
+						logger.error("RemoteParallelRecordService发生异常!\n", ex);
+					}
+				}
+			});
 		}
 	}
 }

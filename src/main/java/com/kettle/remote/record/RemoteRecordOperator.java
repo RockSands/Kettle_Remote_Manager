@@ -38,8 +38,8 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 
 	@Override
 	public boolean attachRecord(KettleRecord record) {
-		if (remoteClient.isRunning()) {
-			return super.attachRecord(record);
+		if (remoteClient.isRunning() && super.attachRecord(record)) {
+			return true;
 		}
 		return false;
 	}

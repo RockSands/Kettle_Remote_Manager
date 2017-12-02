@@ -43,7 +43,7 @@ public class RemoteSerialRecordService extends RecordService {
 	private Boolean hasStart;
 
 	/**
-	 * 
+	 * 构造器
 	 */
 	public RemoteSerialRecordService() {
 		threadPool = Executors.newScheduledThreadPool(remotePool.getRemoteclients().size());
