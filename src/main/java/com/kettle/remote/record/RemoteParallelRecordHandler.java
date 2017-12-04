@@ -161,8 +161,8 @@ public class RemoteParallelRecordHandler {
 						return;
 					}
 					if (remoteRecordOperator.attachRecord(recordTMP)) {
-						logger.info(
-								"remote[" + remoteClient.getHostName() + "]开始处理下一个Record[" + recordTMP.getUuid() + "]!");
+						logger.info("remote[" + remoteClient.getHostName() + "]开始处理下一个Record[" + recordTMP.getUuid()
+								+ "]!");
 						remoteRecordOperator.dealRecord();
 					} else {
 						callBackRecord(recordTMP);

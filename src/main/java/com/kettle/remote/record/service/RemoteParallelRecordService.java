@@ -68,12 +68,16 @@ public class RemoteParallelRecordService extends RecordService implements Kettle
 		for (KettleRecord record : oldRecords) {
 			super.recordPool.addPrioritizeRecord(record);
 		}
+		// 注册监听
 		recordPool.registePoolMonitor(this);
+		// 申请
+		addRecordNotify();
 	}
 
 	@Override
 	public void addRecordNotify() {
 		for (final RemoteParallelRecordHandler handler : handlers) {
+			// 尝试唤醒
 			threadPool.execute(new Runnable() {
 				@Override
 				public void run() {
