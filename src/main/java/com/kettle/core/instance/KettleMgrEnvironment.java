@@ -37,6 +37,24 @@ public class KettleMgrEnvironment {
 	private KettleDBClient dbClient;
 
 	/**
+	 * RecordDB是否使用连接池
+	 */
+	public static String KETTLE_RECORD_DB_POOL = NVLStr("KETTLE_RECORD_DB_POOL",
+			KettleEnvDefault.KETTLE_RECORD_DB_POOL);
+
+	/**
+	 * RecordDB是否使用连接池
+	 */
+	public static int KETTLE_RECORD_DB_POOL_INIT = NVLInt("KETTLE_RECORD_DB_POOL_INIT",
+			KettleEnvDefault.KETTLE_RECORD_DB_POOL_INIT);
+
+	/**
+	 * RecordDB是否使用连接池
+	 */
+	public static int KETTLE_RECORD_DB_POOL_MAX = NVLInt("KETTLE_RECORD_DB_POOL_MAX",
+			KettleEnvDefault.KETTLE_RECORD_DB_POOL_MAX);
+
+	/**
 	 * Record任务最大保持数量
 	 */
 	public static Integer KETTLE_RECORD_POOL_MAX = NVLInt("KETTLE_RECORD_POOL_MAX",
