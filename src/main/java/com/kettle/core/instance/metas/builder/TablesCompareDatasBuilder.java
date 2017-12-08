@@ -38,6 +38,7 @@ import net.sf.jsqlparser.statement.select.Select;
 
 /**
  * Table比较构建器
+ * 
  * @author Administrator
  *
  */
@@ -97,6 +98,7 @@ public class TablesCompareDatasBuilder {
 				"Native", newOption.getHost(), newOption.getDatabase(), newOption.getPort(), newOption.getUser(),
 				newOption.getPasswd());
 		transMeta.addDatabase(newDatabase);
+		transMeta.setUsingUniqueConnections(true);
 		/*
 		 * 条件
 		 */

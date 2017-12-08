@@ -49,7 +49,6 @@ public class KettleMgrInstance {
 	/**
 	 * 远程执行池
 	 */
-	;
 	public static KettleMgrEnvironment kettleMgrEnvironment;
 
 	/**

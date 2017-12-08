@@ -197,6 +197,7 @@ public class TableDataMigrationBuilder {
 		transMeta.setRepository(repositoryClient.getRepository());
 		transMeta.setRepositoryDirectory(directory);
 		kettleJobEntireDefine.getDependentTrans().add(transMeta);
+		transMeta.setUsingUniqueConnections(true);
 
 		JobMeta mainJob = new JobMeta();
 		mainJob.setRepository(repositoryClient.getRepository());
