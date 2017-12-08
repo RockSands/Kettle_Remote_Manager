@@ -77,7 +77,6 @@ public class SyncTablesDatasBuilder {
 				target.getHost() + "_" + target.getDatabase() + "_" + target.getUser(), target.getType(), "Native",
 				target.getHost(), target.getDatabase(), target.getPort(), target.getUser(), target.getPasswd());
 		transMeta.addDatabase(targetDatabase);
-		transMeta.setUsingUniqueConnections(true);
 		/*
 		 * 获取非PK列
 		 */
