@@ -188,7 +188,7 @@ public class KettleRepositoryClient {
 		try {
 			repository.deleteTransformation(toObjectID(transID));
 		} catch (KettleException e) {
-			logger.error("资源池删除Trans[" + transID + "]发生异常");
+			logger.error("资源池删除Trans[" + transID + "]发生异常", e);
 		}
 	}
 
@@ -213,7 +213,7 @@ public class KettleRepositoryClient {
 		try {
 			deleteJobMeta(jobID);
 		} catch (KettleException e) {
-			logger.error("资源池删除JOB[" + jobID + "]发生异常");
+			logger.error("资源池删除JOB[" + jobID + "]发生异常", e);
 		}
 	}
 

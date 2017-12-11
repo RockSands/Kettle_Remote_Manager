@@ -402,7 +402,7 @@ public class KettleDBClient {
 				+ KettleVariables.R_RECORD_DEPENDENT_MASTER_UUID_ID + " = '" + mainJobUUID + "'";
 		List<Object[]> result = null;
 		List<KettleRecordRelation> depends = new LinkedList<KettleRecordRelation>();
-		result = database.getRows(sql, -1);
+		result = queryRows(sql);
 		if (result == null) {
 			return depends;
 		}

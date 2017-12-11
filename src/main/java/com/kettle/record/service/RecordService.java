@@ -212,16 +212,17 @@ public abstract class RecordService {
 		KettleRecord record = dbClient.queryRecord(uuid);
 		return record;
 	}
-	
-    /**
-     * 查询
-     * @param uuids
-     * @return
-     * @throws KettleException
-     */
-    public List<KettleRecord> queryJobs(List<String> uuids) throws KettleException {
-        return dbClient.queryRecords(uuids);
-    }
+
+	/**
+	 * 查询
+	 * 
+	 * @param uuids
+	 * @return
+	 * @throws KettleException
+	 */
+	public List<KettleRecord> queryJobs(List<String> uuids) throws KettleException {
+		return dbClient.queryRecords(uuids);
+	}
 
 	/**
 	 * 删除工作
@@ -230,10 +231,7 @@ public abstract class RecordService {
 	 * @throws KettleException
 	 */
 	public void deleteJob(String uuid) throws KettleException {
-		KettleRecord record = dbClient.queryRecord(uuid);
-		if (record != null) {
-			recordPool.deleteRecord(uuid);
-		}
+		recordPool.deleteRecord(uuid);
 		dbClient.deleteRecordNE(uuid);
 		List<KettleRecordRelation> relations = dbClient.deleteDependentsRelationNE(uuid);
 		repositoryClient.deleteJobEntireDefineNE(relations);
