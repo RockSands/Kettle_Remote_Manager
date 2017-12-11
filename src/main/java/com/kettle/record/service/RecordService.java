@@ -231,6 +231,13 @@ public abstract class RecordService {
 	 * @throws KettleException
 	 */
 	public void deleteJob(String uuid) throws KettleException {
+		KettleRecord record = dbClient.queryRecord(uuid);
+		if (record == null) {
+			return;
+		}
+		if (record.isRunning()) {
+			throw new KettleException("Record[" + uuid + "]运行中,无法删除!");
+		}
 		recordPool.deleteRecord(uuid);
 		dbClient.deleteRecordNE(uuid);
 		List<KettleRecordRelation> relations = dbClient.deleteDependentsRelationNE(uuid);
