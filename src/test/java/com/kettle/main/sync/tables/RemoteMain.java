@@ -81,7 +81,7 @@ public class RemoteMain {
 		ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(flags.size());
 		for (int i = 0; i < flags.size(); i++) {
 			CreateSTDThread cdt = new CreateSTDThread(sources.get(i), targets.get(i), null);
-			threadPool.scheduleWithFixedDelay(cdt, 2, 15*60*1000, TimeUnit.SECONDS);
+			threadPool.scheduleWithFixedDelay(cdt, 2, 1, TimeUnit.SECONDS);
 			createDataTransfers.add(cdt);
 		}
 	}

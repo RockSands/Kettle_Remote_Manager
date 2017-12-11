@@ -30,8 +30,10 @@ public class CreateSTDThread implements Runnable {
 	public void run() {
 		try {
 			if (result != null) {
+				long now = System.currentTimeMillis();
 				result = KettleMgrInstance.getInstance().queryJob(result.getUuid());
 				// System.out.println("==>[" + result.getUuid() + "]状态: " + result.getStatus());
+				System.out.println("==>query used: " + (System.currentTimeMillis() - now));
 			}
 			if (result == null) {
 				SyncTablesDatasBuilder builder = new SyncTablesDatasBuilder();
