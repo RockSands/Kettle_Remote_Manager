@@ -1,6 +1,7 @@
 package com.kettle.core.instance;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -219,6 +220,27 @@ public class KettleMgrInstance {
 		result.setErrMsg(record.getErrMsg());
 		return result;
 	}
+	
+    /**
+     * 查询Job
+     * 
+     * @param uuids uuids
+     * @return KettleResult KettleResult
+     * @throws KettleException
+     */
+    public List<KettleResult> queryJobs(List<String> uuids) throws KettleException {
+        final List<KettleRecord> records = recordService.queryJobs(uuids);
+        final List<KettleResult> results = new ArrayList<KettleResult>(records.size());
+        KettleResult result;
+        for (KettleRecord record : records) {
+            result = new KettleResult();
+            result.setUuid(record.getUuid());
+            result.setStatus(record.getStatus());
+            result.setErrMsg(record.getErrMsg());
+            results.add(result);
+        }
+        return results;
+    }
 
 	/**
 	 * 查询Job

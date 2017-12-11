@@ -212,6 +212,16 @@ public abstract class RecordService {
 		KettleRecord record = dbClient.queryRecord(uuid);
 		return record;
 	}
+	
+    /**
+     * 查询
+     * @param uuids
+     * @return
+     * @throws KettleException
+     */
+    public List<KettleRecord> queryJobs(List<String> uuids) throws KettleException {
+        return dbClient.queryRecords(uuids);
+    }
 
 	/**
 	 * 删除工作

@@ -185,15 +185,11 @@ public class KettleDBClient {
 	public synchronized KettleRecord queryRecord(String uuid) throws KettleException {
 		connect();
 		RowMetaAndData table;
-		ResultSet resultSet = null;
 		try {
 			String sql = "SELECT * FROM " + KettleVariables.R_JOB_RECORD + " WHERE " + KettleVariables.R_JOB_RECORD_UUID
 					+ " = ?";
 			table = queryOneRow(sql, ValueMetaInterface.TYPE_STRING, uuid);
 		} finally {
-			if (resultSet != null) {
-				database.closeQuery(resultSet);
-			}
 			disConnect();
 		}
 		KettleRecord job = new KettleRecord();
@@ -211,6 +207,61 @@ public class KettleDBClient {
 		job.setCreateTime(table.getDate(KettleVariables.R_RECORD_CREATETIME, null));
 		job.setUpdateTime(table.getDate(KettleVariables.R_RECORD_UPDATETIME, null));
 		return job;
+	}
+
+	/**
+	 * 查询Record记录
+	 * 
+	 * @throws KettleException
+	 */
+	public synchronized List<KettleRecord> queryRecords(List<String> uuids) throws KettleException {
+		String[] inStrArr = new String[(uuids.size() / 128) + 1];
+		StringBuffer strBuffer = new StringBuffer();
+		for (int i = 0; i < uuids.size(); i++) {
+			strBuffer.append(",'").append(uuids.get(i)).append("'");
+			if (i % 128 == 127 || i == uuids.size() - 1) {
+				inStrArr[(i / 128)] = strBuffer.substring(1);
+				strBuffer.delete(0, strBuffer.length());
+			}
+		}
+		String sql;
+		List<Object[]> result = null;
+		KettleRecord bean = null;
+		List<KettleRecord> kettleRecords = new LinkedList<KettleRecord>();
+		connect();
+		try {
+			for (String inStr : inStrArr) {
+				sql = "SELECT " + KettleVariables.R_JOB_RECORD_UUID + "," + KettleVariables.R_JOB_RECORD_ID_JOB + ","
+						+ KettleVariables.R_JOB_RECORD_NAME_JOB + "," + KettleVariables.R_RECORD_ID_RUN + ","
+						+ KettleVariables.R_RECORD_STATUS + "," + KettleVariables.R_RECORD_HOSTNAME + ","
+						+ KettleVariables.R_RECORD_CREATETIME + "," + KettleVariables.R_RECORD_UPDATETIME + ","
+						+ KettleVariables.R_RECORD_ERRORMSG + "," + KettleVariables.R_RECORD_CRON_EXPRESSION + " FROM "
+						+ KettleVariables.R_JOB_RECORD + " WHERE " + KettleVariables.R_RECORD_CRON_EXPRESSION
+						+ " IS NULL AND " + KettleVariables.R_JOB_RECORD_UUID + " in (" + inStr + ");";
+
+				result = database.getRows(sql, -1);
+				if (result == null || result.isEmpty()) {
+					continue;
+				}
+				for (Object[] record : result) {
+					bean = new KettleRecord();
+					bean.setUuid((String) record[0]);
+					bean.setJobid((String) record[1]);
+					bean.setName((String) record[2]);
+					bean.setRunID((String) record[3]);
+					bean.setStatus((String) record[4]);
+					bean.setHostname(record[5] == null ? null : (String) record[5]);
+					bean.setCreateTime((Date) record[6]);
+					bean.setUpdateTime((Date) record[7]);
+					bean.setErrMsg(record[8] == null ? null : (String) record[8]);
+					bean.setCronExpression(record[9] == null ? null : (String) record[9]);
+					kettleRecords.add(bean);
+				}
+			}
+		} finally {
+			disConnect();
+		}
+		return kettleRecords;
 	}
 
 	/**
