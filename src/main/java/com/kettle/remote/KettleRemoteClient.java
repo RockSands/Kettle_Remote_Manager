@@ -52,6 +52,7 @@ public class KettleRemoteClient {
 
 	/**
 	 * 构造器
+	 * 
 	 * @param repositoryClient
 	 * @param remoteServer
 	 * @throws KettleException
@@ -165,7 +166,7 @@ public class KettleRemoteClient {
 		try {
 			remoteStopJob(job);
 		} catch (Exception ex) {
-			logger.debug("Kettle远端[" + this.getHostName() + "]停止Job[" + job.getUuid() + "]失败!");
+			logger.debug("Kettle远端[" + this.getHostName() + "]停止Job[" + job.getUuid() + "]失败!", ex);
 		}
 	}
 
