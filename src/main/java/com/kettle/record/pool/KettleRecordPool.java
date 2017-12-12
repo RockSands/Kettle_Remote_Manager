@@ -13,6 +13,7 @@ import org.quartz.CronScheduleBuilder;
 import org.quartz.JobBuilder;
 import org.quartz.JobDataMap;
 import org.quartz.JobDetail;
+import org.quartz.JobKey;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.SchedulerFactory;
@@ -23,7 +24,6 @@ import org.quartz.impl.StdSchedulerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.kettle.core.KettleVariables;
 import com.kettle.core.db.KettleDBClient;
 import com.kettle.core.instance.KettleMgrEnvironment;
 import com.kettle.core.instance.KettleMgrInstance;
@@ -135,8 +135,6 @@ public class KettleRecordPool {
 		if (record != null) {
 			if (!isAcceptedRecord(record)) {
 				check();
-				record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
-				dbClient.updateRecord(record);
 				recordCache.put(record.getUuid(), record);
 				if (recordQueue.offer(record.getUuid())) {
 					notifyPoolMonitors();
@@ -162,8 +160,6 @@ public class KettleRecordPool {
 				boolean result = recordPrioritizeQueue.offer(record.getUuid());
 				if (result) {
 					notifyPoolMonitors();
-					record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
-					dbClient.updateRecordNE(record);
 				}
 				return result;
 			} else if (!isAcceptedRecord(record)) {// 一般任务
@@ -171,8 +167,6 @@ public class KettleRecordPool {
 				boolean result = recordPrioritizeQueue.offer(record.getUuid());
 				if (result) {
 					notifyPoolMonitors();
-					record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
-					dbClient.updateRecordNE(record);
 				}
 				return result;
 			}
@@ -186,11 +180,7 @@ public class KettleRecordPool {
 	 * @param record
 	 * @throws SchedulerException
 	 */
-	public void addSchedulerRecord(KettleRecord record) throws Exception {
-		if (record == null || record.getCronExpression() == null) {
-			throw new Exception("添加SchedulerRecord[" + record.getName() + "]失败,未找到CRON表达式!");
-		}
-		// 循环任务默认为完成,等待下次执行
+	private void addSchedulerRecord(KettleRecord record) throws Exception {
 		Trigger trigger = TriggerBuilder.newTrigger().withIdentity(record.getUuid()).startNow()
 				.withSchedule(CronScheduleBuilder.cronSchedule(record.getCronExpression())).build();
 		JobDataMap newJobDataMap = new JobDataMap();
@@ -208,17 +198,50 @@ public class KettleRecordPool {
 	 * @param newCron
 	 * @throws Exception
 	 */
-	public void modifySchedulerRecord(String uuid, String newCron) throws Exception {
-		if (newCron == null || "".equals(newCron.trim())) {
-			throw new Exception("修改SchedulerRecord[" + uuid + "]是CRON表达式不能为空!");
+	public void addOrModifySchedulerRecord(KettleRecord record) throws KettleException {
+		if (record == null || record.getCronExpression() == null) {
+			throw new KettleException("添加SchedulerRecord[" + record.getName() + "]失败,未找到CRON表达式!");
 		}
-		TriggerKey triggerKey = new TriggerKey(String.valueOf(uuid));
-		if (!scheduler.checkExists(triggerKey)) {
-			throw new Exception("修改SchedulerRecord[" + uuid + "]失败,记录未找到!");
+		TriggerKey triggerKey = new TriggerKey(record.getUuid());
+		Trigger trigger = TriggerBuilder.newTrigger().withIdentity(record.getUuid()).startNow()
+				.withSchedule(CronScheduleBuilder.cronSchedule(record.getCronExpression())).build();
+		try {
+			if (scheduler.checkExists(triggerKey)) {
+				scheduler.rescheduleJob(triggerKey, trigger);
+			} else {
+				JobDataMap newJobDataMap = new JobDataMap();
+				newJobDataMap.put("RECORD", record);
+				newJobDataMap.put("RECORDPOOL", this);
+				JobDetail jobDetail = JobBuilder.newJob(RecordSchedulerJob.class).withIdentity(record.getUuid())
+						.setJobData(newJobDataMap).build();
+				scheduler.scheduleJob(jobDetail, trigger);
+			}
+		} catch (Exception ex) {
+			throw new KettleException("添加SchedulerRecord[" + record.getName() + "]失败!", ex);
 		}
-		Trigger newTrigger = TriggerBuilder.newTrigger().withIdentity(String.valueOf(uuid)).startNow()
-				.withSchedule(CronScheduleBuilder.cronSchedule(newCron)).build();
-		scheduler.rescheduleJob(triggerKey, newTrigger);
+	}
+
+	/**
+	 * 删除
+	 * 
+	 * @param jobID
+	 * @throws SchedulerException
+	 */
+	public synchronized boolean deleteRecord(String uuid) throws KettleException {
+		try {
+			TriggerKey triggerKey = new TriggerKey(uuid);
+			JobKey jobKey = new JobKey(uuid, null);
+			if (scheduler.checkExists(triggerKey)) {
+				scheduler.pauseTrigger(triggerKey);// 停止触发器
+				scheduler.unscheduleJob(triggerKey);// 移除触发器
+				scheduler.deleteJob(jobKey);// 删除任务
+			}
+		} catch (Exception ex) {
+			throw new KettleException();
+		}
+		recordPrioritizeQueue.remove(uuid);
+		recordQueue.remove(uuid);
+		return recordCache.remove(uuid) != null;
 	}
 
 	/**
@@ -235,26 +258,10 @@ public class KettleRecordPool {
 		if (recordUUID == null && !recordQueue.isEmpty()) {
 			recordUUID = recordQueue.poll();
 		}
-		if (recordUUID != null) {
-			// 如果Cache不存在,则直接下一个,该Record已经删除或处理完成
-			if (!recordCache.containsKey(recordUUID)) {
-				deleteRecord(recordUUID);
-				record = nextRecord();
-			} else {
-				record = recordCache.get(recordUUID);
-				deleteRecord(recordUUID);
-			}
+		if (recordUUID != null && !recordQueue.contains(recordUUID) && !recordPrioritizeQueue.contains(recordUUID)) {
+			recordCache.remove(recordUUID);
 		}
 		return record;
-	}
-
-	/**
-	 * 删除,执行删除,从缓存中删除
-	 * 
-	 * @param jobID
-	 */
-	public void deleteRecord(String uuid) {
-		recordCache.remove(uuid);
 	}
 
 	/**

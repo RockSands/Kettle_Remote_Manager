@@ -100,7 +100,7 @@ public class KettleRepositoryClient {
 	 * @return
 	 * @throws KettleException
 	 */
-	public synchronized RepositoryDirectoryInterface getDirectory() throws KettleException {
+	public RepositoryDirectoryInterface getDirectory() throws KettleException {
 		syncCurrentDirectory();
 		return directory;
 	}
@@ -147,7 +147,7 @@ public class KettleRepositoryClient {
 	 * @return
 	 * @throws KettleException
 	 */
-	public synchronized TransMeta getTransMeta(String transID) throws KettleException {
+	public TransMeta getTransMeta(String transID) throws KettleException {
 		connect();
 		TransMeta transMeta = repository.loadTransformation(toObjectID(transID), null);
 		return transMeta;
@@ -160,7 +160,7 @@ public class KettleRepositoryClient {
 	 * @return
 	 * @throws KettleException
 	 */
-	public synchronized JobMeta getJobMeta(String jobId) throws KettleException {
+	public JobMeta getJobMeta(String jobId) throws KettleException {
 		connect();
 		JobMeta jobMeta = repository.loadJob(toObjectID(jobId), null);
 		return jobMeta;
@@ -183,10 +183,9 @@ public class KettleRepositoryClient {
 	 * @param transMeta
 	 * @throws KettleException
 	 */
-	public synchronized void deleteTransMetaNE(String transID) {
-		connect();
+	public void deleteTransMetaNE(String transID) {
 		try {
-			repository.deleteTransformation(toObjectID(transID));
+			deleteTransMeta(transID);
 		} catch (KettleException e) {
 			logger.error("资源池删除Trans[" + transID + "]发生异常", e);
 		}
@@ -209,7 +208,7 @@ public class KettleRepositoryClient {
 	 * @param jobID
 	 * @throws KettleException
 	 */
-	public synchronized void deleteJobMetaNE(String jobID) {
+	public void deleteJobMetaNE(String jobID) {
 		try {
 			deleteJobMeta(jobID);
 		} catch (KettleException e) {

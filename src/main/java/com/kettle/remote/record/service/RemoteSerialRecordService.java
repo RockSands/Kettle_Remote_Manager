@@ -11,9 +11,11 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.record.KettleRecord;
 import com.kettle.record.service.RecordService;
 import com.kettle.remote.KettleRemoteClient;
+import com.kettle.remote.KettleRemotePool;
 import com.kettle.remote.record.RemoteSerialRecordHandler;
 
 /**
@@ -46,6 +48,7 @@ public class RemoteSerialRecordService extends RecordService {
 	 * 构造器
 	 */
 	public RemoteSerialRecordService() {
+		KettleRemotePool remotePool = KettleMgrInstance.kettleMgrEnvironment.getRemotePool();
 		threadPool = Executors.newScheduledThreadPool(remotePool.getRemoteclients().size());
 		List<KettleRecord> oldRecords = super.getOldRecords();
 		Map<String, List<KettleRecord>> oldRecordMap = new HashMap<String, List<KettleRecord>>();

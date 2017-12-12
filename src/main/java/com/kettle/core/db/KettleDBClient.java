@@ -354,6 +354,34 @@ public class KettleDBClient {
 	 * @param record
 	 * @throws KettleException
 	 */
+	public void updateRecordNoStatus(KettleRecord record) throws KettleException {
+		RowMetaAndData table = new RowMetaAndData();
+		record.setUpdateTime(new Date());
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_ID_RUN, ValueMetaInterface.TYPE_STRING),
+				record.getRunID());
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_HOSTNAME, ValueMetaInterface.TYPE_STRING),
+				record.getHostname());
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_ERRORMSG, ValueMetaInterface.TYPE_STRING),
+				record.getErrMsg());
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_UPDATETIME, ValueMetaInterface.TYPE_DATE),
+				record.getUpdateTime());
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_CRON_EXPRESSION, ValueMetaInterface.TYPE_STRING),
+				record.getCronExpression());
+		String[] sets = new String[table.size()];
+		for (int i = 0; i < table.size(); i++) {
+			sets[i] = table.getValueMeta(i).getName();
+		}
+		updateTableRow(KettleVariables.R_JOB_RECORD, table, KettleVariables.R_JOB_RECORD_UUID,
+				ValueMetaInterface.TYPE_STRING, record.getUuid());
+		insertHistory(record);
+	}
+
+	/**
+	 * 更新工作
+	 * 
+	 * @param record
+	 * @throws KettleException
+	 */
 	public void updateRecord(KettleRecord record) throws KettleException {
 		RowMetaAndData table = new RowMetaAndData();
 		record.setUpdateTime(new Date());
@@ -367,6 +395,8 @@ public class KettleDBClient {
 				record.getErrMsg());
 		table.addValue(new ValueMeta(KettleVariables.R_RECORD_UPDATETIME, ValueMetaInterface.TYPE_DATE),
 				record.getUpdateTime());
+		table.addValue(new ValueMeta(KettleVariables.R_RECORD_CRON_EXPRESSION, ValueMetaInterface.TYPE_STRING),
+				record.getCronExpression());
 		String[] sets = new String[table.size()];
 		for (int i = 0; i < table.size(); i++) {
 			sets[i] = table.getValueMeta(i).getName();

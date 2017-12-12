@@ -8,7 +8,7 @@ package com.kettle.record.pool;
  */
 public interface KettleRecordPoolMonitor {
 	/**
-	 * 添加了Record
+	 * 添加Record
 	 */
 	public void addRecordNotify();
 }

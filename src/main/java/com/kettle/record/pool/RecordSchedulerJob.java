@@ -23,7 +23,7 @@ public class RecordSchedulerJob implements Job {
 	@Override
 	public void execute(JobExecutionContext context) throws JobExecutionException {
 		KettleRecord record = (KettleRecord) context.getJobDetail().getJobDataMap().get("RECORD");
-		if (record.isRegiste() || record.isApply() || record.isFinished() || record.isError()) {
+		if (record.isApply() || record.isFinished() || record.isError()) {
 			record.setHostname(null);
 			KettleRecordPool pool = (KettleRecordPool) context.getJobDetail().getJobDataMap().get("RECORDPOOL");
 			pool.addPrioritizeRecord(record);

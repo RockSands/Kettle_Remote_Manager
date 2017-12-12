@@ -68,4 +68,9 @@ public interface IRecordOperator {
 	 * 运行中
 	 */
 	public void dealRunning() throws KettleException;
+
+	/**
+	 * 删除中
+	 */
+	public void dealRemoving();
 }

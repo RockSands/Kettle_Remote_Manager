@@ -161,7 +161,8 @@ public class KettleMgrInstance {
 			throws KettleException {
 		// logger.info("Kettle注册Repeat_Job[" + jobEntire.getMainJob().getName()
 		// + "]");
-		KettleRecord record = recordService.applyScheduleJob(jobEntire, cronExpression);
+		KettleRecord record = recordService.registeJob(jobEntire);
+		recordService.makeRecordScheduled(record.getUuid(), cronExpression);
 		KettleResult result = new KettleResult();
 		result.setUuid(record.getUuid());
 		result.setStatus(record.getStatus());
@@ -176,10 +177,8 @@ public class KettleMgrInstance {
 	 * @throws KettleException
 	 */
 	public void modifySchedule(String uuid, String newCron) throws KettleException {
-		// logger.info("Kettle修改Repeat_Job[" + uuid + "]的Cron表达式[" + newCron +
-		// "]");
 		try {
-			recordService.modifyRecordSchedule(uuid, newCron);
+			recordService.makeRecordScheduled(uuid, newCron);
 		} catch (Exception e) {
 			logger.error("Kettle环境更新定时任务[" + uuid + "]失败!", e);
 			throw new KettleException("Kettle环境更新定时任务[" + uuid + "]失败!", e);
@@ -220,27 +219,28 @@ public class KettleMgrInstance {
 		result.setErrMsg(record.getErrMsg());
 		return result;
 	}
-	
-    /**
-     * 查询Job
-     * 
-     * @param uuids uuids
-     * @return KettleResult KettleResult
-     * @throws KettleException
-     */
-    public List<KettleResult> queryJobs(List<String> uuids) throws KettleException {
-        final List<KettleRecord> records = recordService.queryJobs(uuids);
-        final List<KettleResult> results = new ArrayList<KettleResult>(records.size());
-        KettleResult result;
-        for (KettleRecord record : records) {
-            result = new KettleResult();
-            result.setUuid(record.getUuid());
-            result.setStatus(record.getStatus());
-            result.setErrMsg(record.getErrMsg());
-            results.add(result);
-        }
-        return results;
-    }
+
+	/**
+	 * 查询Job
+	 * 
+	 * @param uuids
+	 *            uuids
+	 * @return KettleResult KettleResult
+	 * @throws KettleException
+	 */
+	public List<KettleResult> queryJobs(List<String> uuids) throws KettleException {
+		final List<KettleRecord> records = recordService.queryJobs(uuids);
+		final List<KettleResult> results = new ArrayList<KettleResult>(records.size());
+		KettleResult result;
+		for (KettleRecord record : records) {
+			result = new KettleResult();
+			result.setUuid(record.getUuid());
+			result.setStatus(record.getStatus());
+			result.setErrMsg(record.getErrMsg());
+			results.add(result);
+		}
+		return results;
+	}
 
 	/**
 	 * 查询Job
@@ -250,7 +250,7 @@ public class KettleMgrInstance {
 	 */
 	public void deleteJob(String uuid) throws KettleException {
 		// logger.info("Kettle开始删除Job[" + uuid + "]");
-		recordService.deleteJob(uuid);
+		recordService.deleteJob(uuid, false);
 	}
 
 	private class DelAbandonedRecord implements Runnable {

@@ -1,14 +1,17 @@
 package com.kettle.remote.record;
 
+import java.util.List;
+
 import org.pentaho.di.core.exception.KettleException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kettle.core.KettleVariables;
-import com.kettle.core.db.KettleDBClient;
 import com.kettle.core.instance.KettleMgrEnvironment;
 import com.kettle.core.instance.KettleMgrInstance;
+import com.kettle.core.repo.KettleRepositoryClient;
 import com.kettle.record.KettleRecord;
+import com.kettle.record.KettleRecordRelation;
 import com.kettle.record.operation.BaseRecordOperator;
 import com.kettle.remote.KettleRemoteClient;
 
@@ -18,22 +21,23 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 	 * 日志
 	 */
 	private static Logger logger = LoggerFactory.getLogger(RemoteRecordOperator.class);
+
 	/**
 	 * 远端
 	 */
 	private final KettleRemoteClient remoteClient;
 
 	/**
-	 * 数据库
+	 * Kettle资源库
 	 */
-	private final KettleDBClient dbClient;
+	private final KettleRepositoryClient repositoryClient;
 
 	/**
 	 * @param remoteClient
 	 */
 	public RemoteRecordOperator(KettleRemoteClient remoteClient) {
 		this.remoteClient = remoteClient;
-		dbClient = KettleMgrInstance.kettleMgrEnvironment.getDbClient();
+		this.repositoryClient = KettleMgrInstance.kettleMgrEnvironment.getRepositoryClient();
 	}
 
 	@Override
@@ -55,7 +59,6 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 	}
 
 	/**
-	 * @param record
 	 * @throws KettleException
 	 */
 	@Override
@@ -69,6 +72,9 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 		}
 	}
 
+	/**
+	 * @throws KettleException
+	 */
 	private void updateRecord() throws KettleException {
 		try {
 			dbClient.updateRecord(record);
@@ -133,6 +139,23 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 				super.dealRecord();
 			}
 		}
+	}
+
+	@Override
+	public void dealRemoving() {
+		if (record.isRunning()) {// 如果远程是运行状态
+			remoteClient.remoteStopJobNE(record);
+			remoteClient.remoteRemoveJobNE(record);
+		}
+		record.setStatus(KettleVariables.RECORD_STATUS_REMOVING);
+		try {
+			dbClient.deleteRecord(record.getUuid());
+			List<KettleRecordRelation> relations = dbClient.deleteDependentsRelationNE(record.getUuid());
+			repositoryClient.deleteJobEntireDefineNE(relations);
+		} catch (Exception e) {
+			logger.error("Record[" + record.getUuid() + "]状态Removing,后台删除失败！", e);
+		}
+		detachRecord();
 	}
 
 	/**

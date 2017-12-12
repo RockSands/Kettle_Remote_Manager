@@ -12,10 +12,12 @@ import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.record.KettleRecord;
 import com.kettle.record.pool.KettleRecordPoolMonitor;
 import com.kettle.record.service.RecordService;
 import com.kettle.remote.KettleRemoteClient;
+import com.kettle.remote.KettleRemotePool;
 import com.kettle.remote.record.RemoteParallelRecordHandler;
 
 /**
@@ -44,6 +46,7 @@ public class RemoteParallelRecordService extends RecordService implements Kettle
 	 * 构造器
 	 */
 	public RemoteParallelRecordService() {
+		KettleRemotePool remotePool = KettleMgrInstance.kettleMgrEnvironment.getRemotePool();
 		List<KettleRecord> oldRecords = super.getOldRecords();
 		Map<String, List<KettleRecord>> oldRecordMap = new HashMap<String, List<KettleRecord>>();
 		KettleRecord recordIndex = null;

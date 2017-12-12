@@ -3,6 +3,8 @@ package com.kettle.record.operation;
 import org.pentaho.di.core.exception.KettleException;
 
 import com.kettle.core.KettleVariables;
+import com.kettle.core.db.KettleDBClient;
+import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.record.KettleRecord;
 
 public abstract class BaseRecordOperator implements IRecordOperator {
@@ -11,6 +13,15 @@ public abstract class BaseRecordOperator implements IRecordOperator {
 	 * 任务
 	 */
 	protected KettleRecord record;
+
+	/**
+	 * 数据库
+	 */
+	protected final KettleDBClient dbClient;
+
+	public BaseRecordOperator() {
+		this.dbClient = KettleMgrInstance.kettleMgrEnvironment.getDbClient();
+	}
 
 	@Override
 	public KettleRecord getRecord() {
@@ -77,6 +88,10 @@ public abstract class BaseRecordOperator implements IRecordOperator {
 	 * @throws KettleException
 	 */
 	public void dealRecord() throws KettleException {
+		KettleRecord recordTMP = dbClient.queryRecord(record.getUuid());
+		if (recordTMP == null || recordTMP.isRemoving()) {
+			dealRemoving();
+		}
 		if (record.isApply()) {
 			dealApply();
 		} else if (record.isRegiste()) {

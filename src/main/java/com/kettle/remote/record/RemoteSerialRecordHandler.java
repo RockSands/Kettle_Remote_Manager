@@ -138,6 +138,13 @@ public class RemoteSerialRecordHandler implements Runnable {
 		}
 	}
 
+	/**
+	 * @return
+	 */
+	public List<KettleRecord> getRecords() {
+		return kettleRecords;
+	}
+
 	@Override
 	public void run() {
 		logger.debug("Kettle远端进程[" + remoteClient.getHostName() + "]守护进程唤醒!");
