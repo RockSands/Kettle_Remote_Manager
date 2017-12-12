@@ -258,8 +258,12 @@ public class KettleRecordPool {
 		if (recordUUID == null && !recordQueue.isEmpty()) {
 			recordUUID = recordQueue.poll();
 		}
-		if (recordUUID != null && !recordQueue.contains(recordUUID) && !recordPrioritizeQueue.contains(recordUUID)) {
-			recordCache.remove(recordUUID);
+		if (recordUUID != null) {
+			if (!recordCache.containsKey(recordUUID)) {
+				record = nextRecord();
+			} else {
+				record = recordCache.remove(recordUUID);
+			}
 		}
 		return record;
 	}

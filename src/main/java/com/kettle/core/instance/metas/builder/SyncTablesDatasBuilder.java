@@ -1,6 +1,7 @@
 package com.kettle.core.instance.metas.builder;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,8 +34,15 @@ import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.core.instance.metas.KettleTableMeta;
 import com.kettle.core.repo.KettleRepositoryClient;
 
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.statement.select.OrderByElement;
+import net.sf.jsqlparser.statement.select.PlainSelect;
+import net.sf.jsqlparser.statement.select.Select;
+
 /**
  * Kettle数据库同步构建器
+ * 
  * @author Administrator
  *
  */
@@ -77,6 +85,17 @@ public class SyncTablesDatasBuilder {
 				target.getHost() + "_" + target.getDatabase() + "_" + target.getUser(), target.getType(), "Native",
 				target.getHost(), target.getDatabase(), target.getPort(), target.getUser(), target.getPasswd());
 		transMeta.addDatabase(targetDatabase);
+		Select sourceSelect = null;
+		Select targetSelect = null;
+		/*
+		 * SQL解析
+		 */
+		try {
+			sourceSelect = (Select) CCJSqlParserUtil.parse(source.getSql());
+			targetSelect = (Select) CCJSqlParserUtil.parse(target.getSql());
+		} catch (Exception ex) {
+			throw new KettleException("Select语句无法解析!", ex);
+		}
 		/*
 		 * 获取非PK列
 		 */
@@ -110,8 +129,19 @@ public class SyncTablesDatasBuilder {
 		 */
 		TableInputMeta tii = new TableInputMeta();
 		tii.setDatabaseMeta(sourceDataBase);
-		String selectSQL = source.getSql();
-		tii.setSQL(selectSQL);
+		List<OrderByElement> selectOrderBy = ((PlainSelect) sourceSelect.getSelectBody()).getOrderByElements();
+		if (selectOrderBy == null) {
+			selectOrderBy = new LinkedList<OrderByElement>();
+			((PlainSelect) sourceSelect.getSelectBody()).setOrderByElements(selectOrderBy);
+		}
+		selectOrderBy.clear();
+		OrderByElement orderByElement = null;
+		for (String pk : source.getPkcolumns()) {
+			orderByElement = new OrderByElement();
+			orderByElement.setExpression(new Column(pk));
+			selectOrderBy.add(orderByElement);
+		}
+		tii.setSQL(sourceSelect.getSelectBody().toString());
 		StepMeta query = new StepMeta("source", tii);
 		query.setLocation(150, 100);
 		query.setDraw(true);
@@ -144,7 +174,18 @@ public class SyncTablesDatasBuilder {
 		 */
 		TableInputMeta targettii = new TableInputMeta();
 		targettii.setDatabaseMeta(targetDatabase);
-		targettii.setSQL(target.getSql());
+		selectOrderBy = ((PlainSelect) targetSelect.getSelectBody()).getOrderByElements();
+		if (selectOrderBy == null) {
+			selectOrderBy = new LinkedList<OrderByElement>();
+			((PlainSelect) targetSelect.getSelectBody()).setOrderByElements(selectOrderBy);
+		}
+		selectOrderBy.clear();
+		for (String pk : target.getPkcolumns()) {
+			orderByElement = new OrderByElement();
+			orderByElement.setExpression(new Column(pk));
+			selectOrderBy.add(orderByElement);
+		}
+		targettii.setSQL(targetSelect.getSelectBody().toString());
 		StepMeta targetQuery = new StepMeta("target", targettii);
 		transMeta.addStep(targetQuery);
 		targetQuery.setLocation(350, 300);

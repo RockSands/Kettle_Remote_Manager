@@ -47,7 +47,7 @@ public class CreateSTDThread implements Runnable {
 				// System.out.println("==>registe used: " +
 				// (System.currentTimeMillis() - now));
 				now = System.currentTimeMillis();
-				KettleMgrInstance.getInstance().excuteJob(result.getUuid());
+				//KettleMgrInstance.getInstance().excuteJob(result.getUuid());
 				System.out.println("==>apply used: " + (System.currentTimeMillis() - now));
 			}
 			if (KettleVariables.RECORD_STATUS_ERROR.equals(result.getStatus())
