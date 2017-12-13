@@ -138,11 +138,6 @@ public class KettleVariables {
 	public static final String RECORD_STATUS_FINISHED = "FINISHED";
 
 	/**
-	 * 记录的运行状态:删除中
-	 */
-	public static final String RECORD_STATUS_REMOVING = "REMOVING";
-
-	/**
 	 * 远端的运行状态:异常
 	 */
 	public static final String REMOTE_STATUS_ERROR = "ERROR";

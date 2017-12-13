@@ -132,7 +132,7 @@ public class KettleRecordPool {
 	 * @throws KettleException
 	 */
 	public synchronized boolean addRecord(KettleRecord record) throws KettleException {
-		if (record != null) {
+		if (record != null && !recordCache.containsKey(record.getUuid())) {
 			if (!isAcceptedRecord(record)) {
 				check();
 				recordCache.put(record.getUuid(), record);
@@ -155,21 +155,13 @@ public class KettleRecordPool {
 	 * @return 是否添加成功
 	 */
 	public synchronized boolean addPrioritizeRecord(KettleRecord record) {
-		if (record != null) {
-			if (record.getCronExpression() != null && !recordPrioritizeQueue.contains(record.getUuid())) {// 定时任务
-				boolean result = recordPrioritizeQueue.offer(record.getUuid());
-				if (result) {
-					notifyPoolMonitors();
-				}
-				return result;
-			} else if (!isAcceptedRecord(record)) {// 一般任务
-				recordCache.put(record.getUuid(), record);
-				boolean result = recordPrioritizeQueue.offer(record.getUuid());
-				if (result) {
-					notifyPoolMonitors();
-				}
-				return result;
+		if (record != null && !recordCache.containsKey(record.getUuid())) {
+			recordCache.put(record.getUuid(), record);
+			boolean result = recordPrioritizeQueue.offer(record.getUuid());
+			if (result) {
+				notifyPoolMonitors();
 			}
+			return result;
 		}
 		return false;
 	}
@@ -224,11 +216,24 @@ public class KettleRecordPool {
 	/**
 	 * 删除
 	 * 
-	 * @param jobID
-	 * @throws SchedulerException
+	 * @param uuid
+	 * @throws KettleException
 	 */
 	public synchronized boolean deleteRecord(String uuid) throws KettleException {
+		recordPrioritizeQueue.remove(uuid);
+		recordQueue.remove(uuid);
+		return recordCache.remove(uuid) != null;
+	}
+
+	/**
+	 * 移除定时任务
+	 * 
+	 * @param uuid
+	 * @throws KettleException
+	 */
+	public synchronized void removeSchedulerRecord(String uuid) throws KettleException {
 		try {
+
 			TriggerKey triggerKey = new TriggerKey(uuid);
 			JobKey jobKey = new JobKey(uuid, null);
 			if (scheduler.checkExists(triggerKey)) {
@@ -236,12 +241,10 @@ public class KettleRecordPool {
 				scheduler.unscheduleJob(triggerKey);// 移除触发器
 				scheduler.deleteJob(jobKey);// 删除任务
 			}
+			deleteRecord(uuid);
 		} catch (Exception ex) {
-			throw new KettleException();
+			logger.error("RecordPool停止Record[" + uuid + "]的触发器失败!", ex);
 		}
-		recordPrioritizeQueue.remove(uuid);
-		recordQueue.remove(uuid);
-		return recordCache.remove(uuid) != null;
 	}
 
 	/**
@@ -259,11 +262,7 @@ public class KettleRecordPool {
 			recordUUID = recordQueue.poll();
 		}
 		if (recordUUID != null) {
-			if (!recordCache.containsKey(recordUUID)) {
-				record = nextRecord();
-			} else {
-				record = recordCache.remove(recordUUID);
-			}
+			record = recordCache.remove(recordUUID);
 		}
 		return record;
 	}

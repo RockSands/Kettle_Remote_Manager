@@ -9,11 +9,13 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.pentaho.di.core.exception.KettleException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.record.KettleRecord;
+import com.kettle.record.KettleRecordRelation;
 import com.kettle.record.pool.KettleRecordPoolMonitor;
 import com.kettle.record.service.RecordService;
 import com.kettle.remote.KettleRemoteClient;
@@ -92,5 +94,18 @@ public class RemoteParallelRecordService extends RecordService implements Kettle
 				}
 			});
 		}
+	}
+
+	@Override
+	protected void jobMustDie(KettleRecord record) throws KettleException {
+		for (final RemoteParallelRecordHandler handler : handlers) {
+			if (handler.tryRemoveRecord(record)) {
+				break;
+			}
+		}
+		// 直接清除
+		dbClient.deleteRecord(record.getUuid());
+		List<KettleRecordRelation> relations = dbClient.deleteDependentsRelationNE(record.getUuid());
+		repositoryClient.deleteJobEntireDefineNE(relations);
 	}
 }

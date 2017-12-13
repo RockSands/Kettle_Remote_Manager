@@ -88,10 +88,6 @@ public abstract class BaseRecordOperator implements IRecordOperator {
 	 * @throws KettleException
 	 */
 	public void dealRecord() throws KettleException {
-		KettleRecord recordTMP = dbClient.queryRecord(record.getUuid());
-		if (recordTMP == null || recordTMP.isRemoving()) {
-			dealRemoving();
-		}
 		if (record.isApply()) {
 			dealApply();
 		} else if (record.isRegiste()) {

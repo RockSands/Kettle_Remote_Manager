@@ -126,7 +126,7 @@ public class KettleMgrInstance {
 			KettleRemotePool remotePool = new KettleRemotePool();
 			kettleMgrEnvironment.setRemotePool(remotePool);
 			// 服务
-			//recordService = new RemoteParallelRecordService();
+			// recordService = new RemoteParallelRecordService();
 			recordService = new RemoteSerialRecordService();
 		} catch (Exception ex) {
 			throw new RuntimeException("KettleMgrInstance初始化失败", ex);
@@ -244,14 +244,23 @@ public class KettleMgrInstance {
 	}
 
 	/**
-	 * 查询Job
+	 * 删除Job
 	 * 
 	 * @param uuid
 	 * @throws KettleException
 	 */
 	public void deleteJob(String uuid) throws KettleException {
-		// logger.info("Kettle开始删除Job[" + uuid + "]");
-		recordService.deleteJob(uuid, false);
+		recordService.deleteJob(uuid);
+	}
+
+	/**
+	 * 强制删除Job,运行中的任务直接被停止并删除
+	 * 
+	 * @param uuid
+	 * @throws KettleException
+	 */
+	public void deleteJobForce(String uuid) throws KettleException {
+		recordService.deleteJobImmediately(uuid);
 	}
 
 	private class DelAbandonedRecord implements Runnable {

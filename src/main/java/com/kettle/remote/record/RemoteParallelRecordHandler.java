@@ -49,7 +49,7 @@ public class RemoteParallelRecordHandler {
 	private final ScheduledExecutorService threadPool;
 
 	/**
-	 * 
+	 * 并行线程
 	 */
 	private RecordOperatorThread[] remoteRecordThreads;
 
@@ -81,6 +81,34 @@ public class RemoteParallelRecordHandler {
 		if (thisRemoteRecords.isEmpty()) {
 			attackRecords();
 		}
+	}
+
+	/**
+	 * 尝试停止
+	 * 
+	 * @param record
+	 * @return 是否成功
+	 */
+	@SuppressWarnings("deprecation")
+	public boolean tryRemoveRecord(KettleRecord record) {
+		KettleRecord remoteRecord = null;
+		if (record.getHostname() != null && !remoteClient.getHostName().equals(record.getHostname())) {
+			return false;
+		}
+		for (RecordOperatorThread thread : remoteRecordThreads) {
+			remoteRecord = thread.remoteRecordOperator.getRecord();
+			if (thread.isRunning && remoteRecord.getUuid().equals(record.getUuid())) {
+				thread.stop();
+				if (remoteClient.isRunning()) {
+					remoteClient.remoteStopJobNE(remoteRecord);
+					remoteClient.remoteRemoveJobNE(remoteRecord);
+				}
+				thread.remoteRecordOperator.detachRecord();
+				thread.isRunning = false;
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -140,7 +168,7 @@ public class RemoteParallelRecordHandler {
 	 * @author Administrator
 	 *
 	 */
-	private class RecordOperatorThread implements Runnable {
+	private class RecordOperatorThread extends Thread {
 
 		private boolean isRunning = false;
 
@@ -157,7 +185,7 @@ public class RemoteParallelRecordHandler {
 					KettleRecord recordTMP = getNextRecord();
 					if (recordTMP == null) { // 如果没有后续任务,直接停止进程
 						isRunning = false;
-						Thread.currentThread().stop();
+						this.stop();
 						return;
 					}
 					if (remoteRecordOperator.attachRecord(recordTMP)) {
@@ -167,8 +195,7 @@ public class RemoteParallelRecordHandler {
 					} else {
 						callBackRecord(recordTMP);
 						isRunning = false;
-						Thread.currentThread().stop();
-						return;
+						this.stop();
 					}
 				}
 			} catch (Exception e) {

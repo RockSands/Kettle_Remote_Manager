@@ -167,7 +167,7 @@ public abstract class RecordService {
 	 */
 	public KettleRecord queryJob(String uuid) throws KettleException {
 		KettleRecord record = dbClient.queryRecord(uuid);
-		if (record != null && record.isRemoving()) {
+		if (record == null) {
 			return null;
 		}
 		return record;
@@ -185,7 +185,7 @@ public abstract class RecordService {
 		KettleRecord roll = null;
 		for (Iterator<KettleRecord> it = records.iterator(); it.hasNext();) {
 			roll = it.next();
-			if (roll == null || roll.isRemoving()) {
+			if (roll == null) {
 				it.remove();
 			}
 		}
@@ -198,29 +198,56 @@ public abstract class RecordService {
 	 * @param uuid
 	 * @throws KettleException
 	 */
-	public void deleteJob(String uuid, boolean force) throws KettleException {
+	public void deleteJob(String uuid) throws KettleException {
 		KettleRecord record = dbClient.queryRecord(uuid);
-		if (record == null || record.isRemoving()) {
+		if (record == null) {
 			return;
 		}
-		if (force && recordPool.deleteRecord(uuid)) {// 如果强制且申请但是未执行
-			dbClient.deleteRecord(uuid);
-			List<KettleRecordRelation> relations = dbClient.deleteDependentsRelationNE(uuid);
-			repositoryClient.deleteJobEntireDefineNE(relations);
-			return;
-		} else if (record.isRegiste() || record.isFinished() || record.isError()) { // 非运行状态
+		if (record.getCronExpression() != null) {
+			recordPool.removeSchedulerRecord(uuid);
+			record = dbClient.queryRecord(uuid);// 定时任务重新查询,避免状态啊为脏数据
+		}
+		if (record.isError() || record.isFinished() || record.isRegiste()) {
 			recordPool.deleteRecord(uuid);
 			dbClient.deleteRecord(uuid);
 			List<KettleRecordRelation> relations = dbClient.deleteDependentsRelationNE(uuid);
 			repositoryClient.deleteJobEntireDefineNE(relations);
 			return;
-		} else if (!force) {
-			throw new KettleException("Job[" + uuid + "]运行中,无法删除!");
-		} else {
-			record.setStatus(KettleVariables.RECORD_STATUS_REMOVING);
-			dbClient.updateRecord(record);
 		}
+		throw new KettleException("Record[" + uuid + "]已被受理,无法删除!");
 	}
+
+	/**
+	 * 立即删除工作,运行中的即可停止
+	 * 
+	 * @param uuid
+	 * @throws KettleException
+	 */
+	public void deleteJobImmediately(String uuid) throws KettleException {
+		KettleRecord record = dbClient.queryRecord(uuid);
+		if (record == null) {
+			return;
+		}
+		if (record.getCronExpression() != null) {
+			recordPool.removeSchedulerRecord(uuid);
+			record = dbClient.queryRecord(uuid);// 定时任务重新查询,避免状态啊为脏数据
+		}
+		if (record.isError() || record.isFinished() || record.isRegiste()) {
+			recordPool.deleteRecord(uuid);
+			dbClient.deleteRecord(uuid);
+			List<KettleRecordRelation> relations = dbClient.deleteDependentsRelationNE(uuid);
+			repositoryClient.deleteJobEntireDefineNE(relations);
+			return;
+		}
+		jobMustDie(record);
+	}
+
+	/**
+	 * 将Job关闭
+	 * 
+	 * @throws KettleException
+	 */
+	protected abstract void jobMustDie(KettleRecord record) throws KettleException;
 
 	/**
 	 * 获取遗留Record

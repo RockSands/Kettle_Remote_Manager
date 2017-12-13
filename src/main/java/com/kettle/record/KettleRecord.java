@@ -209,13 +209,4 @@ public class KettleRecord {
 	public boolean isRegiste() {
 		return KettleVariables.RECORD_STATUS_REGISTE.equals(this.getStatus());
 	}
-
-	/**
-	 * 是否标记删除
-	 * 
-	 * @return
-	 */
-	public boolean isRemoving() {
-		return KettleVariables.RECORD_STATUS_REMOVING.equals(this.getStatus());
-	}
 }

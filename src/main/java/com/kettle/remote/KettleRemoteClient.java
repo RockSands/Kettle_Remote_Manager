@@ -166,7 +166,7 @@ public class KettleRemoteClient {
 		try {
 			remoteStopJob(job);
 		} catch (Exception ex) {
-			logger.debug("Kettle远端[" + this.getHostName() + "]停止Job[" + job.getUuid() + "]失败!", ex);
+			logger.debug("Kettle远端[" + this.getHostName() + "]强制停止Job[" + job.getUuid() + "]失败!", ex);
 		}
 	}
 
@@ -216,7 +216,7 @@ public class KettleRemoteClient {
 		try {
 			remoteRemoveJob(job);
 		} catch (Exception ex) {
-			logger.error("Kettle远端[" + this.getHostName() + "]删除Job[" + job.getUuid() + "]失败!", ex);
+			logger.error("Kettle远端[" + this.getHostName() + "]强制删除Job[" + job.getUuid() + "]失败!", ex);
 		}
 
 	}

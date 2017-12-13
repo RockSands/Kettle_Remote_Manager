@@ -8,11 +8,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.pentaho.di.core.exception.KettleException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.record.KettleRecord;
+import com.kettle.record.KettleRecordRelation;
 import com.kettle.record.service.RecordService;
 import com.kettle.remote.KettleRemoteClient;
 import com.kettle.remote.KettleRemotePool;
@@ -87,5 +89,18 @@ public class RemoteSerialRecordService extends RecordService {
 		} else {
 			logger.info("Kettle远程任务关系系统的线程已经启动,无法再次启动!");
 		}
+	}
+
+	@Override
+	protected void jobMustDie(KettleRecord record) throws KettleException {
+		for (RemoteSerialRecordHandler handler : handlers) {
+			if (handler.tryRemoveRecord(record)) {
+				break;
+			}
+		}
+		// 直接清除
+		dbClient.deleteRecord(record.getUuid());
+		List<KettleRecordRelation> relations = dbClient.deleteDependentsRelationNE(record.getUuid());
+		repositoryClient.deleteJobEntireDefineNE(relations);
 	}
 }

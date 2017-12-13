@@ -116,44 +116,65 @@ public class RemoteSerialRecordHandler implements Runnable {
 	 * 
 	 * @return
 	 */
-	private synchronized void dealRecords() {
-		KettleRecord indexRecord;
-		for (Iterator<KettleRecord> it = kettleRecords.iterator(); it.hasNext();) {
-			indexRecord = it.next();
-			if (indexRecord == null) {
-				continue;
-			}
-			try {
-				remoteRecordOperator.attachRecord(indexRecord);
-				remoteRecordOperator.dealRecord();
-			} catch (Exception ex) {
-				logger.error("Kettle远端[" + remoteClient.getHostName() + "]处理record[" + indexRecord.getUuid() + "]发生异常!",
-						ex);
-			} finally {
-				remoteRecordOperator.detachRecord();
-			}
-			if (indexRecord.isError() || indexRecord.isFinished()) {
-				it.remove();
-			}
+	private synchronized void dealRecord(int index) {
+		if (index >= kettleRecords.size()) {// 由于存在异步删除,优先确认是否越界
+			return;
+		}
+		KettleRecord record = kettleRecords.get(index);
+		if (record == null) {
+			return;
+		}
+		try {
+			remoteRecordOperator.attachRecord(record);
+			remoteRecordOperator.dealRecord();
+		} catch (Exception ex) {
+			logger.error("Kettle远端[" + remoteClient.getHostName() + "]处理record[" + record.getUuid() + "]发生异常!", ex);
+		} finally {
+			remoteRecordOperator.detachRecord();
+		}
+		if (record.isError() || record.isFinished()) {
+			kettleRecords.remove(index);
 		}
 	}
 
 	/**
+	 * 尝试删除任务
+	 * 
+	 * @param record
 	 * @return
 	 */
-	public List<KettleRecord> getRecords() {
-		return kettleRecords;
+	public synchronized boolean tryRemoveRecord(KettleRecord record) {
+		if (record.getHostname() != null && !remoteClient.getHostName().equals(record.getHostname())) {
+			return false;
+		}
+		KettleRecord remoteRecord = null;
+		for (Iterator<KettleRecord> it = kettleRecords.iterator(); it.hasNext();) {
+			remoteRecord = it.next();
+			if (remoteRecord != null && remoteRecord.getUuid().equals(record.getUuid())) {
+				it.remove();
+				if (!remoteRecord.isApply() && remoteClient.isRunning()) {
+					remoteClient.remoteStopJobNE(remoteRecord);
+					remoteClient.remoteRemoveJobNE(remoteRecord);
+				}
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@Override
 	public void run() {
 		logger.debug("Kettle远端进程[" + remoteClient.getHostName() + "]守护进程唤醒!");
 		try {
+			int index = 0;
+			int size = kettleRecords.size();
 			fetchRecord();
-			dealRecords();
+			while (index < size) {
+				index++;
+				dealRecord(index);
+			}
 		} catch (Exception ex) {
 			logger.error("Kettle远端[" + remoteClient.getHostName() + "]守护进程结束!", ex);
 		}
 	}
-
 }
