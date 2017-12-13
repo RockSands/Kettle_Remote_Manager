@@ -52,7 +52,7 @@ public class RecordSchedulerJob implements Job {
 			record.setHostname(null);
 			record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
 			try {
-				dbClient.updateRecord(record);
+				dbClient.updateRecordStatus(record);
 			} catch (KettleException e) {
 				logger.error("Kettle的SchedulerRecord[" + record.getUuid() + "]更新任务状态!", e);
 				return;

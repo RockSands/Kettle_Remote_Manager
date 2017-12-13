@@ -160,8 +160,6 @@ public class KettleMgrInstance {
 	 */
 	public KettleResult applyScheduleJob(KettleJobEntireDefine jobEntire, String cronExpression)
 			throws KettleException {
-		// logger.info("Kettle注册Repeat_Job[" + jobEntire.getMainJob().getName()
-		// + "]");
 		KettleRecord record = recordService.registeJob(jobEntire);
 		recordService.makeRecordScheduled(record.getUuid(), cronExpression);
 		KettleResult result = new KettleResult();
@@ -194,14 +192,8 @@ public class KettleMgrInstance {
 	 * @return
 	 * @throws KettleException
 	 */
-	public KettleResult excuteJob(String uuid) throws KettleException {
-		// logger.info("Kettle开始执行Job[" + uuid + "]");
-		KettleRecord record = recordService.excuteJob(uuid);
-		KettleResult result = new KettleResult();
-		result.setUuid(record.getUuid());
-		result.setStatus(record.getStatus());
-		result.setErrMsg(record.getErrMsg());
-		return result;
+	public void excuteJob(String uuid) throws KettleException {
+		recordService.excuteJob(uuid);
 	}
 
 	/**
@@ -212,7 +204,6 @@ public class KettleMgrInstance {
 	 * @throws KettleException
 	 */
 	public KettleResult queryJob(String uuid) throws KettleException {
-		// logger.info("Kettle开始查询Job[" + uuid + "]");
 		KettleRecord record = recordService.queryJob(uuid);
 		KettleResult result = new KettleResult();
 		result.setUuid(record.getUuid());

@@ -127,7 +127,7 @@ public abstract class RecordService {
 	 * @return
 	 * @throws KettleException
 	 */
-	public KettleRecord excuteJob(String uuid) throws KettleException {
+	public void excuteJob(String uuid) throws KettleException {
 		KettleRecord record = dbClient.queryRecord(uuid);
 		if (record == null) {
 			throw new KettleException("Job[" + uuid + "]未找到,请先注册!");
@@ -147,10 +147,10 @@ public abstract class RecordService {
 		}
 		if (recordPool.addRecord(record)) {
 			record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
-			dbClient.updateRecord(record);
-			return record;
+			dbClient.updateRecordStatus(record);
+		} else {
+			throw new KettleException("Job[" + uuid + "]申请执行失败,被任务池已满或任务已经存在!");
 		}
-		throw new KettleException("Job[" + uuid + "]申请执行失败,被任务池已满或任务已经存在!");
 	}
 
 	/**

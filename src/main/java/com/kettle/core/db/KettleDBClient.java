@@ -382,7 +382,7 @@ public class KettleDBClient {
 	 * @param record
 	 * @throws KettleException
 	 */
-	public void updateRecord(KettleRecord record) throws KettleException {
+	public void updateRecordStatus(KettleRecord record) throws KettleException {
 		RowMetaAndData table = new RowMetaAndData();
 		record.setUpdateTime(new Date());
 		table.addValue(new ValueMeta(KettleVariables.R_RECORD_STATUS, ValueMetaInterface.TYPE_STRING),
@@ -395,8 +395,6 @@ public class KettleDBClient {
 				record.getErrMsg());
 		table.addValue(new ValueMeta(KettleVariables.R_RECORD_UPDATETIME, ValueMetaInterface.TYPE_DATE),
 				record.getUpdateTime());
-		table.addValue(new ValueMeta(KettleVariables.R_RECORD_CRON_EXPRESSION, ValueMetaInterface.TYPE_STRING),
-				record.getCronExpression());
 		String[] sets = new String[table.size()];
 		for (int i = 0; i < table.size(); i++) {
 			sets[i] = table.getValueMeta(i).getName();
@@ -411,9 +409,9 @@ public class KettleDBClient {
 	 * 
 	 * @param record
 	 */
-	public void updateRecordNE(KettleRecord record) {
+	public void updateRecordStatusNE(KettleRecord record) {
 		try {
-			updateRecord(record);
+			updateRecordStatus(record);
 		} catch (Exception ex) {
 			logger.error("数据库更新record[" + record.getUuid() + "]发生异常!", ex);
 		}

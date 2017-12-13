@@ -1,11 +1,7 @@
 package com.kettle.main;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.pentaho.di.core.exception.KettleException;
 
-import com.kettle.core.bean.KettleResult;
 import com.kettle.core.instance.KettleMgrInstance;
 
 /**
@@ -16,7 +12,7 @@ import com.kettle.core.instance.KettleMgrInstance;
  */
 public class KettleMgrInstanceMain {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws KettleException {
 		KettleMgrInstance.getInstance();
 //		for (int i = 0; i < 100; i++) {
 //			try {

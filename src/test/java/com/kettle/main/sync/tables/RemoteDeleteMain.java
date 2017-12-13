@@ -4,23 +4,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.pentaho.di.core.exception.KettleException;
-
+import com.kettle.core.KettleVariables;
 import com.kettle.core.bean.KettleResult;
 import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.core.instance.metas.KettleTableMeta;
 import com.kettle.core.instance.metas.builder.SyncTablesDatasBuilder;
 
-public class RemoteScheduleMain {
-
-	public static void main(String[] args) throws KettleException, Exception {
-
+public class RemoteDeleteMain {
+	/**
+	 * @param args
+	 * @throws Exception
+	 */
+	public static void main(String[] args) throws Exception {
 		System.out.println("------------------------------");
 		KettleMgrInstance.getInstance();
-		// List<String> flags = Arrays.asList("A", "B", "C", "D", "E", "F", "G",
-		// "H", "I", "J", "K", "L", "M", "N", "O",
-		// "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
-		List<String> flags = Arrays.asList("A", "B", "C", "D");
+		List<String> flags = Arrays.asList("");
 		/*
 		 * Source的TableName无效
 		 */
@@ -37,10 +35,16 @@ public class RemoteScheduleMain {
 			source.setDatabase("employees");
 			source.setUser("root");
 			source.setPasswd("123456");
-			source.setSql(
-					"SELECT employees.emp_no, dept_emp.dept_no, employees.first_name, employees.last_name, employees.birth_date "
-							+ "FROM employees, dept_emp WHERE employees.emp_no = dept_emp.emp_no AND first_name LIKE '"
-							+ flag + "%'");
+			if ("".equals(flag)) {
+				source.setSql(
+						"SELECT employees.emp_no, dept_emp.dept_no, employees.first_name, employees.last_name, employees.birth_date "
+								+ "FROM employees, dept_emp WHERE employees.emp_no = dept_emp.emp_no");
+			} else {
+				source.setSql(
+						"SELECT employees.emp_no, dept_emp.dept_no, employees.first_name, employees.last_name, employees.birth_date "
+								+ "FROM employees, dept_emp WHERE employees.emp_no = dept_emp.emp_no AND first_name LIKE '"
+								+ flag + "%'");
+			}
 			source.setColumns(Arrays.asList("emp_no", "dept_no", "first_name", "last_name", "birth_date"));
 			source.setPkcolumns(Arrays.asList("emp_no", "dept_no"));
 			sources.add(source);
@@ -62,40 +66,39 @@ public class RemoteScheduleMain {
 				target.setTableName("target_employees_" + flag);
 			}
 			targets.add(target);
-		}
-		List<KettleResult> results = new ArrayList<KettleResult>(flags.size());
-		KettleResult resultTMP;
-		for (int i = 0; i < flags.size(); i++) {
 			SyncTablesDatasBuilder builder = new SyncTablesDatasBuilder();
+			System.out.println("-------------registe Delete----------------------");
+			KettleResult resultTMP = KettleMgrInstance.getInstance()
+					.registeJob(builder.source(source).target(target).createJob());
+			Thread.sleep(10000);
+			KettleMgrInstance.getInstance().deleteJob(resultTMP.getUuid());
+			Thread.sleep(10000);
+			System.out.println("-------------Running Delete----------------------");
 			resultTMP = KettleMgrInstance.getInstance().registeJob(builder.source(source).target(target).createJob());
-			KettleMgrInstance.getInstance().modifySchedule(resultTMP.getUuid(), "*/5 * * * * ?");
-			results.add(resultTMP);
-		}
-		long now = System.currentTimeMillis();
-		while ((System.currentTimeMillis() - now) / 1000 < 60) {
-			for (KettleResult result : results) {
-				result = KettleMgrInstance.getInstance().queryJob(result.getUuid());
-				System.out.println("=1=status=>" + result.getStatus());
+			KettleMgrInstance.getInstance().excuteJob(resultTMP.getUuid());
+			while (true) {
+				resultTMP = KettleMgrInstance.getInstance().queryJob(resultTMP.getUuid());
+				if (KettleVariables.RECORD_STATUS_RUNNING.equals(resultTMP.getStatus())) {
+					break;
+				}
+				if (KettleVariables.RECORD_STATUS_ERROR.equals(resultTMP.getStatus())
+						|| KettleVariables.RECORD_STATUS_FINISHED.equals(resultTMP.getStatus())) {
+					break;
+				}
+				Thread.sleep(1000);
 			}
-			Thread.sleep(5000);
-		}
-		System.out.println("---------------10------------------");
-		for (KettleResult result : results) {
-			KettleMgrInstance.getInstance().modifySchedule(result.getUuid(), "*/10 * * * * ?");
-		}
-		now = System.currentTimeMillis();
-		while ((System.currentTimeMillis() - now) / 1000 < 60) {
-			for (KettleResult result : results) {
-				result = KettleMgrInstance.getInstance().queryJob(result.getUuid());
-				System.out.println("=2=status=>" + result.getStatus());
+			if (KettleVariables.RECORD_STATUS_RUNNING.equals(resultTMP.getStatus())) {
+				try {
+					KettleMgrInstance.getInstance().deleteJob(resultTMP.getUuid());
+				} catch (Exception ex) {
+					System.out.println("==ErrMsg==>" + ex.getMessage());
+				}
+				Thread.sleep(5000);
+				System.out.println("-----------deleteJobForce--------------");
+				KettleMgrInstance.getInstance().deleteJobForce(resultTMP.getUuid());
+			} else {
+				KettleMgrInstance.getInstance().deleteJob(resultTMP.getUuid());
 			}
-			Thread.sleep(5000);
 		}
-		System.out.println("---------------DELETE------------------");
-		for (KettleResult result : results) {
-			KettleMgrInstance.getInstance().deleteJobForce(result.getUuid());
-			Thread.sleep(60000);
-		}
-		System.out.println("---------------END------------------");
 	}
 }

@@ -83,7 +83,7 @@ public class RemoteSerialRecordHandler implements Runnable {
 	/**
 	 * 远程错误是对Record的处理
 	 */
-	private void dealRemoteErrorRecords() {
+	private synchronized void dealRemoteErrorRecords() {
 		KettleRecord recordTMP = null;
 		if (kettleRecords.isEmpty()) {
 			return;
@@ -117,9 +117,6 @@ public class RemoteSerialRecordHandler implements Runnable {
 	 * @return
 	 */
 	private synchronized void dealRecord(int index) {
-		if (index >= kettleRecords.size()) {// 由于存在异步删除,优先确认是否越界
-			return;
-		}
 		KettleRecord record = kettleRecords.get(index);
 		if (record == null) {
 			return;
@@ -148,14 +145,16 @@ public class RemoteSerialRecordHandler implements Runnable {
 			return false;
 		}
 		KettleRecord remoteRecord = null;
-		for (Iterator<KettleRecord> it = kettleRecords.iterator(); it.hasNext();) {
-			remoteRecord = it.next();
+		for (int i = 0; i < kettleRecords.size(); i++) {
+			remoteRecord = kettleRecords.get(i);
 			if (remoteRecord != null && remoteRecord.getUuid().equals(record.getUuid())) {
-				it.remove();
 				if (!remoteRecord.isApply() && remoteClient.isRunning()) {
 					remoteClient.remoteStopJobNE(remoteRecord);
 					remoteClient.remoteRemoveJobNE(remoteRecord);
 				}
+				kettleRecords.remove(i);
+				kettleRecords.add(i, null);
+				// 设置为空
 				return true;
 			}
 		}

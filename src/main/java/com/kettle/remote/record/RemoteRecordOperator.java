@@ -6,8 +6,6 @@ import org.slf4j.LoggerFactory;
 
 import com.kettle.core.KettleVariables;
 import com.kettle.core.instance.KettleMgrEnvironment;
-import com.kettle.core.instance.KettleMgrInstance;
-import com.kettle.core.repo.KettleRepositoryClient;
 import com.kettle.record.KettleRecord;
 import com.kettle.record.operation.BaseRecordOperator;
 import com.kettle.remote.KettleRemoteClient;
@@ -25,16 +23,10 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 	private final KettleRemoteClient remoteClient;
 
 	/**
-	 * Kettle资源库
-	 */
-	private final KettleRepositoryClient repositoryClient;
-
-	/**
 	 * @param remoteClient
 	 */
 	public RemoteRecordOperator(KettleRemoteClient remoteClient) {
 		this.remoteClient = remoteClient;
-		this.repositoryClient = KettleMgrInstance.kettleMgrEnvironment.getRepositoryClient();
 	}
 
 	@Override
@@ -74,7 +66,7 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 	 */
 	private void updateRecord() throws KettleException {
 		try {
-			dbClient.updateRecord(record);
+			dbClient.updateRecordStatus(record);
 		} catch (Exception ex) {
 			throw new KettleException("remote[" + remoteClient.getHostName() + "]持久化更新Job[" + record.getUuid() + "]失败!",
 					ex);
@@ -105,7 +97,7 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 	@Override
 	public void dealError() throws KettleException {
 		try {
-			dbClient.updateRecord(record);
+			dbClient.updateRecordStatus(record);
 		} catch (Exception e) {
 			throw new KettleException("Record[" + record.getUuid() + "] 状态为[Error],数据库发生异常!", e);
 		}
@@ -114,7 +106,7 @@ public class RemoteRecordOperator extends BaseRecordOperator {
 	@Override
 	public void dealFinished() throws KettleException {
 		try {
-			dbClient.updateRecord(record);
+			dbClient.updateRecordStatus(record);
 			remoteClient.remoteRemoveJobNE(record);
 		} catch (Exception e) {
 			throw new KettleException("Record[" + record.getUuid() + "] 状态为[Finished],数据库发生异常!", e);
