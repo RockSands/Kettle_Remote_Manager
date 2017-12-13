@@ -59,7 +59,7 @@ public class RecordSchedulerJob implements Job {
 			}
 			KettleRecordPool pool = (KettleRecordPool) context.getJobDetail().getJobDataMap().get("RECORDPOOL");
 			pool.addPrioritizeRecord(record);
-			logger.debug("Kettle向任务队列添加SchedulerRecord[" + record.getUuid() + "],任务池任务个数:" + pool.size());
+			logger.debug("Kettle向任务队列添加SchedulerRecord[" + record.getUuid() + "],任务池任务" + pool.size());
 		} else {
 			logger.debug(
 					"Kettle向任务队列添加SchedulerRecord[" + record.getUuid() + "]由于状态为:" + record.getStatus() + "而无法添加!");

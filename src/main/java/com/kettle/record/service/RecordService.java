@@ -117,12 +117,7 @@ public abstract class RecordService {
 		}
 		record.setCronExpression(newCron);
 		recordPool.addOrModifySchedulerRecord(record);
-		if (record.isRegiste()) {
-			record.setStatus(KettleVariables.RECORD_STATUS_APPLY);
-			dbClient.updateRecord(record);
-		} else {
-			dbClient.updateRecordNoStatus(record);
-		}
+		dbClient.updateRecordNoStatus(record);
 	}
 
 	/**

@@ -166,12 +166,12 @@ public class RemoteSerialRecordHandler implements Runnable {
 	public void run() {
 		logger.debug("Kettle远端进程[" + remoteClient.getHostName() + "]守护进程唤醒!");
 		try {
+			fetchRecord();
 			int index = 0;
 			int size = kettleRecords.size();
-			fetchRecord();
 			while (index < size) {
-				index++;
 				dealRecord(index);
+				index++;
 			}
 		} catch (Exception ex) {
 			logger.error("Kettle远端[" + remoteClient.getHostName() + "]守护进程结束!", ex);
