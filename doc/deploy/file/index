@@ -88,8 +88,8 @@ STATD_PORT=30004
 		  <!--
 		  <repository>
 		    <name>KettleFileRepo</name>
-		    <username>admin</username>
-		    <password>admin</password>
+		    <username>guest</username>
+		    <password>guest</password>
 		  </repository>
 		  -->
 		</slave_config>
@@ -153,8 +153,8 @@ STATD_PORT=30004
 		<!--
 		  <repository>
 		    <name>KettleFileRepo</name>
-		    <username>admin</username>
-		    <password>admin</password>
+		    <username>guest</username>
+		    <password>guest</password>
 		  </repository>
 		  -->
 		  
