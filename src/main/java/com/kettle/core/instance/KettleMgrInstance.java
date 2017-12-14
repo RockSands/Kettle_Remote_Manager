@@ -28,7 +28,7 @@ import com.kettle.record.KettleRecord;
 import com.kettle.record.pool.KettleRecordPool;
 import com.kettle.record.service.RecordService;
 import com.kettle.remote.KettleRemotePool;
-import com.kettle.remote.record.service.RemoteSerialRecordService;
+import com.kettle.remote.record.service.RemoteParallelRecordService;
 
 /**
  * Kettle数据迁移管理者
@@ -126,8 +126,8 @@ public class KettleMgrInstance {
 			KettleRemotePool remotePool = new KettleRemotePool();
 			kettleMgrEnvironment.setRemotePool(remotePool);
 			// 服务
-			// recordService = new RemoteParallelRecordService();
-			recordService = new RemoteSerialRecordService();
+			recordService = new RemoteParallelRecordService();
+			// recordService = new RemoteSerialRecordService();
 		} catch (Exception ex) {
 			throw new RuntimeException("KettleMgrInstance初始化失败", ex);
 		}
