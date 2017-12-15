@@ -49,6 +49,9 @@ public abstract class RecordService {
 	 */
 	protected final KettleRecordPool recordPool;
 
+	/**
+	 * 
+	 */
 	public RecordService() {
 		recordPool = KettleMgrInstance.kettleMgrEnvironment.getRecordPool();
 		dbClient = KettleMgrInstance.kettleMgrEnvironment.getDbClient();
@@ -58,7 +61,7 @@ public abstract class RecordService {
 	/**
 	 * 注册作业
 	 * 
-	 * @param transMeta
+	 * @param jobEntire
 	 * @return
 	 * @throws KettleException
 	 */
@@ -104,6 +107,8 @@ public abstract class RecordService {
 	/**
 	 * 更新任务为Cron
 	 * 
+	 * @param uuid
+	 * @param newCron
 	 * @throws Exception
 	 */
 	public void makeRecordScheduled(String uuid, String newCron) throws KettleException {
@@ -123,8 +128,7 @@ public abstract class RecordService {
 	/**
 	 * 执行作业
 	 * 
-	 * @param transMeta
-	 * @return
+	 * @param uuid
 	 * @throws KettleException
 	 */
 	public void excuteJob(String uuid) throws KettleException {

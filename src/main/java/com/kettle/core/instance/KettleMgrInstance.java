@@ -62,6 +62,9 @@ public class KettleMgrInstance {
 	 */
 	private ScheduledExecutorService threadPool = Executors.newSingleThreadScheduledExecutor();
 
+	/**
+	 * @return
+	 */
 	public synchronized static KettleMgrInstance getInstance() {
 		if (instance == null) {
 			instance = new KettleMgrInstance();
@@ -69,6 +72,9 @@ public class KettleMgrInstance {
 		return instance;
 	}
 
+	/**
+	 * 构造器
+	 */
 	private KettleMgrInstance() {
 		init();
 		if (KettleMgrEnvironment.KETTLE_RECORD_PERSIST_MAX_HOUR != null
@@ -76,7 +82,7 @@ public class KettleMgrInstance {
 			Calendar now = Calendar.getInstance();
 			now.setTime(new Date());
 			int initialDelay = 24 - now.get(Calendar.HOUR_OF_DAY) + 1;
-			threadPool.scheduleAtFixedRate(new DelAbandonedRecord(), initialDelay, 24, TimeUnit.HOURS);
+			threadPool.scheduleAtFixedRate(new DelAbandonedRecordDaemon(), initialDelay, 24, TimeUnit.HOURS);
 		}
 	}
 
@@ -129,6 +135,7 @@ public class KettleMgrInstance {
 			recordService = new RemoteParallelRecordService();
 			// recordService = new RemoteSerialRecordService();
 		} catch (Exception ex) {
+			logger.error("KettleMgrInstance初始化失败", ex);
 			throw new RuntimeException("KettleMgrInstance初始化失败", ex);
 		}
 	}
@@ -151,7 +158,7 @@ public class KettleMgrInstance {
 	}
 
 	/**
-	 * 注册定时任务
+	 * 申请定时任务
 	 *
 	 * @param jobEntire
 	 * @param cronExpression
@@ -170,8 +177,8 @@ public class KettleMgrInstance {
 	}
 
 	/**
-	 * @param source
-	 * @param target
+	 * @param uuid
+	 * @param newCron
 	 * @return
 	 * @throws KettleException
 	 */
@@ -187,8 +194,7 @@ public class KettleMgrInstance {
 	/**
 	 * 执行
 	 * 
-	 * @param source
-	 * @param target
+	 * @param uuid
 	 * @return
 	 * @throws KettleException
 	 */
@@ -216,8 +222,7 @@ public class KettleMgrInstance {
 	 * 查询Job
 	 * 
 	 * @param uuids
-	 *            uuids
-	 * @return KettleResult KettleResult
+	 * @return
 	 * @throws KettleException
 	 */
 	public List<KettleResult> queryJobs(List<String> uuids) throws KettleException {
@@ -254,7 +259,11 @@ public class KettleMgrInstance {
 		recordService.deleteJobImmediately(uuid);
 	}
 
-	private class DelAbandonedRecord implements Runnable {
+	/**
+	 * @author Administrator
+	 *
+	 */
+	private class DelAbandonedRecordDaemon implements Runnable {
 		@Override
 		public void run() {
 			try {

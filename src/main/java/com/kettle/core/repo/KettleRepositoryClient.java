@@ -44,6 +44,10 @@ public class KettleRepositoryClient {
 	 */
 	private RepositoryDirectoryInterface directory = null;
 
+	/**
+	 * @param repository
+	 * @throws KettleException
+	 */
 	public KettleRepositoryClient(Repository repository) throws KettleException {
 		this.repository = repository;
 	}
@@ -61,6 +65,9 @@ public class KettleRepositoryClient {
 		}
 	}
 
+	/**
+	 * 连接
+	 */
 	public synchronized void connect() {
 		if (!repository.isConnected()) {
 			try {
@@ -106,6 +113,26 @@ public class KettleRepositoryClient {
 	}
 
 	/**
+	 * 向资源库保存TransMeta
+	 *
+	 * @param transMeta
+	 * @throws KettleException
+	 */
+	private synchronized void saveTransMeta(TransMeta transMeta) throws KettleException {
+		repository.save(transMeta, "1", Calendar.getInstance(), null, true);
+	}
+
+	/**
+	 * 向资源库保存TransMeta
+	 * 
+	 * @param jobMeta
+	 * @throws KettleException
+	 */
+	private synchronized void saveJobMeta(JobMeta jobMeta) throws KettleException {
+		repository.save(jobMeta, "1", Calendar.getInstance(), null, true);
+	}
+	
+	/**
 	 * @param id
 	 * @return
 	 */
@@ -118,32 +145,9 @@ public class KettleRepositoryClient {
 	}
 
 	/**
-	 * 向资源库保存TransMeta
-	 *
-	 * @param transMeta
-	 * @param repositoryDirectory
-	 * @throws KettleException
-	 */
-	private synchronized void saveTransMeta(TransMeta transMeta) throws KettleException {
-		repository.save(transMeta, "1", Calendar.getInstance(), null, true);
-	}
-
-	/**
-	 * 向资源库保存TransMeta
-	 * 
-	 * @param repositoryDirectory
-	 *
-	 * @param transMeta
-	 * @throws KettleException
-	 */
-	private synchronized void saveJobMeta(JobMeta jobMeta) throws KettleException {
-		repository.save(jobMeta, "1", Calendar.getInstance(), null, true);
-	}
-
-	/**
 	 * 从资源库获取TransMeta
 	 *
-	 * @param name
+	 * @param transID
 	 * @return
 	 * @throws KettleException
 	 */
@@ -160,16 +164,16 @@ public class KettleRepositoryClient {
 	 * @return
 	 * @throws KettleException
 	 */
-	public JobMeta getJobMeta(String jobId) throws KettleException {
+	public JobMeta getJobMeta(String jobID) throws KettleException {
 		connect();
-		JobMeta jobMeta = repository.loadJob(toObjectID(jobId), null);
+		JobMeta jobMeta = repository.loadJob(toObjectID(jobID), null);
 		return jobMeta;
 	}
 
 	/**
 	 * 资源库删除TransMeta
 	 *
-	 * @param transMeta
+	 * @param transID
 	 * @throws KettleException
 	 */
 	public synchronized void deleteTransMeta(String transID) throws KettleException {
@@ -180,7 +184,7 @@ public class KettleRepositoryClient {
 	/**
 	 * 资源库删除TransMeta
 	 *
-	 * @param transMeta
+	 * @param transID
 	 * @throws KettleException
 	 */
 	public void deleteTransMetaNE(String transID) {
@@ -241,9 +245,9 @@ public class KettleRepositoryClient {
 	}
 
 	/**
-	 * 删除
+	 * 删除依赖
 	 * 
-	 * @param depends
+	 * @param relations
 	 */
 	public synchronized void deleteJobEntireDefineNE(List<KettleRecordRelation> relations) {
 		connect();

@@ -55,6 +55,7 @@ public class RemoteParallelRecordHandler {
 
 	/**
 	 * @param remoteClient
+	 * @param oldRecords
 	 */
 	public RemoteParallelRecordHandler(KettleRemoteClient remoteClient, List<KettleRecord> oldRecords) {
 		threadPool = Executors.newScheduledThreadPool(KettleMgrEnvironment.KETTLE_RECORD_MAX_PER_REMOTE);
@@ -150,7 +151,7 @@ public class RemoteParallelRecordHandler {
 
 	/**
 	 * 获取下一个任务
-	 * 
+	 * @param record
 	 * @return
 	 */
 	private synchronized void callBackRecord(KettleRecord record) {

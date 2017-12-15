@@ -19,6 +19,9 @@ public abstract class BaseRecordOperator implements IRecordOperator {
 	 */
 	protected final KettleDBClient dbClient;
 
+	/**
+	 * 构造器
+	 */
 	public BaseRecordOperator() {
 		this.dbClient = KettleMgrInstance.kettleMgrEnvironment.getDbClient();
 	}
@@ -28,6 +31,9 @@ public abstract class BaseRecordOperator implements IRecordOperator {
 		return record;
 	}
 
+	/**
+	 * @return
+	 */
 	public String getRecordStatus() {
 		return record.getStatus();
 	}

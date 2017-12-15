@@ -113,7 +113,7 @@ public class RemoteSerialRecordHandler implements Runnable {
 
 	/**
 	 * 获取记录
-	 * 
+	 * @param index
 	 * @return
 	 */
 	private synchronized void dealRecord(int index) {

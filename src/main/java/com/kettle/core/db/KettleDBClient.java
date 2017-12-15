@@ -41,12 +41,17 @@ public class KettleDBClient {
 	/**
 	 * 日志
 	 */
-	Logger logger = LoggerFactory.getLogger(KettleDBClient.class);
+	private static Logger logger = LoggerFactory.getLogger(KettleDBClient.class);
+	
 	/**
 	 * 数据库元数据
 	 */
 	private final Database database;
 
+	/**
+	 * @param databaseMeta
+	 * @throws KettleDatabaseException
+	 */
 	public KettleDBClient(DatabaseMeta databaseMeta) throws KettleDatabaseException {
 		database = new Database(new SimpleLoggingObject("Kettel DB", LoggingObjectType.DATABASE, null), databaseMeta);
 
@@ -86,7 +91,6 @@ public class KettleDBClient {
 	 * @param id
 	 * @return
 	 * @throws KettleException
-	 * @throws KettleDatabaseException
 	 */
 	private synchronized RowMetaAndData queryOneRow(String sql, int type, Object id) throws KettleException {
 		ResultSet resultSet = null;
@@ -115,14 +119,11 @@ public class KettleDBClient {
 	}
 
 	/**
-	 * 查询一条数据
+	 * 查询多条数据
 	 * 
 	 * @param sql
-	 * @param type
-	 * @param id
 	 * @return
 	 * @throws KettleException
-	 * @throws KettleDatabaseException
 	 */
 	private synchronized List<Object[]> queryRows(String sql) throws KettleException {
 		connect();
@@ -210,7 +211,7 @@ public class KettleDBClient {
 
 	/**
 	 * 查询Record记录
-	 * 
+	 * @param uuid
 	 * @throws KettleException
 	 */
 	public KettleRecord queryRecord(String uuid) throws KettleException {
@@ -237,7 +238,7 @@ public class KettleDBClient {
 
 	/**
 	 * 查询Record记录
-	 * 
+	 * @param uuids
 	 * @throws KettleException
 	 */
 	public List<KettleRecord> queryRecords(List<String> uuids) throws KettleException {
@@ -420,7 +421,7 @@ public class KettleDBClient {
 	/**
 	 * 持查询依赖
 	 * 
-	 * @param mainJobID
+	 * @param mainJobUUID
 	 * @throws KettleException
 	 */
 	public List<KettleRecordRelation> queryDependents(String mainJobUUID) throws KettleException {
@@ -449,10 +450,7 @@ public class KettleDBClient {
 	/**
 	 * 维护关系
 	 * 
-	 * @param dependentTrans
-	 * @param dependentJobs
-	 * @param mainJob
-	 * @param recordUUID
+	 * @param jobEntire
 	 * @throws KettleException
 	 */
 	public synchronized void saveDependentsRelation(KettleJobEntireDefine jobEntire) throws KettleException {
@@ -520,7 +518,7 @@ public class KettleDBClient {
 	/**
 	 * 删除JOB
 	 * 
-	 * @param jobID
+	 * @param uuid
 	 * @throws KettleException
 	 */
 	public synchronized void deleteRecord(String uuid) throws KettleException {
@@ -532,7 +530,7 @@ public class KettleDBClient {
 	/**
 	 * 删除JOB
 	 * 
-	 * @param jobID
+	 * @param uuid
 	 * @throws KettleException
 	 */
 	public synchronized void deleteRecordNE(String uuid) {
@@ -546,7 +544,6 @@ public class KettleDBClient {
 	/**
 	 * 获取所有需处理Job任务
 	 * 
-	 * @param hostname
 	 * @return
 	 * @throws KettleException
 	 */
@@ -584,7 +581,6 @@ public class KettleDBClient {
 	/**
 	 * 获取所有需处理Job任务
 	 * 
-	 * @param hostname
 	 * @return
 	 * @throws KettleException
 	 */
