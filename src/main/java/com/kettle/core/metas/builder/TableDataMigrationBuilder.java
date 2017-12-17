@@ -1,4 +1,4 @@
-package com.kettle.core.instance.metas.builder;
+package com.kettle.core.metas.builder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,8 +24,8 @@ import org.pentaho.di.trans.steps.tableoutput.TableOutputMeta;
 
 import com.kettle.core.bean.KettleJobEntireDefine;
 import com.kettle.core.instance.KettleMgrInstance;
-import com.kettle.core.instance.metas.KettleSQLSMeta;
-import com.kettle.core.instance.metas.KettleTableMeta;
+import com.kettle.core.metas.KettleSQLSMeta;
+import com.kettle.core.metas.KettleTableMeta;
 import com.kettle.core.repo.KettleRepositoryClient;
 
 /**
@@ -60,6 +60,13 @@ public class TableDataMigrationBuilder {
 	 * 失败的操作
 	 */
 	private KettleSQLSMeta error = null;
+	
+	private TableDataMigrationBuilder() {
+	}
+
+	public static TableDataMigrationBuilder newBuilder() {
+		return new TableDataMigrationBuilder();
+	}
 
 	/**
 	 * 源

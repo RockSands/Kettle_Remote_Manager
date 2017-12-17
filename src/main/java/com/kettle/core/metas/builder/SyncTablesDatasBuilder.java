@@ -1,4 +1,4 @@
-package com.kettle.core.instance.metas.builder;
+package com.kettle.core.metas.builder;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -31,7 +31,7 @@ import org.pentaho.di.trans.steps.update.UpdateMeta;
 
 import com.kettle.core.bean.KettleJobEntireDefine;
 import com.kettle.core.instance.KettleMgrInstance;
-import com.kettle.core.instance.metas.KettleTableMeta;
+import com.kettle.core.metas.KettleTableMeta;
 import com.kettle.core.repo.KettleRepositoryClient;
 
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
@@ -61,6 +61,13 @@ public class SyncTablesDatasBuilder {
 	 * 目标
 	 */
 	private KettleTableMeta target;
+	
+	private SyncTablesDatasBuilder() {
+	}
+
+	public static SyncTablesDatasBuilder newBuilder() {
+		return new SyncTablesDatasBuilder();
+	}
 
 	public SyncTablesDatasBuilder source(KettleTableMeta source) {
 		this.source = source;

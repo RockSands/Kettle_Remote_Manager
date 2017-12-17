@@ -1,4 +1,4 @@
-package com.kettle.core.instance.metas;
+package com.kettle.core.metas;
 
 /**
  * 数据库元数据

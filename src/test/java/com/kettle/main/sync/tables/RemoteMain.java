@@ -8,7 +8,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.kettle.core.instance.KettleMgrInstance;
-import com.kettle.core.instance.metas.KettleTableMeta;
+import com.kettle.core.metas.KettleTableMeta;
 
 public class RemoteMain {
 	/**

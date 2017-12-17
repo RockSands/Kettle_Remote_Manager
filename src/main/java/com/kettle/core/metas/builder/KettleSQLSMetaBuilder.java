@@ -1,13 +1,14 @@
-package com.kettle.core.instance.metas.builder;
+package com.kettle.core.metas.builder;
 
 import java.util.List;
 
 import org.apache.commons.beanutils.BeanUtils;
 
-import com.kettle.core.instance.metas.KettleSQLSMeta;
+import com.kettle.core.metas.KettleSQLSMeta;
 
 /**
  * KettleSQL元数据构建器
+ * 
  * @author Administrator
  *
  */
@@ -46,6 +47,20 @@ public class KettleSQLSMetaBuilder {
 	 * 执行的SQL
 	 */
 	private List<String> sqls;
+
+	/**
+	 * 构造器
+	 */
+	private KettleSQLSMetaBuilder() {
+
+	}
+
+	/**
+	 * @return
+	 */
+	public static KettleSQLSMetaBuilder newBuilder() {
+		return new KettleSQLSMetaBuilder();
+	}
 
 	public String getType() {
 		return type;

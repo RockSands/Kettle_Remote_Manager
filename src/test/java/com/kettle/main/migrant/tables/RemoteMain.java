@@ -8,8 +8,8 @@ import java.util.concurrent.Executors;
 
 import com.kettle.core.bean.KettleResult;
 import com.kettle.core.instance.KettleMgrInstance;
-import com.kettle.core.instance.metas.KettleSQLSMeta;
-import com.kettle.core.instance.metas.KettleTableMeta;
+import com.kettle.core.metas.KettleSQLSMeta;
+import com.kettle.core.metas.KettleTableMeta;
 
 public class RemoteMain {
 	/**

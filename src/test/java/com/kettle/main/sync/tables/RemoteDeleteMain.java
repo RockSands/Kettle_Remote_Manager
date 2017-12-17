@@ -7,8 +7,8 @@ import java.util.List;
 import com.kettle.core.KettleVariables;
 import com.kettle.core.bean.KettleResult;
 import com.kettle.core.instance.KettleMgrInstance;
-import com.kettle.core.instance.metas.KettleTableMeta;
-import com.kettle.core.instance.metas.builder.SyncTablesDatasBuilder;
+import com.kettle.core.metas.KettleTableMeta;
+import com.kettle.core.metas.builder.SyncTablesDatasBuilder;
 
 public class RemoteDeleteMain {
 	/**
@@ -66,15 +66,15 @@ public class RemoteDeleteMain {
 				target.setTableName("target_employees_" + flag);
 			}
 			targets.add(target);
-			SyncTablesDatasBuilder builder = new SyncTablesDatasBuilder();
 			System.out.println("-------------registe Delete----------------------");
 			KettleResult resultTMP = KettleMgrInstance.getInstance()
-					.registeJob(builder.source(source).target(target).createJob());
+					.registeJob(SyncTablesDatasBuilder.newBuilder().source(source).target(target).createJob());
 			Thread.sleep(10000);
 			KettleMgrInstance.getInstance().deleteJob(resultTMP.getUuid());
 			Thread.sleep(10000);
 			System.out.println("-------------Running Delete----------------------");
-			resultTMP = KettleMgrInstance.getInstance().registeJob(builder.source(source).target(target).createJob());
+			resultTMP = KettleMgrInstance.getInstance()
+					.registeJob(SyncTablesDatasBuilder.newBuilder().source(source).target(target).createJob());
 			KettleMgrInstance.getInstance().excuteJob(resultTMP.getUuid());
 			while (true) {
 				resultTMP = KettleMgrInstance.getInstance().queryJob(resultTMP.getUuid());

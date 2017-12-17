@@ -8,8 +8,8 @@ import org.pentaho.di.core.exception.KettleException;
 
 import com.kettle.core.bean.KettleResult;
 import com.kettle.core.instance.KettleMgrInstance;
-import com.kettle.core.instance.metas.KettleTableMeta;
-import com.kettle.core.instance.metas.builder.SyncTablesDatasBuilder;
+import com.kettle.core.metas.KettleTableMeta;
+import com.kettle.core.metas.builder.SyncTablesDatasBuilder;
 
 public class RemoteScheduleMain {
 
@@ -66,8 +66,8 @@ public class RemoteScheduleMain {
 		List<KettleResult> results = new ArrayList<KettleResult>(flags.size());
 		KettleResult resultTMP;
 		for (int i = 0; i < flags.size(); i++) {
-			SyncTablesDatasBuilder builder = new SyncTablesDatasBuilder();
-			resultTMP = KettleMgrInstance.getInstance().registeJob(builder.source(source).target(target).createJob());
+			resultTMP = KettleMgrInstance.getInstance()
+					.registeJob(SyncTablesDatasBuilder.newBuilder().source(source).target(target).createJob());
 			KettleMgrInstance.getInstance().modifySchedule(resultTMP.getUuid(), "*/5 * * * * ?");
 			results.add(resultTMP);
 		}

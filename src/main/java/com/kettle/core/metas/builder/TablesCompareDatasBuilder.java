@@ -1,4 +1,4 @@
-package com.kettle.core.instance.metas.builder;
+package com.kettle.core.metas.builder;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -27,7 +27,7 @@ import org.pentaho.di.trans.steps.tableinput.TableInputMeta;
 
 import com.kettle.core.bean.KettleJobEntireDefine;
 import com.kettle.core.instance.KettleMgrInstance;
-import com.kettle.core.instance.metas.KettleTableMeta;
+import com.kettle.core.metas.KettleTableMeta;
 import com.kettle.core.repo.KettleRepositoryClient;
 
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
@@ -62,6 +62,13 @@ public class TablesCompareDatasBuilder {
 	 * 新操作
 	 */
 	private KettleTableMeta newOption;
+	
+	private TablesCompareDatasBuilder() {
+	}
+
+	public static TablesCompareDatasBuilder newBuilder() {
+		return new TablesCompareDatasBuilder();
+	}
 
 	public TablesCompareDatasBuilder base(KettleTableMeta base) {
 		this.base = base;

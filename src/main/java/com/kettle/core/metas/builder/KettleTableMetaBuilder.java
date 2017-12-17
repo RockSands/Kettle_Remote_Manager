@@ -1,8 +1,10 @@
-package com.kettle.core.instance.metas.builder;
+package com.kettle.core.metas.builder;
 
 import java.util.List;
+
 import org.apache.commons.beanutils.BeanUtils;
-import com.kettle.core.instance.metas.KettleTableMeta;
+
+import com.kettle.core.metas.KettleTableMeta;
 
 /**
  * Kettle Table元数据构建器
@@ -60,6 +62,13 @@ public class KettleTableMetaBuilder {
 	 * 表名
 	 */
 	private String tableName;
+
+	private KettleTableMetaBuilder() {
+	}
+
+	public static KettleTableMetaBuilder newBuilder() {
+		return new KettleTableMetaBuilder();
+	}
 
 	public KettleTableMetaBuilder dbType(String type) {
 		this.type = type;

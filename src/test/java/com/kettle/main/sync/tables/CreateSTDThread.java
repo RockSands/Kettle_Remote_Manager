@@ -6,8 +6,8 @@ import com.kettle.core.KettleVariables;
 import com.kettle.core.bean.KettleJobEntireDefine;
 import com.kettle.core.bean.KettleResult;
 import com.kettle.core.instance.KettleMgrInstance;
-import com.kettle.core.instance.metas.KettleTableMeta;
-import com.kettle.core.instance.metas.builder.SyncTablesDatasBuilder;
+import com.kettle.core.metas.KettleTableMeta;
+import com.kettle.core.metas.builder.SyncTablesDatasBuilder;
 
 public class CreateSTDThread implements Runnable {
 	KettleTableMeta source = null;
@@ -37,10 +37,7 @@ public class CreateSTDThread implements Runnable {
 				// (System.currentTimeMillis() - now));
 			}
 			if (result == null) {
-				SyncTablesDatasBuilder builder = new SyncTablesDatasBuilder();
-				builder.source(source);
-				builder.target(target);
-				kjed = builder.createJob();
+				kjed = SyncTablesDatasBuilder.newBuilder().source(source).target(target).createJob();
 				long now = System.currentTimeMillis();
 				result = KettleMgrInstance.getInstance().registeJob(kjed);
 				// System.out.println("==>registe used: " +
