@@ -109,7 +109,7 @@ public class KettleRemoteClient {
 	public String remoteSendJob(KettleRecord job) throws KettleException {
 		JobExecutionConfiguration jobExecutionConfiguration = new JobExecutionConfiguration();
 		jobExecutionConfiguration.setRemoteServer(remoteServer);
-		jobExecutionConfiguration.setLogLevel(LogLevel.ERROR);
+		jobExecutionConfiguration.setLogLevel(LogLevel.BASIC);
 		jobExecutionConfiguration.setPassingExport(false);
 		jobExecutionConfiguration.setExecutingRemotely(true);
 		jobExecutionConfiguration.setExecutingLocally(false);

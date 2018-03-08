@@ -1,8 +1,8 @@
 package com.kettle.record;
 
+import java.util.ArrayList;
 import java.util.Date;
-
-import org.pentaho.di.job.JobMeta;
+import java.util.List;
 
 import com.kettle.core.KettleVariables;
 
@@ -15,12 +15,12 @@ import com.kettle.core.KettleVariables;
 public class KettleRecord {
 
 	/**
-	 * ID
+	 * UUID
 	 */
 	private String uuid;
 
 	/**
-	 * ID
+	 * 任务ID
 	 */
 	private String jobid;
 
@@ -64,19 +64,11 @@ public class KettleRecord {
 	private String errMsg;
 
 	/**
-	 * Job元数据
+	 * 依赖
 	 */
-	private JobMeta KettleMeta;
+	private List<KettleRecordRelation> relations;
 
 	public KettleRecord() {
-	}
-
-	public JobMeta getKettleMeta() {
-		return KettleMeta;
-	}
-
-	public void setKettleMeta(JobMeta kettleMeta) {
-		KettleMeta = kettleMeta;
 	}
 
 	public String getUuid() {
@@ -139,6 +131,16 @@ public class KettleRecord {
 				this.errMsg = errMsg;
 			}
 		}
+	}
+
+	/**
+	 * @return the relations
+	 */
+	public List<KettleRecordRelation> getRelations() {
+		if (relations == null) {
+			relations = new ArrayList<KettleRecordRelation>();
+		}
+		return relations;
 	}
 
 	public String getCronExpression() {

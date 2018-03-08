@@ -15,7 +15,6 @@ import org.pentaho.di.job.JobMeta;
 import org.pentaho.di.job.entries.special.JobEntrySpecial;
 import org.pentaho.di.job.entries.trans.JobEntryTrans;
 import org.pentaho.di.job.entry.JobEntryCopy;
-import org.pentaho.di.repository.RepositoryDirectoryInterface;
 import org.pentaho.di.trans.TransHopMeta;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.StepMeta;
@@ -30,9 +29,7 @@ import org.pentaho.di.trans.steps.tableoutput.TableOutputMeta;
 import org.pentaho.di.trans.steps.update.UpdateMeta;
 
 import com.kettle.core.bean.KettleJobEntireDefine;
-import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.core.metas.KettleTableMeta;
-import com.kettle.core.repo.KettleRepositoryClient;
 
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Column;
@@ -47,12 +44,6 @@ import net.sf.jsqlparser.statement.select.Select;
  *
  */
 public class SyncTablesDatasBuilder {
-
-	/**
-	 * 资源链接
-	 */
-	private final KettleRepositoryClient repositoryClient = KettleMgrInstance.kettleMgrEnvironment
-			.getRepositoryClient();
 	/**
 	 * 源
 	 */
@@ -326,16 +317,11 @@ public class SyncTablesDatasBuilder {
 	}
 
 	public KettleJobEntireDefine createJob() throws Exception {
-		RepositoryDirectoryInterface directory = repositoryClient.getDirectory();
 		KettleJobEntireDefine kettleJobEntireDefine = new KettleJobEntireDefine();
 		TransMeta transMeta = createTrans();
-		transMeta.setRepository(repositoryClient.getRepository());
-		transMeta.setRepositoryDirectory(directory);
 		kettleJobEntireDefine.getDependentTrans().add(transMeta);
 
 		JobMeta mainJob = new JobMeta();
-		mainJob.setRepository(repositoryClient.getRepository());
-		mainJob.setRepositoryDirectory(directory);
 		mainJob.setName(UUID.randomUUID().toString().replace("-", ""));
 		// 启动
 		JobEntryCopy start = new JobEntryCopy(new JobEntrySpecial("START", true, false));

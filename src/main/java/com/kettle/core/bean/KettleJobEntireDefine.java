@@ -1,6 +1,6 @@
 package com.kettle.core.bean;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.pentaho.di.job.JobMeta;
@@ -17,6 +17,10 @@ public class KettleJobEntireDefine {
 	 */
 	private String uuid;
 	/**
+	 * 核心Job
+	 */
+	private JobMeta mainJob;
+	/**
 	 * 依赖的Trans
 	 */
 	private List<TransMeta> dependentTrans;
@@ -24,10 +28,6 @@ public class KettleJobEntireDefine {
 	 * 依赖的Job
 	 */
 	private List<JobMeta> dependentJobs;
-	/**
-	 * 核心Job
-	 */
-	private JobMeta mainJob;
 	
 	public String getUuid() {
 		return uuid;
@@ -47,14 +47,14 @@ public class KettleJobEntireDefine {
 
 	public List<TransMeta> getDependentTrans() {
 		if (dependentTrans == null) {
-			dependentTrans = new LinkedList<TransMeta>();
+			dependentTrans = new ArrayList<TransMeta>();
 		}
 		return dependentTrans;
 	}
 
 	public List<JobMeta> getDependentJobs() {
 		if (dependentJobs == null) {
-			dependentJobs = new LinkedList<JobMeta>();
+			dependentJobs = new ArrayList<JobMeta>();
 		}
 		return dependentJobs;
 	}

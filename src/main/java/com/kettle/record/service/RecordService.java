@@ -1,6 +1,8 @@
 package com.kettle.record.service;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
@@ -83,22 +85,17 @@ public abstract class RecordService {
 			throw new KettleException("JobMeta的核心Job[" + jobEntire.getMainJob().getName() + "]必须是即时任务!");
 		}
 		jobEntire.setUuid(UUID.randomUUID().toString().replace("-", ""));
-		repositoryClient.saveJobEntireDefine(jobEntire);
-		KettleRecord record = null;
-		record = new KettleRecord();
-		record.setKettleMeta(jobEntire.getMainJob());
-		record.setUuid(jobEntire.getUuid());
-		record.setJobid(jobEntire.getMainJob().getObjectId().getId());
-		record.setName(jobEntire.getMainJob().getName());
+		/*
+		 * 设定存储路径
+		 */
+		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
+		KettleRecord record = repositoryClient.saveJobEntireDefine(jobEntire, df.format(new Date()));
 		record.setStatus(KettleVariables.RECORD_STATUS_REGISTE);
 		try {
-			dbClient.saveDependentsRelation(jobEntire);
 			dbClient.insertRecord(record);
 		} catch (Exception ex) {
 			logger.error("Job[" + jobEntire.getMainJob().getName() + "]执行注册操作发生异常!", ex);
 			dbClient.deleteRecordNE(jobEntire.getUuid());
-			List<KettleRecordRelation> relations = dbClient.deleteDependentsRelationNE(jobEntire.getUuid());
-			repositoryClient.deleteJobEntireDefineNE(relations);
 			throw new KettleException("Job[" + jobEntire.getMainJob().getName() + "]执行注册操作发生异常!");
 		}
 		return record;
@@ -116,9 +113,10 @@ public abstract class RecordService {
 		if (record == null) {
 			throw new KettleException("Kettle不存在UUID为[" + uuid + "]的记录!");
 		}
-		record.setKettleMeta(repositoryClient.getJobMeta(record.getJobid()));
-		if (record.getKettleMeta() == null) {
-			throw new KettleException("Job[" + uuid + "]数据异常,未找到Kettle元数据!");
+		KettleJobEntireDefine kjed = repositoryClient.getJobEntireDefine(record);
+		if ((record.getCronExpression() == null && newCron != null)
+				|| (record.getCronExpression() != null && newCron == null)) {
+			repositoryClient.moveJobEntireDefine(record, "scheduledJobs");
 		}
 		record.setCronExpression(newCron);
 		recordPool.addOrModifySchedulerRecord(record);

@@ -17,6 +17,7 @@ import org.pentaho.di.core.util.EnvUtil;
 import org.pentaho.di.repository.RepositoryMeta;
 import org.pentaho.di.repository.filerep.KettleFileRepository;
 import org.pentaho.di.repository.filerep.KettleFileRepositoryMeta;
+import org.pentaho.metastore.api.IMetaStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,6 +77,7 @@ public class KettleMgrInstance {
 	 * 构造器
 	 */
 	private KettleMgrInstance() {
+		IMetaStore i;
 		init();
 		if (KettleMgrEnvironment.KETTLE_RECORD_PERSIST_MAX_HOUR != null
 				&& KettleMgrEnvironment.KETTLE_RECORD_PERSIST_MAX_HOUR > 0) {

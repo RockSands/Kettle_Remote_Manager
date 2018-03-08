@@ -7,13 +7,14 @@ import java.util.UUID;
 import org.pentaho.di.core.Condition;
 import org.pentaho.di.core.NotePadMeta;
 import org.pentaho.di.core.database.DatabaseMeta;
+import org.pentaho.di.core.plugins.DatabasePluginType;
+import org.pentaho.di.core.plugins.PluginRegistry;
 import org.pentaho.di.core.row.ValueMetaAndData;
 import org.pentaho.di.job.JobHopMeta;
 import org.pentaho.di.job.JobMeta;
 import org.pentaho.di.job.entries.special.JobEntrySpecial;
 import org.pentaho.di.job.entries.trans.JobEntryTrans;
 import org.pentaho.di.job.entry.JobEntryCopy;
-import org.pentaho.di.repository.RepositoryDirectoryInterface;
 import org.pentaho.di.trans.TransHopMeta;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.StepMeta;
@@ -26,9 +27,7 @@ import org.pentaho.di.trans.steps.sql.ExecSQLMeta;
 import org.pentaho.di.trans.steps.tableinput.TableInputMeta;
 
 import com.kettle.core.bean.KettleJobEntireDefine;
-import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.core.metas.KettleTableMeta;
-import com.kettle.core.repo.KettleRepositoryClient;
 
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Column;
@@ -43,13 +42,6 @@ import net.sf.jsqlparser.statement.select.Select;
  *
  */
 public class TablesCompareDatasBuilder {
-
-	/**
-	 * 资源链接
-	 */
-	private final KettleRepositoryClient repositoryClient = KettleMgrInstance.kettleMgrEnvironment
-			.getRepositoryClient();
-
 	/**
 	 * 基础
 	 */
@@ -62,7 +54,7 @@ public class TablesCompareDatasBuilder {
 	 * 新操作
 	 */
 	private KettleTableMeta newOption;
-	
+
 	private TablesCompareDatasBuilder() {
 	}
 
@@ -95,15 +87,27 @@ public class TablesCompareDatasBuilder {
 		DatabaseMeta baseDataBase = new DatabaseMeta(base.getHost() + "_" + base.getDatabase() + "_" + base.getUser(),
 				base.getType(), "Native", base.getHost(), base.getDatabase(), base.getPort(), base.getUser(),
 				base.getPasswd());
+		if ("ORACLE".equals(base.getType())) {
+			String oracle = PluginRegistry.getInstance().getPlugin(DatabasePluginType.class, "ORACLE").getIds()[0];
+			baseDataBase.addExtraOption(oracle, "QTO", "F");
+		}
 		transMeta.addDatabase(baseDataBase);
 		DatabaseMeta compareDatabase = new DatabaseMeta(
 				compare.getHost() + "_" + compare.getDatabase() + "_" + compare.getUser(), compare.getType(), "Native",
 				compare.getHost(), compare.getDatabase(), compare.getPort(), compare.getUser(), compare.getPasswd());
+		if ("ORACLE".equals(compare.getType())) {
+			String oracle = PluginRegistry.getInstance().getPlugin(DatabasePluginType.class, "ORACLE").getIds()[0];
+			compareDatabase.addExtraOption(oracle, "QTO", "F");
+		}
 		transMeta.addDatabase(compareDatabase);
 		DatabaseMeta newDatabase = new DatabaseMeta(
 				newOption.getHost() + "_" + newOption.getDatabase() + "_" + newOption.getUser(), newOption.getType(),
 				"Native", newOption.getHost(), newOption.getDatabase(), newOption.getPort(), newOption.getUser(),
 				newOption.getPasswd());
+		if ("ORACLE".equals(newOption.getType())) {
+			String oracle = PluginRegistry.getInstance().getPlugin(DatabasePluginType.class, "ORACLE").getIds()[0];
+			newDatabase.addExtraOption(oracle, "QTO", "F");
+		}
 		transMeta.addDatabase(newDatabase);
 		/*
 		 * 条件
@@ -245,16 +249,11 @@ public class TablesCompareDatasBuilder {
 	}
 
 	public KettleJobEntireDefine createJob() throws Exception {
-		RepositoryDirectoryInterface directory = repositoryClient.getDirectory();
 		KettleJobEntireDefine kettleJobEntireDefine = new KettleJobEntireDefine();
 		TransMeta transMeta = createTrans();
-		transMeta.setRepository(repositoryClient.getRepository());
-		transMeta.setRepositoryDirectory(directory);
 		kettleJobEntireDefine.getDependentTrans().add(transMeta);
 
 		JobMeta mainJob = new JobMeta();
-		mainJob.setRepository(repositoryClient.getRepository());
-		mainJob.setRepositoryDirectory(directory);
 		mainJob.setName(UUID.randomUUID().toString().replace("-", ""));
 		// 启动
 		JobEntryCopy start = new JobEntryCopy(new JobEntrySpecial("START", true, false));
