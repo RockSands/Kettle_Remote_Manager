@@ -1,3 +1,11 @@
-/bin/
-/target/
-/.settings/
+.project
+.classpath
+.settings
+.springBeans
+build
+target
+bin
+*.class
+*.jar
+*.war
+.factorypath
