@@ -195,8 +195,8 @@ public class KettleRecordPool {
      * @throws Exception
      */
     public void addOrModifySchedulerRecord(KettleRecord record) throws KettleException {
-	if (record == null || record.getCronExpression() == null) {
-	    throw new KettleException("添加SchedulerRecord[" + record.getName() + "]失败,未找到CRON表达式!");
+	if (record == null) {
+	    throw new KettleException("添加SchedulerRecord[" + record.getName() + "]失败,Record为Null!");
 	}
 	TriggerKey triggerKey = new TriggerKey(record.getUuid());
 	Trigger trigger = TriggerBuilder.newTrigger().withIdentity(record.getUuid()).startNow()
@@ -238,7 +238,6 @@ public class KettleRecordPool {
      */
     public synchronized void removeSchedulerRecord(String uuid) throws KettleException {
 	try {
-
 	    TriggerKey triggerKey = new TriggerKey(uuid);
 	    JobKey jobKey = new JobKey(uuid, null);
 	    if (scheduler.checkExists(triggerKey)) {

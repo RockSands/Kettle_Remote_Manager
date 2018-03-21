@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 
+import org.apache.commons.lang.StringUtils;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.job.JobMeta;
 import org.pentaho.di.job.entries.special.JobEntrySpecial;
@@ -20,7 +21,6 @@ import com.kettle.core.db.KettleDBClient;
 import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.core.repo.KettleRepositoryClient;
 import com.kettle.record.KettleRecord;
-import com.kettle.record.KettleRecordRelation;
 import com.kettle.record.pool.KettleRecordPool;
 
 /**
@@ -192,9 +192,16 @@ public abstract class RecordService {
 	if (record == null) {
 	    throw new KettleException("Kettle不存在UUID为[" + uuid + "]的记录!");
 	}
-	KettleJobEntireDefine kjed = repositoryClient.getJobEntireDefine(record);
-	if ((record.getCronExpression() == null && newCron != null)
-		|| (record.getCronExpression() != null && newCron == null)) {
+	if (record.getCronExpression() == null && StringUtils.isEmpty(newCron)) {// 什么也不用做
+	    return;
+	} else if (StringUtils.isEmpty(newCron)) {// 如果是撤销定时任务,将任务迁移至当前目录
+	    recordPool.removeSchedulerRecord(uuid);
+	    SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
+	    repositoryClient.moveJobEntireDefine(record, df.format(new Date()));
+	    dbClient.updateRecordNoStatus(record);
+	    return;
+	}
+	if (record.getCronExpression() == null) {// 如果record为非定时任务,将任务迁移并处理定时!
 	    repositoryClient.moveJobEntireDefine(record, "scheduledJobs");
 	}
 	record.setCronExpression(newCron);
@@ -257,15 +264,16 @@ public abstract class RecordService {
 	if (record == null) {
 	    return;
 	}
+
 	if (record.getCronExpression() != null) {
 	    recordPool.removeSchedulerRecord(uuid);
 	    record = dbClient.queryRecord(uuid);// 定时任务重新查询,避免状态啊为脏数据
 	}
 	if (record.isError() || record.isFinished() || record.isRegiste()) {
+	    dbClient.queryRecordRelations(record);
 	    recordPool.deleteRecord(uuid);
 	    dbClient.deleteRecord(uuid);
-	    List<KettleRecordRelation> relations = dbClient.deleteDependentsRelationNE(uuid);
-	    repositoryClient.deleteJobEntireDefineNE(relations);
+	    repositoryClient.deleteJobEntireDefine(record);
 	    return;
 	}
 	throw new KettleException("Record[" + uuid + "]已被受理,无法删除!");
@@ -286,11 +294,11 @@ public abstract class RecordService {
 	    recordPool.removeSchedulerRecord(uuid);
 	    record = dbClient.queryRecord(uuid);// 定时任务重新查询,避免状态啊为脏数据
 	}
+	dbClient.queryRecordRelations(record);
 	if (record.isError() || record.isFinished() || record.isRegiste()) {
 	    recordPool.deleteRecord(uuid);
 	    dbClient.deleteRecord(uuid);
-	    List<KettleRecordRelation> relations = dbClient.deleteDependentsRelationNE(uuid);
-	    repositoryClient.deleteJobEntireDefineNE(relations);
+	    repositoryClient.deleteJobEntireDefine(record);
 	    return;
 	}
 	jobMustDie(record);
