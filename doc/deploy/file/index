@@ -104,7 +104,8 @@ STATD_PORT=30004
 	10.挂载NFS目录
 		mkdir -p /data/kettleFileRepo
 		mount -t nfs <NFS服务IP>:/data/kettleFileRepo /data/kettleFileRepo
-		
+		样例:
+		mount -t nfs 10.99.1.100:/kettleFileRepo /data/kettleFileRepo
 		# 开机挂载
 		vi /etc/fstab
 		

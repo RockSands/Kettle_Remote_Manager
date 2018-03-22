@@ -1,26 +1,23 @@
-package com.kettle.main.sync.tables;
+package com.kettle.main;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.kettle.core.bean.KettleResult;
+import org.pentaho.di.core.exception.KettleException;
+
 import com.kettle.core.instance.KettleMgrInstance;
 import com.kettle.core.metas.KettleTableMeta;
-import com.kettle.core.metas.builder.SyncTablesDatasBuilder;
 
-public class RemoteDeleteMain {
-	/**
-	 * @param args
-	 * @throws Exception
-	 */
-	public static void main(String[] args) throws Exception {
+public class KettleRemoteQuery {
+	public static void main(String[] args) throws KettleException {
+		KettleMgrInstance.getInstance();
 		System.out.println("------------------------------");
 		KettleMgrInstance.getInstance();
-		List<String> flags = Arrays.asList("");
-		/*
-		 * Source的TableName无效
-		 */
+		// List<String> flags = Arrays.asList("A", "B", "C", "D", "E", "F", "G", "H",
+		// "I", "J", "K", "L", "M", "N", "O",
+		// "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
+		List<String> flags = Arrays.asList("A","B");
 		List<KettleTableMeta> sources = new ArrayList<KettleTableMeta>(flags.size());
 		List<KettleTableMeta> targets = new ArrayList<KettleTableMeta>(flags.size());
 		KettleTableMeta source = null;
@@ -65,40 +62,6 @@ public class RemoteDeleteMain {
 				target.setTableName("target_employees_" + flag);
 			}
 			targets.add(target);
-			System.out.println("-------------registe Delete----------------------");
-			KettleResult resultTMP = KettleMgrInstance.getInstance()
-					.registeJob(SyncTablesDatasBuilder.newBuilder().source(source).target(target).createJob());
-			KettleMgrInstance.getInstance().excuteJob(resultTMP.getUuid());
-			Thread.sleep(10000);
-//			KettleMgrInstance.getInstance().deleteJob(resultTMP.getUuid());
-//			Thread.sleep(10000);
-//			System.out.println("-------------Running Delete----------------------");
-//			resultTMP = KettleMgrInstance.getInstance()
-//					.registeJob(SyncTablesDatasBuilder.newBuilder().source(source).target(target).createJob());
-//			KettleMgrInstance.getInstance().excuteJob(resultTMP.getUuid());
-//			while (true) {
-//				resultTMP = KettleMgrInstance.getInstance().queryJob(resultTMP.getUuid());
-//				if (KettleVariables.RECORD_STATUS_RUNNING.equals(resultTMP.getStatus())) {
-//					break;
-//				}
-//				if (KettleVariables.RECORD_STATUS_ERROR.equals(resultTMP.getStatus())
-//						|| KettleVariables.RECORD_STATUS_FINISHED.equals(resultTMP.getStatus())) {
-//					break;
-//				}
-//				Thread.sleep(1000);
-//			}
-//			if (KettleVariables.RECORD_STATUS_RUNNING.equals(resultTMP.getStatus())) {
-//				try {
-//					KettleMgrInstance.getInstance().deleteJob(resultTMP.getUuid());
-//				} catch (Exception ex) {
-//					System.out.println("==ErrMsg==>" + ex.getMessage());
-//				}
-//				Thread.sleep(5000);
-//				System.out.println("-----------deleteJobForce--------------");
-//				KettleMgrInstance.getInstance().deleteJobForce(resultTMP.getUuid());
-//			} else {
-//				KettleMgrInstance.getInstance().deleteJob(resultTMP.getUuid());
-//			}
 		}
 	}
 }
