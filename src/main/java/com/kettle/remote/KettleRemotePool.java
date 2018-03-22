@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.kettle.core.KettleVariables;
-import com.kettle.core.instance.KettleMgrInstance;
+import com.kettle.core.repo.KettleRepositoryClient;
 
 /**
  * Kettle远程池,仅维护远端的状态
@@ -53,13 +53,11 @@ public class KettleRemotePool {
 	 * @param repositoryClient
 	 * @throws Exception
 	 */
-	public KettleRemotePool() throws Exception {
+	public KettleRemotePool(KettleRepositoryClient repositoryClient) throws Exception {
 		this.remoteclients = new HashMap<String, KettleRemoteClient>();
-		for (SlaveServer server : KettleMgrInstance.kettleMgrEnvironment.getRepositoryClient().getRepository()
-				.getSlaveServers()) {
+		for (SlaveServer server : repositoryClient.getSlaveServers()) {
 			server.getLogChannel().setLogLevel(LogLevel.ERROR);
-			addRemoteClient(
-					new KettleRemoteClient(KettleMgrInstance.kettleMgrEnvironment.getRepositoryClient(), server));
+			addRemoteClient(new KettleRemoteClient(repositoryClient, server));
 			hostNames.add(server.getHostname());
 		}
 		logger.info("Kettle远程池已经加载Client" + remoteclients.keySet());

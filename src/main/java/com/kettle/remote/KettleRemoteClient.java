@@ -5,6 +5,7 @@ import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.logging.LogLevel;
 import org.pentaho.di.job.Job;
 import org.pentaho.di.job.JobExecutionConfiguration;
+import org.pentaho.di.job.JobMeta;
 import org.pentaho.di.www.SlaveServerJobStatus;
 import org.pentaho.di.www.SlaveServerStatus;
 import org.pentaho.di.www.WebResult;
@@ -31,11 +32,6 @@ public class KettleRemoteClient {
 	private static Logger logger = LoggerFactory.getLogger(KettleRemoteClient.class);
 
 	/**
-	 * 资源链接
-	 */
-	private final KettleRepositoryClient repositoryClient;
-
-	/**
 	 * 远端状态 -- 初始状态未运行中
 	 */
 	private String remoteStatus = KettleVariables.REMOTE_STATUS_RUNNING;
@@ -44,6 +40,11 @@ public class KettleRemoteClient {
 	 * 远程服务
 	 */
 	private final SlaveServer remoteServer;
+
+	/**
+	 * Kettle资源库
+	 */
+	private final KettleRepositoryClient repositoryClient;
 
 	/**
 	 * 最大任务数量
@@ -115,10 +116,8 @@ public class KettleRemoteClient {
 		jobExecutionConfiguration.setExecutingLocally(false);
 		jobExecutionConfiguration.setRepository(repositoryClient.getRepository());
 		String runID = null;
-		if (job.getKettleMeta() == null) {
-			job.setKettleMeta(repositoryClient.getJobMeta(job.getJobid()));
-		}
-		runID = Job.sendToSlaveServer(job.getKettleMeta(), jobExecutionConfiguration, repositoryClient.getRepository(),
+		JobMeta jobMeta = repositoryClient.getMainJob(job);
+		runID = Job.sendToSlaveServer(jobMeta, jobExecutionConfiguration, repositoryClient.getRepository(),
 				repositoryClient.getRepository().getMetaStore());
 		return runID;
 	}
