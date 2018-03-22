@@ -79,5 +79,6 @@ public class KettleRemoteQuery {
 	for (KettleResult result : kettleResults) {
 	    KettleMgrInstance.getInstance().deleteJob(result.getUuid());
 	}
+	KettleMgrInstance.getInstance().cleanJob();
     }
 }

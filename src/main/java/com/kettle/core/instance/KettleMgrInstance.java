@@ -279,6 +279,32 @@ public class KettleMgrInstance {
     }
 
     /**
+     * 清理任务
+     */
+    public void cleanJob() {
+	try {
+	    /*
+	     * 清理任务
+	     */
+	    List<KettleRecord> records = recordService.queryStopedJobs();
+	    kettleMgrEnvironment.getDbClient().allStopRecord();
+	    Long current = System.currentTimeMillis();
+	    for (KettleRecord record : records) {
+		if ((current - record.getUpdateTime().getTime()) / 1000 / 60
+			/ 60 > KettleMgrEnvironment.KETTLE_RECORD_PERSIST_MAX_HOUR) {
+		    deleteJob(record.getUuid());
+		}
+	    }
+	    /*
+	     * 清理目录
+	     */
+	    recordService.deleteEmptyRepoPath();
+	} catch (Exception e) {
+	    e.printStackTrace();
+	}
+    }
+
+    /**
      * @author Administrator
      *
      */

@@ -1,6 +1,7 @@
 
 package com.kettle.core.repo;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -13,8 +14,10 @@ import org.pentaho.di.repository.LongObjectId;
 import org.pentaho.di.repository.ObjectId;
 import org.pentaho.di.repository.Repository;
 import org.pentaho.di.repository.RepositoryDirectoryInterface;
+import org.pentaho.di.repository.RepositoryElementMetaInterface;
 import org.pentaho.di.repository.StringObjectId;
 import org.pentaho.di.repository.filerep.KettleFileRepository;
+import org.pentaho.di.repository.filerep.KettleFileRepositoryMeta;
 import org.pentaho.di.trans.TransMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,12 +133,20 @@ public class KettleRepositoryClient {
      * 
      * @throws KettleException
      */
-    public synchronized void deleteEmptyRepoPath() throws KettleException {
+    public synchronized void deleteEmptyRepoPath(List<String> excludes) throws KettleException {
 	connect();
 	List<RepositoryDirectoryInterface> directorys = repository.findDirectory("").getChildren();
+	List<RepositoryElementMetaInterface> objects = null;
+	KettleFileRepositoryMeta meta = (KettleFileRepositoryMeta) repository.getRepositoryMeta();
 	for (RepositoryDirectoryInterface directory : directorys) {
-	    if (directory.getRepositoryObjects().isEmpty()) {
-		repository.deleteRepositoryDirectory(directory);
+	    if (excludes.contains(directory.getPath())) {
+		continue;
+	    }
+	    objects = repository.getJobAndTransformationObjects(directory.getObjectId(), true);
+	    if (objects == null || objects.isEmpty()) {
+		String path = meta.getBaseDirectory() + directory.getPath();
+		File file = new File(path);
+		file.delete();
 	    }
 	}
     }

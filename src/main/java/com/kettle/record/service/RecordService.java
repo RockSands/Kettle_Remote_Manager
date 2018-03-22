@@ -2,6 +2,7 @@ package com.kettle.record.service;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -12,6 +13,7 @@ import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.job.JobMeta;
 import org.pentaho.di.job.entries.special.JobEntrySpecial;
 import org.pentaho.di.job.entry.JobEntryCopy;
+import org.pentaho.di.repository.RepositoryDirectory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,7 +77,10 @@ public abstract class RecordService {
      * @throws KettleException
      */
     public void deleteEmptyRepoPath() throws KettleException {
-	repositoryClient.deleteEmptyRepoPath();
+	SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
+	repositoryClient
+		.deleteEmptyRepoPath(Arrays.asList(RepositoryDirectory.DIRECTORY_SEPARATOR + df.format(new Date()),
+			RepositoryDirectory.DIRECTORY_SEPARATOR + "ScheduledJobs"));
     }
 
     /**
@@ -213,7 +218,7 @@ public abstract class RecordService {
 	    dbClient.updateRecordRelationsID(record, oldMetaIDs);
 	    return;
 	} else if (record.getCronExpression() == null) {// 如果record为非定时任务,将任务迁移并处理定时!
-	    List<String> oldMetaIDs = repositoryClient.moveJobEntireDefine(record, "scheduledJobs");
+	    List<String> oldMetaIDs = repositoryClient.moveJobEntireDefine(record, "ScheduledJobs");
 	    dbClient.updateRecordRelationsID(record, oldMetaIDs);
 	}
 	record.setCronExpression(newCron);
