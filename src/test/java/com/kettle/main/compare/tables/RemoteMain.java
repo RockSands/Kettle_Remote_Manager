@@ -27,7 +27,7 @@ public class RemoteMain {
 	public static void main(String[] args) throws Exception {
 		System.out.println("------------------------------");
 		KettleMgrInstance.getInstance();
-		List<String> flags = Arrays.asList("D", "E", "C");
+		List<String> flags = Arrays.asList("d", "e", "c");
 		/*
 		 * Source的TableName无效
 		 */
