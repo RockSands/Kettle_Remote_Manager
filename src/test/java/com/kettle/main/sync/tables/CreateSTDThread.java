@@ -33,15 +33,13 @@ public class CreateSTDThread implements Runnable {
 				// long now = System.currentTimeMillis();
 				result = KettleMgrInstance.getInstance().queryJob(result.getUuid());
 				System.out.println("==>[" + result.getUuid() + "]状态: " + result.getStatus());
-				// System.out.println("==>query used: " +
-				// (System.currentTimeMillis() - now));
+				// System.out.println("==>query used: " + (System.currentTimeMillis() - now));
 			}
 			if (result == null) {
 				kjed = SyncTablesDatasBuilder.newBuilder().source(source).target(target).createJob();
 				long now = System.currentTimeMillis();
 				result = KettleMgrInstance.getInstance().registeJob(kjed);
-				// System.out.println("==>registe used: " +
-				// (System.currentTimeMillis() - now));
+				// System.out.println("==>registe used: " + (System.currentTimeMillis() - now));
 				now = System.currentTimeMillis();
 				KettleMgrInstance.getInstance().excuteJob(result.getUuid());
 				System.out.println("==>apply used: " + (System.currentTimeMillis() - now));
